@@ -183,6 +183,14 @@ dos2unix /cipi/host-del.sh
 dos2unix /cipi/alias-add.sh
 dos2unix /cipi/alias-del.sh
 dos2unix /cipi/ssl.sh
+PHPINI=/etc/php/7.2/fpm/conf.d/cipi.ini
+touch $PHPINI
+cat > 
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+<<EOF
+sudo service php7.2-fpm restart
 
 #FINAL MESSAGGE
 clear
