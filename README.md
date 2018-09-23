@@ -30,12 +30,12 @@ To create an alias pointed to an user document root:
 To create an alias pointed to an user document root:
 > sudo sh /cipi/alias-del.sh -a ALIASCODE -u ALIASHOSTUSER
 
-#### Regenerate an SSL certificate
-To regenerate an SSL certificate:
+#### Regenerate a SSL certificate
+To regenerate a SSL certificate:
 > sudo sh /cipi/ssl.sh -d DOMAIN.EXT
 
 #### Change user SFTP/SSH and DB passwords
-To regenerate an SSL certificate:
+To change an user SSH/SFTP and MySql passwords:
 > sudo bash /cipi/passwd.sh -u HOSTUSER
 
 ## Enjoy :)
