@@ -36,6 +36,6 @@ To regenerate an SSL certificate:
 
 #### Change user SFTP/SSH and DB passwords
 To regenerate an SSL certificate:
-> sudo sh /cipi/passwd.sh -u HOSTUSER
+> sudo bash /cipi/passwd.sh -u HOSTUSER
 
 ## Enjoy :)
