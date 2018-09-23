@@ -190,7 +190,7 @@ cat > "$PHPINI" <<EOF
 memory_limit = 256M
 upload_max_filesize = 256M
 post_max_size = 256M
-<<EOF
+EOF
 sudo service php7.2-fpm restart
 
 #FINAL MESSAGGE
