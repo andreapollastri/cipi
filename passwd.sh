@@ -27,6 +27,12 @@ if [ -f "/cipi/$USER" ]
 then
     DBOLDPASS=$(for word in $(cat /cipi/$USER); do echo $word; done)
     sudo mysqladmin -u $USER -p$DBOLDPASS password $DBPASS
+    DBRFILE=/cipi/$DBUSER
+    unlink $DBRFILE
+    touch $DBRFILE
+    cat > "$DBRFILE" <<EOF
+    $DBPASS
+    EOF
     #FINAL MESSAGGE
     clear
     echo "###################################################################################"
