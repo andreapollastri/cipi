@@ -44,7 +44,7 @@ sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
 #LAMP INSTALLATION
-sudo apt-get -y install rpl fail2ban openssl apache2 php7.2 php7.2-common php7.2-cli php7.2-fpm php-pear php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-mysql php7.2-xml libmcrypt-dev mysql-client
+sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.2 php7.2-common php7.2-cli php7.2-fpm php-pear php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php7.2-zip php7.2-mysql php7.2-xml libmcrypt-dev mysql-client
 
 #FIREWALL
 sudo ufw --force-enable reset
@@ -177,6 +177,14 @@ sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
 sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
 sudo service sshd restart
 echo -e "\n"
+
+#OPTIMIZE
+dos2unix /cipi/passwd.sh
+dos2unix /cipi/host-add.sh
+dos2unix /cipi/host-del.sh
+dos2unix /cipi/alias-add.sh
+dos2unix /cipi/alias-del.sh
+dos2unix /cipi/ssl.sh
 
 #FINAL MESSAGGE
 clear
