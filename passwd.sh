@@ -8,7 +8,7 @@ if [ $(id -u) != "0" ]; then
     exit 1
 fi
 while [ -n "$1" ] ; do
-      case $1 in
+       case $1 in
       -u | --user )
               shift
               USER=$1
