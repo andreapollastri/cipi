@@ -1,7 +1,7 @@
 #!/bin/bash
 USER=
 PASS=$(openssl rand -base64 32)
-DBPASS=$(openssl rand -base64 32)
+DBPASS=$(openssl rand -base64 16)
 # Check if user is root
 if [ $(id -u) != "0" ]; then
     echo "Error: You must be root to run this script."
@@ -26,7 +26,7 @@ echo "$USER:$PASS"| sudo chpasswd
 if [ -f "/cipi/$USER" ]
 then
     DBOLDPASS=$(for word in $(cat /cipi/$USER); do echo $word; done)
-    sudo mysqladmin -u $USER -p'$DBOLDPASS' password '$DBPASS'
+    sudo mysqladmin -u $USER -p$DBOLDPASS password $DBPASS
     #FINAL MESSAGGE
     clear
     echo "###################################################################################"
