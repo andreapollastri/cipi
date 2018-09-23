@@ -34,8 +34,8 @@ then
     #CHANGE MYSQL PASSWORD
     DBOLDPASS=$(for word in $(cat /cipi/$USER); do echo $word; done)
     sudo mysqladmin -u $USER -p$DBOLDPASS password $DBPASS
+    unlink /cipi/$DBUSER
     DBRFILE=/cipi/$DBUSER
-    unlink $DBRFILE
     touch $DBRFILE
     cat > "$DBRFILE" <<EOF
     $DBPASS
