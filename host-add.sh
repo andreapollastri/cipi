@@ -94,8 +94,8 @@ $DBPASS
 EOF
 
 #RESTART
-a2ensite $USER_NAME.conf
-service apache2 reload
+sudo a2ensite $USER_NAME.conf
+sudo service apache2 reload
 
 #SSL CERTIFICATE
 certbot --apache -d $DOMAIN --non-interactive --agree-tos --email admin@admin.com
