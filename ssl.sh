@@ -24,4 +24,4 @@ while [ -n "$1" ] ; do
 done
 
 #SSL CERTIFICATE
-certbot --apache -d $DOMAIN --non-interactive --agree-tos --email admin@admin.com
+sudo certbot --apache -d $DOMAIN --non-interactive --agree-tos --email admin@admin.com
