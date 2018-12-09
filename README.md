@@ -39,3 +39,8 @@ To change an user SSH/SFTP and MySql passwords:
 > sudo bash /cipi/passwd.sh -u HOSTUSER
 
 ## Enjoy :)
+
+### Coming Soon...
+- VPS automated websites backups and dbs dumps!
+- HTML admin interface
+- Multi-server support
