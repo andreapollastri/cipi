@@ -18,25 +18,25 @@ while [ -n "$1" ] ; do
 done
 
 #LINUX USER
-userdel -r $USER_NAME
+sudo userdel -r $USER_NAME
 
 #MYSQL USER AND DB
 /usr/bin/mysql -u root -p$DBROOT <<EOF
 DROP DATABASE $USER_NAME;
 DROP USER '$USER_NAME'@'localhost';
 EOF
-unlink /cipi/$USER_NAME
+sudo unlink /cipi/$USER_NAME
 
 #SSL CERTIFICATE
-unlink /cipi/certbot_renew_$USER_NAME.sh
-unlink /etc/cron.d/certbot_renew_$USER_NAME.crontab
-crontab -u $USER_NAME -r
+sudo unlink /cipi/certbot_renew_$USER_NAME.sh
+sudo unlink /etc/cron.d/certbot_renew_$USER_NAME.crontab
+sudo crontab -u $USER_NAME -r
 
 #APACHE
-a2dissite $USER_NAME.conf
+sudo a2dissite $USER_NAME.conf
 
 #RESTART
-service apache2 reload
+sudo service apache2 reload
 
 echo "###################################################################################"
 echo "                               DELETE COMPLETE "
