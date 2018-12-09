@@ -32,10 +32,10 @@ unlink /cipi/certbot_renew_$USER_NAME$ALIAS.sh
 unlink /etc/cron.d/certbot_renew_$USER_NAME$ALIAS.crontab
 
 #APACHE
-a2dissite $USER_NAME$ALIAS.conf
+sudo a2dissite $USER_NAME$ALIAS.conf
 
 #RESTART
-service apache2 reload
+sudo service apache2 reload
 
 echo "###################################################################################"
 echo "                               DELETE COMPLETE "
