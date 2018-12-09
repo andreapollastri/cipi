@@ -56,11 +56,11 @@ cat > "$CONF" <<EOF
 EOF
 
 #RESTART
-a2ensite $USER_NAME$ALIAS.conf
-service apache2 reload
+sudo a2ensite $USER_NAME$ALIAS.conf
+sudo service apache2 reload
 
 #SSL CERTIFICATE
-certbot --apache -d $DOMAIN --non-interactive --agree-tos --email admin@admin.com
+sudo certbot --apache -d $DOMAIN --non-interactive --agree-tos --email admin@admin.com
 CRON=/cipi/certbot_renew_$USER_NAME$ALIAS.sh
 touch $CRON
 cat > "$CRON" <<EOF
@@ -71,7 +71,7 @@ touch $TASK
 cat > "$TASK" <<EOF
 0 1 * * * $USER_NAME /cipi/certbot_renew_$USER_NAME$ALIAS.sh
 EOF
-crontab /etc/cron.d/certbot_renew_$USER_NAME$ALIAS.crontab
+sudo crontab /etc/cron.d/certbot_renew_$USER_NAME$ALIAS.crontab
 
 #RESUME
 clear
