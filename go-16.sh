@@ -13,13 +13,15 @@ PASS=$(openssl rand -base64 32)
 DBPASS=$(openssl rand -base64 32)
 
 #CIPI CORE
-mkdir /cipi/
+sudo mkdir /cipi/
+sudo mkdir /cipi/html/
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/host-add.sh -O /cipi/host-add.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/host-del.sh -O /cipi/host-del.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/ssl.sh -O /cipi/ssl.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/passwd.sh -O /cipi/passwd.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/alias-add.sh -O /cipi/alias-add.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/alias-del.sh -O /cipi/alias-del.sh
+wget https://raw.githubusercontent.com/andreapollastri/cipi/master/linux.png -O /cipi/html/linux.png
 DBRFILE=/cipi/DBR
 touch $DBRFILE
 cat > "$DBRFILE" <<EOF
@@ -88,13 +90,14 @@ sudo service apache2 restart
 sudo apt-get clean
 
 #DEFAULT VIRTUALHOST
-sudo rm -rf /var/www/html/
-sudo mkdir /var/www/html/
-BASE=/var/www/html/index.html
+BASE=/cipi/html/index.html
 touch $BASE
 cat > "$BASE" <<EOF
-<title>It works!</title><br><br>
-<center><h1>It works!</h1></center>
+<style>h1 { font-family: "Helvetica","Arial","sans-serif"; font-weight: 700; font-size: 2.5rem; line-height: 1.2; }
+text { font-family: "Helvetica","Arial","sans-serif"; font-weight: 300; font-size: 0.8rem; line-height: 1.2; }
+a, a:visited, a:hover, a:active { color:#666666; text-decoration: none; }</style>
+<title>It Works!</title><br><br><center><h1>It Works!</h1><img src="linux.png">
+<br><br><span class="text">Powered by <a href="https://cipi.io">cipi.io</a></span></center>
 EOF
 sudo service apache2 restart
 
@@ -105,7 +108,7 @@ touch $CONF
 cat > "$CONF" <<EOF
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
-        DocumentRoot /var/www/html
+        DocumentRoot /cipi/html
         <Directory />
           Order allow,deny
           Options FollowSymLinks
@@ -114,7 +117,7 @@ cat > "$CONF" <<EOF
           Require all granted
           SetOutputFilter DEFLATE
         </Directory>
-        <Directory /var/www/html>
+        <Directory /cipi/html>
           Order allow,deny
           Options FollowSymLinks
           Allow from all
@@ -125,15 +128,15 @@ cat > "$CONF" <<EOF
 </VirtualHost>
 EOF
 #RESTART
-a2ensite 000-default.conf
-service apache2 reload
+sudo a2ensite 000-default.conf
+sudo service apache2 reload
 
 BASE=/etc/apache2/sites-available/base.conf
 touch $BASE
 cat > "$BASE" <<EOF
 <VirtualHost $IP:80>
         ServerAdmin webmaster@localhost
-        DocumentRoot /var/www/html
+        DocumentRoot /cipi/html
         <Directory />
           Order allow,deny
           Options FollowSymLinks
@@ -142,7 +145,7 @@ cat > "$BASE" <<EOF
           Require all granted
           SetOutputFilter DEFLATE
         </Directory>
-        <Directory /var/www/html>
+        <Directory /cipi/html>
           Order allow,deny
           Options FollowSymLinks
           Allow from all
@@ -153,8 +156,8 @@ cat > "$BASE" <<EOF
 </VirtualHost>
 EOF
 #RESTART
-a2ensite base.conf
-service apache2 reload
+sudo a2ensite base.conf
+sudo service apache2 reload
 
 #LET'S ENCRYPT
 sudo add-apt-repository -y ppa:certbot/certbot
