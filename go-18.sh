@@ -24,7 +24,7 @@ wget https://raw.githubusercontent.com/andreapollastri/cipi/master/alias-del.sh 
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/linux.png -O /cipi/html/linux.png
 DBRFILE=/cipi/DBR
 sudo touch $DBRFILE
-cat > "$DBRFILE" <<EOF
+sudo cat > "$DBRFILE" <<EOF
 $DBPASS
 EOF
 sudo chmod o-r /cipi
@@ -103,7 +103,7 @@ sudo unlink /etc/apache2/sites-available/000-default.conf
 CONF=/etc/apache2/sites-available/000-default.conf
 sudo touch $CONF
 
-cat > "$CONF" <<EOF
+sudo cat > "$CONF" <<EOF
 <VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /cipi/html
