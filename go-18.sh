@@ -30,8 +30,8 @@ EOF
 sudo chmod o-r /cipi
 
 #ALIAS
-sudo shopt -s expand_aliases
-sudo alias ll='ls -alF'
+shopt -s expand_aliases
+alias ll='ls -alF'
 
 #NEWROOT USER
 sudo useradd -m -s /bin/bash $USER
