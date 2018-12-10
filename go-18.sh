@@ -23,20 +23,20 @@ wget https://raw.githubusercontent.com/andreapollastri/cipi/master/alias-add.sh 
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/alias-del.sh -O /cipi/alias-del.sh
 wget https://raw.githubusercontent.com/andreapollastri/cipi/master/linux.png -O /cipi/html/linux.png
 DBRFILE=/cipi/DBR
-touch $DBRFILE
+sudo touch $DBRFILE
 cat > "$DBRFILE" <<EOF
 $DBPASS
 EOF
 sudo chmod o-r /cipi
 
 #ALIAS
-shopt -s expand_aliases
-alias ll='ls -alF'
+sudo shopt -s expand_aliases
+sudo alias ll='ls -alF'
 
 #NEWROOT USER
 sudo useradd -m -s /bin/bash $USER
 echo "$USER:$PASS"|chpasswd
-usermod -aG sudo $USER
+sudo usermod -aG sudo $USER
 
 #PHP7 PPA
 sudo apt-get -y install python-software-properties
@@ -89,8 +89,8 @@ sudo service apache2 reload
 
 #DEFAULT VIRTUALHOST
 BASE=/cipi/html/index.html
-touch $BASE
-cat > "$BASE" <<EOF
+sudo touch $BASE
+sudo cat > "$BASE" <<EOF
 <style>h1 { font-family: "Helvetica","Arial","sans-serif"; font-weight: 700; font-size: 2.5rem; line-height: 1.2; }
 text { font-family: "Helvetica","Arial","sans-serif"; font-weight: 300; font-size: 0.8rem; line-height: 1.2; }
 a, a:visited, a:hover, a:active { color:#666666; text-decoration: none; }</style>
@@ -101,7 +101,7 @@ sudo service apache2 restart
 
 sudo unlink /etc/apache2/sites-available/000-default.conf
 CONF=/etc/apache2/sites-available/000-default.conf
-touch $CONF
+sudo touch $CONF
 
 cat > "$CONF" <<EOF
 <VirtualHost *:80>
@@ -130,9 +130,9 @@ sudo a2ensite 000-default.conf
 sudo service apache2 reload
 
 BASE=/etc/apache2/sites-available/base.conf
-touch $BASE
+sudo touch $BASE
 
-cat > "$BASE" <<EOF
+sudo cat > "$BASE" <<EOF
 <VirtualHost $IP:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /cipi/html
@@ -187,8 +187,8 @@ dos2unix /cipi/alias-add.sh
 dos2unix /cipi/alias-del.sh
 dos2unix /cipi/ssl.sh
 PHPINI=/etc/php/7.2/fpm/conf.d/cipi.ini
-touch $PHPINI
-cat > "$PHPINI" <<EOF
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
 memory_limit = 256M
 upload_max_filesize = 256M
 post_max_size = 256M
