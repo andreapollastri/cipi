@@ -135,7 +135,7 @@ touch $BASE
 cat > "$BASE" <<EOF
 <VirtualHost $IP:80>
         ServerAdmin webmaster@localhost
-        DocumentRoot /var/www/html
+        DocumentRoot /cipi/html
         <Directory />
           Order allow,deny
           Options FollowSymLinks
@@ -144,7 +144,7 @@ cat > "$BASE" <<EOF
           Require all granted
           SetOutputFilter DEFLATE
         </Directory>
-        <Directory /var/www/html>
+        <Directory /cipi/html>
           Order allow,deny
           Options FollowSymLinks
           Allow from all
@@ -155,8 +155,8 @@ cat > "$BASE" <<EOF
 </VirtualHost>
 EOF
 #RESTART
-a2ensite base.conf
-service apache2 reload
+sudo a2ensite base.conf
+sudo service apache2 reload
 
 #LET'S ENCRYPT
 sudo add-apt-repository -y ppa:certbot/certbot
