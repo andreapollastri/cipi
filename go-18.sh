@@ -62,7 +62,7 @@ sudo a2enmod rewrite
 echo -e "\n"
 sudo a2enmod proxy_fcgi setenvif
 echo -e "\n"
-sudo a2enconf php7.3-fpm
+sudo a2enconf php7.3
 echo -e "\n"
 sudo rpl -i -w "AllowOverride None" "AllowOverride All" /etc/apache2/apache2.conf
 echo -e "\n"
