@@ -186,7 +186,7 @@ dos2unix /cipi/host-del.sh
 dos2unix /cipi/alias-add.sh
 dos2unix /cipi/alias-del.sh
 dos2unix /cipi/ssl.sh
-PHPINI=/etc/php/7.3/fpm/conf.d/cipi.ini
+PHPINI=/etc/php/7.3/apache2/cipi.ini
 sudo touch $PHPINI
 sudo cat > "$PHPINI" <<EOF
 file_uploads = On
@@ -197,7 +197,7 @@ post_max_size = 256M
 max_execution_time = 360
 max_input_time = 360
 EOF
-sudo service php7.3-fpm restart
+sudo service php7.3 restart
 
 #FINAL MESSAGGE
 clear
