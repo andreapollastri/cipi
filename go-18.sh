@@ -46,7 +46,7 @@ sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
 #LAMP INSTALLATION
-sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.2 php7.2-common php7.2-cli php7.2-fpm php-pear php7.2-curl php7.2-dev php7.2-gd php7.2-mbstring php-gettext php7.2-zip php7.2-mysql php7.2-xml libmcrypt-dev mysql-client
+sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 libapache2-mod-php7.3 php7.3-cli php7.3-mysql php7.3-gd php7.3-imagick php7.3-recode php7.3-tidy php7.3-xmlrpc libmcrypt-dev mysql-client
 
 #FIREWALL
 sudo ufw --force-enable reset
@@ -62,7 +62,7 @@ sudo a2enmod rewrite
 echo -e "\n"
 sudo a2enmod proxy_fcgi setenvif
 echo -e "\n"
-sudo a2enconf php7.2-fpm
+sudo a2enconf php7.3-fpm
 echo -e "\n"
 sudo rpl -i -w "AllowOverride None" "AllowOverride All" /etc/apache2/apache2.conf
 echo -e "\n"
@@ -186,16 +186,18 @@ dos2unix /cipi/host-del.sh
 dos2unix /cipi/alias-add.sh
 dos2unix /cipi/alias-del.sh
 dos2unix /cipi/ssl.sh
-PHPINI=/etc/php/7.2/fpm/conf.d/cipi.ini
+PHPINI=/etc/php/7.3/fpm/conf.d/cipi.ini
 sudo touch $PHPINI
 sudo cat > "$PHPINI" <<EOF
+file_uploads = On
+allow_url_fopen = On
 memory_limit = 256M
 upload_max_filesize = 256M
 post_max_size = 256M
-max_execution_time = 180
-max_input_time = 180
+max_execution_time = 360
+max_input_time = 360
 EOF
-sudo service php7.2-fpm restart
+sudo service php7.3-fpm restart
 
 #FINAL MESSAGGE
 clear
