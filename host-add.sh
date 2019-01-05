@@ -54,7 +54,7 @@ CONF=/etc/apache2/sites-available/$USER_NAME.conf
 touch $CONF
 
 cat > "$CONF" <<EOF
-<VirtualHost $DOMAIN:80>
+<VirtualHost *:80>
 	ServerName $DOMAIN
         ServerAlias www.$DOMAIN
         ServerAdmin webmaster@localhost
