@@ -2,7 +2,7 @@
 ### LAMP AUTO-DEPLOY ON LINUX UBUNTU SERVER
 Install PHP 7.2, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban and other on an empty Linux Ubuntu VPS.
 
-More info on [https://cipi.io](https://cipi.io)
+More info on [http://andreapollastri.net/docs/cipi](http://andreapollastri.net/docs/cipi)
 
 #### Ubuntu 16.04 Version Installation
 Run it as root on an empty Linux Ubuntu 16.04 server:
