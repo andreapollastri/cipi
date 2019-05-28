@@ -185,10 +185,10 @@ sudo mv composer.phar /usr/local/bin/composer
 
 #SSH AND ROOT ACCESS CONFIGURATION
 PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
-sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
-sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
-sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
-sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config > /dev/null 2>&1
+sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config > /dev/null 2>&1
+sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config > /dev/null 2>&1
+sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config > /dev/null 2>&1
 sudo service sshd restart
 echo -e "\n"
 
