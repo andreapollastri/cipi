@@ -1,6 +1,6 @@
 # CIPI
 ### LAMP AUTO-DEPLOY ON LINUX UBUNTU SERVER
-Install PHP 7.2, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban and other on an empty Linux Ubuntu VPS.
+Install PHP 7.3, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban and other on an empty Linux Ubuntu VPS.
 
 More info on [http://andreapollastri.net/docs/cipi](http://andreapollastri.net/docs/cipi)
 
@@ -12,7 +12,7 @@ Run it as root on an empty Linux Ubuntu 18.04 server:
 To create a virtual host:
 > sudo sh /cipi/host-add.sh -d DOMAIN.EXT
 
-This script generates one SFTP/SSH user, one document root, one SSL certificate, one MySql DB and one MySql user for DOMAIN and WWW.DOMAIN.
+This script generates one SFTP/SSH user, one document root, one SSL certificate, one MySql DB and one MySql user for DOMAIN.EXT and WWW.DOMAIN.EXT
 
 #### Delete a Virtual host
 To remove a virtual host (and its user)
@@ -40,4 +40,4 @@ To change an user SSH/SFTP and MySql passwords:
 - VPS automated websites backups and dbs dumps!
 - HTML admin interface
 - Multi-server support
-- Git Support
+- Git Support (git clone, git branch, cp -r /GITFOLDER/* /PUBLICFLODER/, make .sh scripts)
