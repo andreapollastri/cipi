@@ -90,11 +90,24 @@ sudo service apache2 reload
 BASE=/cipi/html/index.html
 sudo touch $BASE
 sudo cat > "$BASE" <<EOF
-<style>h1 { font-family: "Helvetica","Arial","sans-serif"; font-weight: 700; font-size: 2.5rem; line-height: 1.2; }
-text { font-family: "Helvetica","Arial","sans-serif"; font-weight: 300; font-size: 0.8rem; line-height: 1.2; }
-a, a:visited, a:hover, a:active { color:#666666; text-decoration: none; }</style>
-<title>It Works!</title><br><br><center><h1>It Works!</h1><img src="linux.png">
-<br><br><span class="text">Powered by <a href="https://cipi.io">cipi.io</a></span></center>
+<!doctype html>
+<html lang="en">
+   <head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Server Up!</title>
+      <link href="https://fonts.googleapis.com/css?family=Nunito:200,600" rel="stylesheet" type="text/css">
+      <style>html, body { background-color: #fff; color: #636b6f; font-family: 'Nunito', sans-serif; font-weight: 200; height: 100vh; margin: 0; } .full-height { height: 100vh; } .flex-center { align-items: center; display: flex; justify-content: center; } .position-ref { position: relative; } .top-right { position: absolute; right: 10px; top: 18px; } .content { text-align: center; } .title { font-size: 48px; } .subtitle { font-size: 30px; }</style>
+   </head>
+   <body>
+      <div class="flex-center position-ref full-height">
+         <div class="content">
+            <div class="title"><b>Server Up!</b></div>
+            <div class="subtitle">$IP</div>
+         </div>
+      </div>
+   </body>
+</html>
 EOF
 sudo service apache2 restart
 
