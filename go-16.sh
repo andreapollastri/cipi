@@ -184,6 +184,7 @@ sudo php -r "unlink('composer-setup.php');"
 sudo mv composer.phar /usr/local/bin/composer
 
 #SSH AND ROOT ACCESS CONFIGURATION
+sudo apt-get install -y rpl
 PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config > /dev/null 2>&1
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config > /dev/null 2>&1
