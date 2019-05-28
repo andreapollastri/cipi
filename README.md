@@ -4,13 +4,9 @@ Install PHP 7.2, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban and other on an 
 
 More info on [http://andreapollastri.net/docs/cipi](http://andreapollastri.net/docs/cipi)
 
-#### Ubuntu 16.04 Version Installation
-Run it as root on an empty Linux Ubuntu 16.04 server:
-> wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/master/go-16.sh | bash
-
-#### Ubuntu 18.04 Version Installation
+#### Installation
 Run it as root on an empty Linux Ubuntu 18.04 server:
-> wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/master/go-18.sh | bash
+> wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/master/go.sh | bash
 
 #### Create a Virtual host
 To create a virtual host:
@@ -44,3 +40,4 @@ To change an user SSH/SFTP and MySql passwords:
 - VPS automated websites backups and dbs dumps!
 - HTML admin interface
 - Multi-server support
+- Git Support
