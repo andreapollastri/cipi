@@ -78,7 +78,6 @@ fi
 #PHPMYADMIN INSTALLATION
 set -euo pipefail
 IFS=$'\n\t'
-sudo add-apt-repository -y ppa:nijel/phpmyadmin
 sudo apt-get update
 sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/dbconfig-install boolean true"
 sudo debconf-set-selections <<< "phpmyadmin phpmyadmin/app-password-confirm password $DBPASS"
