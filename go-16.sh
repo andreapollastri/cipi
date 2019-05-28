@@ -40,7 +40,7 @@ sudo usermod -aG sudo $USER
 
 #PHP7 PPA
 sudo apt-get -y install python-software-properties
-sudo add-apt-repository -y ppa:ondrej/php
+sudo add-apt-repository -y universe
 
 #REPO UPDATES
 sudo apt-get update
