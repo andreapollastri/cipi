@@ -78,7 +78,6 @@ fi
 #PHPMYADMIN INSTALLATION
 set -euo pipefail
 IFS=$'\n\t'
-sudo add-apt-repository --remove ppa:nijel/phpmyadmin
 sudo apt-get update
 sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install phpmyadmin
 sudo service apache2 restart
