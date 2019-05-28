@@ -49,7 +49,7 @@ sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
 #LAMP INSTALLATION
-sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml php-imagick sqlite3 libmcrypt-dev mysql-client
+sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml libmcrypt-dev mysql-client
 
 #FIREWALL
 sudo ufw --force-enable reset
