@@ -33,7 +33,7 @@ $DBPASS
 EOF
 sudo chmod o-r /cipi
 clear
-echo "Core downloadin: OK!"
+echo "Core download: OK!"
 sleep 3s
 echo -e "\n"
 
@@ -41,7 +41,7 @@ echo -e "\n"
 shopt -s expand_aliases
 alias ll='ls -alF'
 clear
-echo "Alias settings: OK!\n\n"
+echo "Alias settings: OK!"
 sleep 3s
 echo -e "\n"
 
