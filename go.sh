@@ -2,7 +2,7 @@
 
 #START
 clear
-echo "Installation is started... It may take some time! Hold on :)"
+echo "Installation has been started... It may takes some time! Hold on :)"
 sleep 5s
 echo -e "\n"
 
@@ -408,15 +408,21 @@ echo -e "\n"
 WELCOME=/etc/motd
 sudo touch $WELCOME
 sudo cat > "$WELCOME" <<EOF
-  _____ _       _ _    _           _   _             _____                 _ 
- / ____(_)     (_| |  | |         | | (_)           |  __ \               | |
-| |     _ _ __  _| |__| | ___  ___| |_ _ _ __   __ _| |__) __ _ _ __   ___| |
-| |    | | '_ \| |  __  |/ _ \/ __| __| | '_ \ / _` |  ___/ _` | '_ \ / _ | |
-| |____| | |_) | | |  | | (_) \__ | |_| | | | | (_| | |  | (_| | | | |  __| |
- \_____|_| .__/|_|_|  |_|\___/|___/\__|_|_| |_|\__, |_|   \__,_|_| |_|\___|_|
-         | |                                    __/ |                        
-         |_|                                   |___/                         
+  _____ _       _ 
+ / ____(_)     (_)
+| |     _ _ __  _
+| |    | | '_ \| |
+| |____| | |_) | |
+ \_____|_| .__/|_|
+         | |
+         |_|        
+
+///// WELCOME \\\\\
+You are into the server!
+Remember... "With great power comes great responsibility!"
+
 EOF
+
 dos2unix /cipi/passwd.sh
 dos2unix /cipi/host-add.sh
 dos2unix /cipi/host-del.sh
@@ -440,8 +446,19 @@ echo -e "\n"
 
 #FINAL MESSAGGE
 clear
-echo "SERVER IP: $IP"
-echo "SSH PORT: $PORT"
-echo "SFTP/SSH ROOT: $USER / $PASS"
-echo "MYSQL ROOT: $DBPASS"
-echo "PHPMYADMIN: http://$IP/phpmyadmin/"
+echo ""
+echo "  _____ _       _ "
+echo " / ____(_)     (_)"
+echo "| |     _ _ __  _ "
+echo "| |    | | '_ \| |"
+echo "| |____| | |_) | |"
+echo " \_____|_| .__/|_|"
+echo "         | |      "
+echo "         |_|      "
+echo ""
+echo "///// SETUP COMPLETE \\\\\"
+echo ""
+echo "sshpass -p $PASS ssh $USER@$IP -p $PORT"
+echo ""
+echo "mysql -u root -p $DBPASS"
+echo ""
