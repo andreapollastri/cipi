@@ -354,6 +354,7 @@ sudo cat > "$BASE" <<EOF
         </Directory>
 </VirtualHost>
 EOF
+
 #RESTART
 sudo a2ensite base.conf
 sudo service apache2 reload
@@ -404,6 +405,18 @@ sleep 3s
 echo -e "\n"
 
 #OPTIMIZE
+WELCOME=/etc/motd
+sudo touch $WELCOME
+sudo cat > "$WELCOME" <<EOF
+  _____ _       _ _    _           _   _             _____                 _ 
+ / ____(_)     (_| |  | |         | | (_)           |  __ \               | |
+| |     _ _ __  _| |__| | ___  ___| |_ _ _ __   __ _| |__) __ _ _ __   ___| |
+| |    | | '_ \| |  __  |/ _ \/ __| __| | '_ \ / _` |  ___/ _` | '_ \ / _ | |
+| |____| | |_) | | |  | | (_) \__ | |_| | | | | (_| | |  | (_| | | | |  __| |
+ \_____|_| .__/|_|_|  |_|\___/|___/\__|_|_| |_|\__, |_|   \__,_|_| |_|\___|_|
+         | |                                    __/ |                        
+         |_|                                   |___/                         
+EOF
 dos2unix /cipi/passwd.sh
 dos2unix /cipi/host-add.sh
 dos2unix /cipi/host-del.sh
