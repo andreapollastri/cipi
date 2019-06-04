@@ -417,10 +417,9 @@ sudo cat > "$WELCOME" <<EOF
          | |
          |_|        
 
-///// WELCOME \\\\\
+   </> WELCOME </>
 You are into the server!
 Remember... "With great power comes great responsibility!"
-
 EOF
 
 dos2unix /cipi/passwd.sh
@@ -456,9 +455,8 @@ echo " \_____|_| .__/|_|"
 echo "         | |      "
 echo "         |_|      "
 echo ""
-echo "///// SETUP COMPLETE \\\\\"
+echo " SETUP COMPLETE "
 echo ""
 echo "sshpass -p $PASS ssh $USER@$IP -p $PORT"
 echo ""
 echo "mysql -u root -p $DBPASS"
-echo ""
