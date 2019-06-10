@@ -1,5 +1,5 @@
 # CIPI
-### LAMP AUTO-DEPLOY ON LINUX UBUNTU SERVER
+### LARAVEL BASED LAMP VPS MANAGER
 Install PHP 7.3, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban, npm and other on an empty Linux Ubuntu VPS.
 
 More info on [http://andreapollastri.dev/cipi](http://andreapollastri.dev/cipi)
