@@ -12,6 +12,24 @@ cd <install-directory>
 composer install
 npm install
 ```
+## Database
+Creata a new database
+```
+mysql -uroot -p
+mysql> create database yourDatabaseName;
+mysql> quit;
+```
+
+Then `cp .env.example .env` and update your database creds.
+```
+DB_CONNECTION=mysql
+DB_HOST=127.0.0.1
+DB_PORT=3306
+DB_DATABASE=yourDatabaseName
+DB_USERNAME=root
+DB_PASSWORD=root
+```
+
 Change (if you want) the initial credential by editing the file `/database/seeds/UsersTableSeeder.php` or use these:
 
 ```
