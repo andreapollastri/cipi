@@ -1,5 +1,5 @@
-# CIPI
-### LARAVEL BASED LAMP VPS MANAGER
-Install PHP 7.3, MySql 5.7, phpmyadmin, Let's encrypt, fail2ban, npm and other on an empty Linux Ubuntu VPS.
+# CIPI - Cloud Control Panel
+### Laravel Based VPS manager
+Install PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other with a click.
 
 More info on [https://cipi.sh](https://cipi.sh)
