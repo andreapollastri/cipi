@@ -235,7 +235,7 @@ sudo cat > "$BASE" <<EOF
             Hey...<br>This is Cipi :)
         </div>
         <div class="links">
-            <a href="https://andreapollastri.dev/cipi/">CIPI CONTROL PANEL</a>
+            <a href="https://cipi.sh">CIPI CONTROL PANEL</a>
         </div>
     </div>
 </div>
