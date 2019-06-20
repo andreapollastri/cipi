@@ -5,13 +5,27 @@ Install PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other w
 More info on [https://cipi.sh](https://cipi.sh)
 
 ## Installation
+
+###There are two ways to install Cipi.
+
+####Autoinstall Script
+The first way is run an autoinstall script on a Ubuntu 18.04 LTS based VPS:
+```
+wget -O - https://cipi.sh/go.sh | bash
+```
+After installation, you can change your personal data and password in the profile section.
+You can configure a SMTP provider into /cipi/.env file.
+
+####Laravel Installation
+The second way is install Cipi Laravel Project into an hosting:
+
 Cloning the git
 ```
 git clone https://github.com/andreapollastri/cipi.git <install-directory>
 cd <install-directory>
 composer install
-npm install
 ```
+
 ## Database
 Creata a new database
 ```
@@ -29,20 +43,14 @@ DB_DATABASE=yourDatabaseName
 DB_USERNAME=root
 DB_PASSWORD=root
 ```
+(Into .env file you can also config an SMTP provider and customize initial username and password)
 
-Change (if you want) the initial credential by editing the file `/database/seeds/UsersTableSeeder.php` or use these:
 
-```
-email: admin@admin.com
-password: 12345678
-```
-
-run the migrations with seed
+At the end run this commands:
 ```
 php artisan migrate:fresh --seed
+php artisan key:generate
+php artisan storage:link
 ```
-You can now run the web server
 
-```
-php artisan serve
-```
+Enjoy Cipi :)
