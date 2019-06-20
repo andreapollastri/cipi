@@ -4,8 +4,8 @@ Install PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other w
 
 More info on [https://cipi.sh](https://cipi.sh)
 
-## Installation
 
+## Installation
 There are two ways to install Cipi.
 
 Autoinstall Script
@@ -51,5 +51,13 @@ php artisan migrate:fresh --seed
 php artisan key:generate
 php artisan storage:link
 ```
+
+
+## Cipi tech
+Cipi was developed with:
+- Laravel 5.8 (https://laravel.com/)
+- SBAdmin 2 (https://startbootstrap.com/themes/sb-admin-2/)
+- Datatable JS (https://datatables.net/)
+
 
 Enjoy Cipi :)
