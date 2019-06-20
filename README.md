@@ -6,9 +6,9 @@ More info on [https://cipi.sh](https://cipi.sh)
 
 ## Installation
 
-###There are two ways to install Cipi.
+### There are two ways to install Cipi.
 
-####Autoinstall Script
+#### Autoinstall Script
 The first way is run an autoinstall script on a Ubuntu 18.04 LTS based VPS:
 ```
 wget -O - https://cipi.sh/go.sh | bash
@@ -16,7 +16,7 @@ wget -O - https://cipi.sh/go.sh | bash
 After installation, you can change your personal data and password in the profile section.
 You can configure a SMTP provider into /cipi/.env file.
 
-####Laravel Installation
+#### Laravel Installation
 The second way is install Cipi Laravel Project into an hosting:
 
 Cloning the git
@@ -25,9 +25,15 @@ git clone https://github.com/andreapollastri/cipi.git <install-directory>
 cd <install-directory>
 composer install
 ```
+Using composer
+```
+composer create-project andreapollastri/cipi <install-directory>
+cd <install-directory>
+npm install
+```
 
 ## Database
-Creata a new database
+Create a new database
 ```
 mysql -uroot -p
 mysql> create database yourDatabaseName;
