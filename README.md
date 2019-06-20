@@ -19,21 +19,21 @@ You can configure a SMTP provider into /cipi/.env file.
 Laravel Installation
 The second way is install Cipi Laravel Project into an hosting:
 
-> Cloning the git
+- Cloning the git
 ```
 git clone https://github.com/andreapollastri/cipi.git <install-directory>
 cd <install-directory>
 composer install
 ```
 
-> Creata a new database
+- Creata a new database
 ```
 mysql -uroot -p
 mysql> create database yourDatabaseName;
 mysql> quit;
 ```
 
-> Then run `cp .env.example .env` and update your database creds.
+- Then run `cp .env.example .env` and update your database creds.
 ```
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -45,7 +45,7 @@ DB_PASSWORD=root
 (Into .env file you can also config an SMTP provider and customize initial username and password)
 
 
-> At the end run this commands:
+- At the end run this commands:
 ```
 php artisan migrate:fresh --seed
 php artisan key:generate
