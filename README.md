@@ -4,7 +4,6 @@ Install PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other w
 
 More info on [https://cipi.sh](https://cipi.sh)
 
-## Installation
 
 ### There are two ways to install Cipi.
 
@@ -19,7 +18,7 @@ You can configure a SMTP provider into /cipi/.env file.
 #### Laravel Installation
 The second way is install Cipi Laravel Project into an hosting:
 
-Cloning the git
+- Cloning the git
 ```
 git clone https://github.com/andreapollastri/cipi.git <install-directory>
 cd <install-directory>
@@ -40,7 +39,7 @@ mysql> create database yourDatabaseName;
 mysql> quit;
 ```
 
-Then `cp .env.example .env` and update your database creds.
+- Then run `cp .env.example .env` and update your database creds.
 ```
 DB_CONNECTION=mysql
 DB_HOST=127.0.0.1
@@ -52,11 +51,20 @@ DB_PASSWORD=root
 (Into .env file you can also config an SMTP provider and customize initial username and password)
 
 
-At the end run this commands:
+- At the end run this commands:
 ```
 php artisan migrate:fresh --seed
 php artisan key:generate
 php artisan storage:link
 ```
+
+
+## Cipi tech
+Cipi was developed with:
+- Laravel 5.8 (https://laravel.com/)
+- SB Admin 2 (https://startbootstrap.com/themes/sb-admin-2/)
+- Datatable JS (https://datatables.net/)
+
+ 
 
 Enjoy Cipi :)
