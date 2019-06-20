@@ -56,8 +56,9 @@ php artisan storage:link
 ## Cipi tech
 Cipi was developed with:
 - Laravel 5.8 (https://laravel.com/)
-- SBAdmin 2 (https://startbootstrap.com/themes/sb-admin-2/)
+- SB Admin 2 (https://startbootstrap.com/themes/sb-admin-2/)
 - Datatable JS (https://datatables.net/)
 
+ 
 
 Enjoy Cipi :)
