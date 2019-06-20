@@ -1,10 +1,11 @@
 # CIPI - Cloud Control Panel
-### Laravel Based VPS manager
-Install PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other with a click.
 
-More info on [https://cipi.sh](https://cipi.sh)
+## About
+Cipi is a Laravel Based VPS manager.
+It installs with a click: PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other with a click.
+More info on [https://cipi.sh](https://cipi.sh).
 
-
+## Installation
 ### There are two ways to install Cipi.
 
 #### Autoinstall Script
@@ -18,21 +19,14 @@ You can configure a SMTP provider into /cipi/.env file.
 #### Laravel Installation
 The second way is install Cipi Laravel Project into an hosting:
 
-- Cloning the git
+- Clone the GIT
 ```
 git clone https://github.com/andreapollastri/cipi.git <install-directory>
 cd <install-directory>
 composer install
 ```
-Using composer
-```
-composer create-project andreapollastri/cipi <install-directory>
-cd <install-directory>
-npm install
-```
 
-## Database
-Create a new database
+- Create a new database
 ```
 mysql -uroot -p
 mysql> create database yourDatabaseName;
@@ -67,4 +61,4 @@ Cipi was developed with:
 
  
 
-Enjoy Cipi :)
+> Enjoy Cipi :)
