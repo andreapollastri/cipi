@@ -1,10 +1,14 @@
 {
-    "name": "laravel/laravel",
+    "name": "andreapollastri/cipi",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "Cloud Control Panel",
     "keywords": [
-        "framework",
-        "laravel"
+        "cloud",
+        "vps",
+        "laravel",
+        "control panel",
+        "server",
+        "managment"
     ],
     "license": "MIT",
     "require": {
