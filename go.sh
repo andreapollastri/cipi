@@ -176,7 +176,7 @@ cd /cipi/ && php artisan storage:link
 cd /cipi/ && php artisan migrate --seed
 sudo chmod -R o+rx /cipi/
 sudo chmod -R 777 /cipi/storage/
-sudco chmod -R 777 /cipi/public/storage/
+sudo chmod -R 777 /cipi/public/storage/
 clear
 echo "Application installation: OK!"
 sleep 3s
