@@ -16,19 +16,14 @@ wget -O - https://cipi.sh/go.sh | bash
 After installation, you can change your personal data and password in the profile section.
 You can configure a SMTP provider into /cipi/.env file.
 
-#### Manual Installation
+#### Composer Installation
 The second way is install Cipi Laravel Project into an hosting:
 
 - Install Cipi via Composer:
 ```
 composer create-project andreapollastri/cipi <install-directory>
 ```
-- You can also install it via GIT:
-```
-git clone https://github.com/andreapollastri/cipi.git <install-directory>
-cd <install-directory>
-composer install
-```
+
 - Create a new database
 ```
 mysql -uroot -p
