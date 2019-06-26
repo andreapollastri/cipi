@@ -150,7 +150,7 @@ echo -e "\n"
 
 
 #APPLICATION INSTALLATION
-/usr/bin/mysql -u root -pcipipass1759 <<EOF
+/usr/bin/mysql -u root -p$DBPASS <<EOF
 CREATE DATABASE IF NOT EXISTS cipi;
 EOF
 composer create-project andreapollastri/cipi /cipi/
