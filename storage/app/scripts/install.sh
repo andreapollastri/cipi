@@ -55,10 +55,9 @@ sleep 3s
 echo -e "\n"
 
 #PHP7 PPA
-sudo apt-get -y install python-software-properties
-sudo apt-get -y install software-properties-common
 sudo add-apt-repository -y universe
 sudo apt-get -y install software-properties-common
+sudo apt-get -y install python-software-properties
 sudo add-apt-repository -y ppa:ondrej/php
 clear
 echo "Repositories: OK!"
@@ -72,7 +71,7 @@ sudo apt-get update
 sudo apt -y purge libzip4
 wget http://ftp.it.debian.org/debian/pool/main/libz/libzip/libzip4_1.5.1-4_amd64.deb
 sudo dpkg -i libzip4_1.5.1-4_amd64.deb
-sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-intl php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml libmcrypt-dev zip unzip mysql-client
+sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-intl php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml libmcrypt-dev zip unzip mysql-client nginx
 clear
 echo "Base installation: OK!"
 sleep 3s
@@ -117,6 +116,37 @@ echo "PHP-FPM configuration: OK!"
 sleep 3s
 echo -e "\n"
 
+#NGINX CONFIGURATION
+sudo systemctl enable nginx.service
+sudo service nginx restart
+sudo rpl -i -w "Listen 80" "Listen 8000" /etc/apache2/ports.conf
+sudo apt-get -y install libapache2-mod-rpaf
+sudo service apache2 restart
+sudo unlink /etc/nginx/proxy_params
+NGX=/etc/nginx/proxy_params
+sudo touch $NGX
+sudo cat > $NGX <<EOF
+proxy_set_header Host $http_host;
+proxy_set_header X-Real-IP $remote_addr;
+proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+client_max_body_size 100M;
+client_body_buffer_size 1m;
+proxy_intercept_errors on;
+proxy_buffering on;
+proxy_buffer_size 128k;
+proxy_buffers 256 16k;
+proxy_busy_buffers_size 256k;
+proxy_temp_file_write_size 256k;
+proxy_max_temp_file_size 0;
+proxy_read_timeout 300;
+EOF
+clear
+echo "nginx configuration: OK!"
+sleep 3s
+echo -e "\n"
+
+
 #PHPMYADMIN INSTALLATION
 set -euo pipefail
 IFS=$'\n\t'
@@ -127,6 +157,22 @@ sudo apt-get clean
 sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
 sudo a2enconf phpmyadmin.conf
 sudo service apache2 reload
+PMA=/etc/nginx/snippets/phpmyadmin.conf
+sudo touch $PMA
+sudo cat > $PMA <<EOF
+location /phpmyadmin {
+    root /usr/share/;
+    index index.php index.html index.htm;
+    location ~ ^/phpmyadmin/(.+\.php)$ {
+        try_files $uri =404;
+        root /usr/share/;
+    }
+
+    location ~* ^/phpmyadmin/(.+\.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt))$ {
+        root /usr/share/;
+    }
+}
+EOF
 clear
 echo "phpmyadmin installation: OK!"
 sleep 3s
@@ -334,7 +380,7 @@ CONF=/etc/apache2/sites-available/000-default.conf
 sudo touch $CONF
 
 sudo cat > "$CONF" <<EOF
-<VirtualHost *:80>
+<VirtualHost *:8000>
         ServerAdmin webmaster@localhost
         DocumentRoot /cipi/html
         <Directory />
@@ -355,9 +401,33 @@ sudo cat > "$CONF" <<EOF
         </Directory>
 </VirtualHost>
 EOF
+
+DNGX=/etc/nginx/proxy_params
+sudo touch $DNGX
+sudo cat > $DNGX <<EOF
+listen 80;
+    server_name default_server;
+    root /cipi/html;
+    index index.php index.htm index.html;
+
+    location / {
+        try_files $uri $uri/ /index.php;
+    }
+
+    location ~ \.php$ {
+        proxy_pass http://localhost:8000;
+        include /etc/nginx/proxy_params;
+    }
+
+    location ~* \.(js|css|jpg|jpeg|gif|png|svg|ico|pdf|html|htm)$ {
+                expires      30d;
+    }
+EOF
+
 #RESTART
 sudo a2ensite 000-default.conf
 sudo service apache2 reload
+sudo service nginx reload
 clear
 echo "Default virtualhost: OK!"
 sleep 3s
