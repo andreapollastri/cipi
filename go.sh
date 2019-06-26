@@ -125,15 +125,6 @@ sleep 3s
 echo -e "\n"
 
 
-#GIT INSTALL
-sudo apt-get update
-sudo apt-get -y install git
-clear
-echo "GIT installation: OK!"
-sleep 3s
-echo -e "\n"
-
-
 sudo /bin/dd if=/dev/zero of=/var/swap.1 bs=1M count=1024
 sudo /sbin/mkswap /var/swap.1
 sudo /sbin/swapon /var/swap.1
@@ -160,12 +151,7 @@ echo -e "\n"
 /usr/bin/mysql -u root -pcipipass1759 <<EOF
 CREATE DATABASE IF NOT EXISTS cipi;
 EOF
-cd /cipi/ && git clone https://github.com/andreapollastri/cipi.git tmp
-cd /cipi/ && mv tmp/.git /cipi/
-cd /cipi/ && rm -rf tmp
-cd /cipi/ && git reset --hard
-cd /cipi/ && sudo rm -rf .git
-cd /cipi/ && composer install
+composer create-project andreapollastri/cipi /cipi/
 cd /cipi/ && sudo cp .env.example .env
 sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=root" /cipi/.env
 sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=cipipass1759" /cipi/.env
