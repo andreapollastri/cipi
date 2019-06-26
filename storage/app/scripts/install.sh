@@ -71,7 +71,7 @@ sudo apt-get update
 sudo apt -y purge libzip4
 wget http://ftp.it.debian.org/debian/pool/main/libz/libzip/libzip4_1.5.1-4_amd64.deb
 sudo dpkg -i libzip4_1.5.1-4_amd64.deb
-sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-intl php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml libmcrypt-dev zip unzip mysql-client nginx
+sudo apt-get -y install rpl dos2unix fail2ban openssl apache2 php7.3 php7.3-common php7.3-intl php7.3-cli php7.3-fpm php-pear php7.3-curl php7.3-dev php7.3-gd php7.3-mbstring php-gettext php7.3-zip php7.3-mysql php7.3-xml libmcrypt-dev zip unzip mysql-client
 clear
 echo "Base installation: OK!"
 sleep 3s
@@ -117,10 +117,11 @@ sleep 3s
 echo -e "\n"
 
 #NGINX CONFIGURATION
-sudo systemctl enable nginx.service
-sudo service nginx restart
 sudo rpl -i -w "Listen 80" "Listen 8000" /etc/apache2/ports.conf
 sudo apt-get -y install libapache2-mod-rpaf
+sudo apt-get -y nginx
+sudo systemctl enable nginx.service
+sudo service nginx restart
 sudo service apache2 restart
 sudo unlink /etc/nginx/proxy_params
 NGX=/etc/nginx/proxy_params
