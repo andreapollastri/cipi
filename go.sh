@@ -1,5 +1,7 @@
 #!/bin/bash
 
+DBPASS=$(openssl rand -base64 32)
+
 clear
 echo "Wait..."
 sleep 3s
@@ -49,8 +51,8 @@ sleep 3s
 echo -e "\n"
 
 #MYSQL INSTALLATION AND PASSWORD SET
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password cipipass1759"
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password cipipass1759"
+sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password $DBPASS"
+sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DBPASS"
 sudo apt-get -y install mysql-server
 clear
 echo "MySql service: OK!"
@@ -154,7 +156,7 @@ EOF
 composer create-project andreapollastri/cipi /cipi/
 cd /cipi/ && sudo cp .env.example .env
 sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=root" /cipi/.env
-sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=cipipass1759" /cipi/.env
+sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /cipi/.env
 sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=cipi" /cipi/.env
 sudo rpl -i -w "APP_URL=http://localhost" "APP_URL=http://$IP" /cipi/.env
 cd /cipi/ && php artisan key:generate
