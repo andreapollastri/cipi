@@ -58,6 +58,13 @@ php artisan key:generate
 php artisan storage:link
 ```
 
+## Contributing
+Thank you for considering contributing to the Cipi Project!
+
+
+## Security Vulnerabilities
+If you discover a security vulnerability within Cipi, please send an e-mail to Andrea Pollastri via mail@andreapollastri.net. All security vulnerabilities will be promptly addressed.
+
 
 ## Cipi tech
 Cipi was developed with:
@@ -65,6 +72,8 @@ Cipi was developed with:
 - SB Admin 2 (https://startbootstrap.com/themes/sb-admin-2/)
 - Datatable JS (https://datatables.net/)
 
- 
+
+## Licence
+Cipi is open-source software licensed under the MIT license.
 
 > Enjoy Cipi :)
