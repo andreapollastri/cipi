@@ -6,7 +6,7 @@ It installs with a click: PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ba
 More info on [https://cipi.sh](https://cipi.sh).
 
 ## Roadmap
-You can follow RoadMap here: https://github.com/andreapollastri/cipi/projects/2
+You can follow Cipi Project RoadMap here: https://github.com/andreapollastri/cipi/projects/
 
 ## Installation
 ### There are two ways to install Cipi.
