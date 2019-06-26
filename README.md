@@ -5,6 +5,9 @@ Cipi is a Laravel Based VPS manager.
 It installs with a click: PHP 7.3, MySql 5.7, phpmyadmin, Let's Encrypt, fail2ban, npm and other with a click.
 More info on [https://cipi.sh](https://cipi.sh).
 
+## Roadmap
+You can follow RoadMap here: https://github.com/andreapollastri/cipi/projects/2
+
 ## Installation
 ### There are two ways to install Cipi.
 
