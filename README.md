@@ -23,13 +23,6 @@ You can configure a SMTP provider into /cipi/.env file.
 composer create-project andreapollastri/cipi <install-directory>
 ```
 
-- Create a new database
-```
-mysql -uroot -p
-mysql> create database yourDatabaseName;
-mysql> quit;
-```
-
 - Then run `cp .env.example .env` and update your database creds. (you can also config an SMTP provider and customize initial username and password)
 
 
