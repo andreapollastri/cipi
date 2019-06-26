@@ -17,9 +17,8 @@ After installation, you can change your personal data and password in the profil
 You can configure a SMTP provider into /cipi/.env file.
 
 #### Composer Installation
-The second way is install Cipi Laravel Project into an hosting:
+- You can install Cipi Laravel Project into an hosting within Composer:
 
-- Install Cipi via Composer:
 ```
 composer create-project andreapollastri/cipi <install-directory>
 ```
