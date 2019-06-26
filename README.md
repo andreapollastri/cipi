@@ -30,21 +30,12 @@ mysql> create database yourDatabaseName;
 mysql> quit;
 ```
 
-- Then run `cp .env.example .env` and update your database creds.
-```
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=yourDatabaseName
-DB_USERNAME=root
-DB_PASSWORD=root
-```
-(Into .env file you can also config an SMTP provider and customize initial username and password)
+- Then run `cp .env.example .env` and update your database creds. (you can also config an SMTP provider and customize initial username and password)
 
 
 - At the end run this commands:
 ```
-php artisan migrate:fresh --seed
+php artisan migrate --seed
 php artisan key:generate
 php artisan storage:link
 ```
@@ -71,5 +62,4 @@ If you discover a security vulnerability within Cipi, please send an e-mail to A
 ## Licence
 Cipi is open-source software licensed under the MIT license.
 
-
-> Enjoy Cipi :)
+### Enjoy Cipi :)
