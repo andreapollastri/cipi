@@ -119,11 +119,12 @@ echo -e "\n"
 #NGINX CONFIGURATION
 sudo rpl -i -w "Listen 80" "Listen 8000" /etc/apache2/ports.conf
 sudo apt-get -y install libapache2-mod-rpaf
+sudo service apache2 restart
 sudo apt-get -y nginx
 sudo systemctl enable nginx.service
 sudo service nginx restart
-sudo service apache2 restart
 sudo unlink /etc/nginx/proxy_params
+sudo mkdir /etc/nginx/
 NGX=/etc/nginx/proxy_params
 sudo touch $NGX
 sudo cat > $NGX <<EOF
@@ -144,38 +145,6 @@ proxy_read_timeout 300;
 EOF
 clear
 echo "nginx configuration: OK!"
-sleep 3s
-echo -e "\n"
-
-
-#PHPMYADMIN INSTALLATION
-set -euo pipefail
-IFS=$'\n\t'
-sudo apt-get update
-sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install phpmyadmin
-sudo service apache2 restart
-sudo apt-get clean
-sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
-sudo a2enconf phpmyadmin.conf
-sudo service apache2 reload
-PMA=/etc/nginx/snippets/phpmyadmin.conf
-sudo touch $PMA
-sudo cat > $PMA <<EOF
-location /phpmyadmin {
-    root /usr/share/;
-    index index.php index.html index.htm;
-    location ~ ^/phpmyadmin/(.+\.php)$ {
-        try_files $uri =404;
-        root /usr/share/;
-    }
-
-    location ~* ^/phpmyadmin/(.+\.(jpg|jpeg|gif|css|png|js|ico|html|xml|txt))$ {
-        root /usr/share/;
-    }
-}
-EOF
-clear
-echo "phpmyadmin installation: OK!"
 sleep 3s
 echo -e "\n"
 
@@ -403,7 +372,7 @@ sudo cat > "$CONF" <<EOF
 </VirtualHost>
 EOF
 
-DNGX=/etc/nginx/proxy_params
+DNGX=/etc/nginx/default
 sudo touch $DNGX
 sudo cat > $DNGX <<EOF
 listen 80;
