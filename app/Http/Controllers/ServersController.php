@@ -39,7 +39,7 @@ class ServersController extends Controller
         if($request->ip == $request->server('SERVER_ADDR')) {
             $user = User::find(Auth::id());
             $profile = $user->name;
-            $messagge = "You can't install a client server into the same Cipi s$
+            $messagge = "You can't install a client server into the same Cipi Server";
             return view('generic', compact('profile','messagge'));
             die();
         }
