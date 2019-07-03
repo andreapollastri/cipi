@@ -35,6 +35,14 @@ class ServersController extends Controller
         $this->validate($request, [
             'name' => 'required', 'ip' => 'required'
         ]);
+        
+        if($request->ip == $request->server('SERVER_ADDR')) {
+            $user = User::find(Auth::id());
+            $profile = $user->name;
+            $messagge = "You can't install a client server into the same Cipi s$
+            return view('generic', compact('profile','messagge'));
+            die();
+        }
 
         Server::create([
             'name'      => $request->name,
