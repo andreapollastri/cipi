@@ -53,8 +53,6 @@ Route::get('/databases','DatabasesController@index')->name('databases');
 Route::get('/users','UsersController@index')->name('users');
 Route::post('/users/reset/','UsersController@reset')->name('usersreset');
 
-Route::get('/backups','BackupsController@index')->name('backups');
-
 Route::get('/applications','ApplicationsController@index')->name('applications');
 Route::post('/applications','ApplicationsController@create')->name('applicationcreate');
 Route::post('/applicationdelete','ApplicationsController@delete')->name('applicationdelete');
