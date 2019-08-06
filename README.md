@@ -33,6 +33,25 @@ php artisan key:generate
 php artisan storage:link
 ```
 
+## Installation Note
+Before you can use Cipi, please make sure your server fulfils these requirements:
+
+- Ubuntu 18.04 x86_64 LTS (Fresh installation)
+- If the server is virtual (VPS), OpenVZ may not be supported (Kernel 2.6)
+
+Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address (NAT VPS is not supported) / External firewall / For VPS providers such as AWS and AZURE, those providers already include an external firewall for your VPS. Please open port 22, 80 and 443 to install Cipi.
+
+Installation may take up to about 5 minutes minimum which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
+
+## Installation notes on AWS
+AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
+
+```
+$ ssh ubuntu@<your server IP address>
+$ ubuntu@aws:~$ sudo -s
+$ root@aws:~# <paste installation script>
+```
+
 ## Cipi tech
 Cipi was developed with:
 - Laravel 5.8 (https://laravel.com/)
