@@ -33,7 +33,7 @@ php artisan key:generate
 php artisan storage:link
 ```
 
-## Installation Note
+#### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
 
 - Ubuntu 18.04 x86_64 LTS (Fresh installation)
@@ -43,7 +43,7 @@ Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB m
 
 Installation may take up to about 5 minutes minimum which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
 
-## Installation notes on AWS
+#### Installation notes on AWS
 AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
 
 ```
