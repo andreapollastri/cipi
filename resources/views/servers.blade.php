@@ -116,12 +116,12 @@
                     <li>{{ __('Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address (NAT VPS is not supported)') }}</li>
                     <li>{{ __('Please open port 22, 80 and 443 to install Cipi') }}</li>
                     <li>{{ __('Cipi would not work with NAT VPN and OpenVZ.') }}</li> 
-                    <li>{{ __('Installation may take up to about 5 minutes minimum which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.') }}</li>
-                    <li>AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s:<br>
+                    <li>{{ __('Installation may take up to about 5 minutes minimum which may also depend on your server internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.') }}</li>
+                    <li>{{ __('AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s:') }}<br>
                         <code>
-                            $ ssh ubuntu@<your server IP address>
+                            $ ssh ubuntu@ your server IP address
                             $ ubuntu@aws:~$ sudo -s
-                            $ root@aws:~# <paste installation script>
+                            $ root@aws:~# paste installation script
                         </code>
                     </li>
                 </ul>
