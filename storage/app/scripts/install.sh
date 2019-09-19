@@ -448,7 +448,8 @@ sleep 3s
 echo -e "\n"
 
 #SSH AND ROOT ACCESS CONFIGURATION
-PORT=1759
+#PORT is defined at top of server install script.
+#It is passed from the SSH_DEFAULT_PORT in the controller's .env file
 #PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
