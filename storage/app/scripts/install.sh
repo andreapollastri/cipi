@@ -63,6 +63,9 @@ wget $REMOTEURL/scripts/authorizedkeys/$SERVERCODE/  -O /home/$USER/.ssh/authori
 PREVIOUSKEYS=''
 [ -f ~/.ssh/authorized_keys ] && { PREVIOUSKEYS=$(cat ~/.ssh/authorized_keys); }
 echo "$PREVIOUSKEYS" >> /home/$USER/.ssh/authorized_keys
+sudo chown -R $USER:$USER /home/$USER/.ssh
+sudo chmod -R 700 /home/$USER/.ssh
+sudo chmod 600 /home/$USER/.ssh/authorized_keys
 
 #PHP7 PPA
 sudo add-apt-repository -y universe
@@ -465,6 +468,29 @@ sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
 sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+sudo rpl -i -w "# AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "#AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "AuthorizedKeysFile" "#AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "PasswordAuthentication" "#PasswordAuthentication" /etc/ssh/sshd_config
+
+sudo cat >> /etc/ssh/sshd_config <<EOF
+
+# Enable Keyless SSH Access for root accounts.
+
+PasswordAuthentication yes
+AuthorizedKeysFile      %h/.ssh/authorized_keys
+
+# Disable password only access to root.
+Match User root
+PasswordAuthentication no
+
+# Force the new root user to use public keys. Disable password only access to root.
+Match User $USER
+PasswordAuthentication no
+EOF
+
 sudo service sshd restart
 echo -e "\n"
 clear
