@@ -174,6 +174,7 @@ echo -e "\n"
 cat /dev/zero | ssh-keygen -q -N "" > /dev/null
 AUTHORIZEDKEY=$(cat ~/.ssh/id_rsa.pub)
 sudo rpl -i -w "# CIPI-CONTROL-PANEL-PUBLIC-KEY" "$AUTHORIZEDKEY" /cipi/storage/app/configuration/authorized_keys
+sudo cp ~/.ssh/id_rsa /cipi/id_rsa
 
 #FINAL MESSAGGE
 clear
