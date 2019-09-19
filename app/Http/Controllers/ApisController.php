@@ -115,12 +115,19 @@ class ApisController extends Controller
         }
 
 
-        $ssh = New \phpseclib\Net\SSH2($application->server->ip, $application->server->port);
-        if(!$ssh->login($application->server->username, $application->server->password)) {
-            $messagge = 'There was a problem with server connection. Try later!';
-            return view('generic', compact('profile','messagge'));
-        }
+        // Attempt to login with SSH key.
+        $ssh = new \phpseclib\Net\SSH2($application->server->ip, $application->server->port);
+        $key = new \phpseclib\Crypt\RSA();
 
+        $key->loadKey(file_get_contents('/cipi/id_rsa'));
+
+        if (!$ssh->login($application->server->username, $key)) {
+            // If login failed, default back to password.
+            if (!$ssh->login($application->server->username, $application->server->password)) {
+                $messagge = 'There was a problem with server connection. Try later!';
+                return view('generic', compact('profile','messagge'));
+            }
+        }
 
         $ssh->setTimeout(60);
         $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$application->domain);
@@ -152,12 +159,19 @@ class ApisController extends Controller
             return abort(403);
         }
 
-        $ssh = New \phpseclib\Net\SSH2($alias->server->ip, $alias->server->port);
-        if(!$ssh->login($alias->server->username, $alias->server->password)) {
-            $messagge = 'There was a problem with server connection. Try later!';
-            return view('generic', compact('profile','messagge'));
-        }
+        // Attempt to login with SSH key.
+        $ssh = new \phpseclib\Net\SSH2($alias->server->ip, $alias->server->port);
+        $key = new \phpseclib\Crypt\RSA();
 
+        $key->loadKey(file_get_contents('/cipi/id_rsa'));
+
+        if (!$ssh->login($alias->server->username, $key)) {
+            // If login failed, default back to password.
+            if (!$ssh->login($alias->server->username, $alias->server->password)) {
+                $messagge = 'There was a problem with server connection. Try later!';
+                return view('generic', compact('profile','messagge'));
+            }
+        }
         $ssh->setTimeout(60);
         $response = $ssh->exec('echo '.$alias->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$alias->domain);
 
