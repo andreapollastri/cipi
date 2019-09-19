@@ -13,6 +13,7 @@ PASS=???
 DBPASS=???
 SERVERCODE=???
 REMOTEURL=???
+ENABLEROOT=???
 
 #REMOTE CURL
 curl --request GET --url $REMOTEURL/server/api/start/$SERVERCODE
@@ -468,6 +469,9 @@ sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
 sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+if [ "$ENABLEROOT" -eq "1" ] ; then
+    sudo rpl -i -w "PermitRootLogin no" "PermitRootLogin yes" /etc/ssh/sshd_config;
+fi
 sudo rpl -i -w "# AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
 sudo rpl -i -w "#AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
 sudo rpl -i -w "AuthorizedKeysFile" "#AuthorizedKeysFile" /etc/ssh/sshd_config

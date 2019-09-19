@@ -38,7 +38,8 @@ class ScriptsController extends Controller
             $server->password,
             $server->dbroot,
             $server->servercode,
-            $this->url->to('/')
+            $this->url->to('/'),
+            env("ENABLE_SSH_ROOT_ACCESS", 0)
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
