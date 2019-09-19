@@ -167,6 +167,22 @@ class ScriptsController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
         
     }
+	
+	
+	public function authorizedkeys($servercode)
+    {
+
+        $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
+        
+        if(!$server) {
+            return response("")->withHeaders(['Content-Type' =>'text/plain']);
+        }
+
+        $script = Storage::get('configuration/authorized_keys');
+
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+        
+    }
 
 
 

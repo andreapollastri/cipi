@@ -54,6 +54,16 @@ echo "New root user: OK!"
 sleep 3s
 echo -e "\n"
 
+#SETUP KEYLESS AUTHENTICATION FOR NEW ROOT USER ACCOUNT
+mkdir /home/$USER/.ssh
+chmod 700 /home/$USER/.ssh
+wget $REMOTEURL/scripts/authorizedkeys/$SERVERCODE/  -O /home/$USER/.ssh/authorized_keys
+
+# If the current root account has SSH keys enabled, copy any current SSH key configurations to new root user.
+PREVIOUSKEYS=''
+[ -f ~/.ssh/authorized_keys ] && { PREVIOUSKEYS=$(cat ~/.ssh/authorized_keys); }
+echo "$PREVIOUSKEYS" >> /home/$USER/.ssh/authorized_keys
+
 #PHP7 PPA
 sudo add-apt-repository -y universe
 sudo apt-get -y install software-properties-common
