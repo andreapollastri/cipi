@@ -1,0 +1,12 @@
+# This is the authorized_keys file. It provides passwordless access to the system from other hosts via SSH.
+# The host running the Cipi control panel has a private key on it. By putting the public key for the server below,
+# this allows the Cipi control panel to have passwordless control over the root account via SSH on the system using the
+# public and private keypair.
+# 
+# DO NOT MODIFY THIS FILE OR THE /etc/ssh/sshd_config FILE UNLESS YOU KNOW WHAT YOU ARE DOING
+# OR YOU MAY LOSE ACCESS TO THIS SERVER FROM THE CIPI CONTROL PANEL.
+#
+# The control panel access key
+# CIPI-CONTROL-PANEL-PUBLIC-KEY
+#
+# ADD YOUR HOSTS BELOW

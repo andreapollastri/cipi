@@ -38,7 +38,8 @@ class ScriptsController extends Controller
             $server->password,
             $server->dbroot,
             $server->servercode,
-            $this->url->to('/')
+            $this->url->to('/'),
+            env("ENABLE_SSH_ROOT_ACCESS", 0)
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
@@ -165,6 +166,22 @@ class ScriptsController extends Controller
         $script = Storage::get('scripts/status.sh');
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+        
+    }
+	
+	
+	public function authorizedkeys($servercode)
+    {
+
+        $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
+        
+        if(!$server) {
+            return response("")->withHeaders(['Content-Type' =>'text/plain']);
+        }
+
+        $script = Storage::get('configuration/authorized_keys');
+
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
         
     }
 

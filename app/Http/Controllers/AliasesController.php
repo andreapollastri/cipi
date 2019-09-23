@@ -67,10 +67,18 @@ class AliasesController extends Controller
 
         $aliascode = md5(uniqid().microtime().$request->name);
 
-        $ssh = New \phpseclib\Net\SSH2($server->ip, $server->port);
-        if(!$ssh->login($server->username, $server->password)) {
-            $messagge = 'There was a problem with server connection. Try later!';
-            return view('generic', compact('profile','messagge'));
+        // Attempt to login with SSH key.
+        $ssh = new \phpseclib\Net\SSH2($server->ip, $server->port);
+        $key = new \phpseclib\Crypt\RSA();
+
+        $key->loadKey(file_get_contents('/cipi/id_rsa'));
+
+        if (!$ssh->login($server->username, $key)) {
+            // If login failed, default back to password.
+            if (!$ssh->login($server->username, $server->password)) {
+                $messagge = 'There was a problem with server connection. Try later!';
+                return view('generic', compact('profile','messagge'));
+            }
         }
 
         Storage::disk('local')->put('public/'.$application->username.'.conf', '');
@@ -146,10 +154,18 @@ class AliasesController extends Controller
 
         $alias->delete();
 
-        $ssh = New \phpseclib\Net\SSH2($alias->server->ip, $alias->server->port);
-        if(!$ssh->login($alias->server->username, $alias->server->password)) {
-            $messagge = 'There was a problem with server connection. Try later!';
-            return view('generic', compact('profile','messagge'));
+        // Attempt to login with SSH key.
+        $ssh = new \phpseclib\Net\SSH2($alias->server->ip, $alias->server->port);
+        $key = new \phpseclib\Crypt\RSA();
+
+        $key->loadKey(file_get_contents('/cipi/id_rsa'));
+
+        if (!$ssh->login($alias->server->username, $key)) {
+            // If login failed, default back to password.
+            if (!$ssh->login($alias->server->username, $alias->server->password)) {
+                $messagge = 'There was a problem with server connection. Try later!';
+                return view('generic', compact('profile','messagge'));
+            }
         }
 
         Storage::disk('local')->put('public/'.$alias->application->username.'.conf', '');

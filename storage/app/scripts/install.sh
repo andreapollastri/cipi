@@ -13,6 +13,7 @@ PASS=???
 DBPASS=???
 SERVERCODE=???
 REMOTEURL=???
+ENABLEROOT=???
 
 #REMOTE CURL
 curl --request GET --url $REMOTEURL/server/api/start/$SERVERCODE
@@ -53,6 +54,19 @@ clear
 echo "New root user: OK!"
 sleep 3s
 echo -e "\n"
+
+#SETUP KEYLESS AUTHENTICATION FOR NEW ROOT USER ACCOUNT
+mkdir /home/$USER/.ssh
+chmod 700 /home/$USER/.ssh
+wget $REMOTEURL/scripts/authorizedkeys/$SERVERCODE/  -O /home/$USER/.ssh/authorized_keys
+
+# If the current root account has SSH keys enabled, copy any current SSH key configurations to new root user.
+PREVIOUSKEYS=''
+[ -f ~/.ssh/authorized_keys ] && { PREVIOUSKEYS=$(cat ~/.ssh/authorized_keys); }
+echo "$PREVIOUSKEYS" >> /home/$USER/.ssh/authorized_keys
+sudo chown -R $USER:$USER /home/$USER/.ssh
+sudo chmod -R 700 /home/$USER/.ssh
+sudo chmod 600 /home/$USER/.ssh/authorized_keys
 
 #PHP7 PPA
 sudo add-apt-repository -y universe
@@ -448,12 +462,39 @@ sleep 3s
 echo -e "\n"
 
 #SSH AND ROOT ACCESS CONFIGURATION
-PORT=1759
+#PORT is defined at top of server install script.
+#It is passed from the SSH_DEFAULT_PORT in the controller's .env file
 #PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
 sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+if [ "$ENABLEROOT" -eq "1" ] ; then
+    sudo rpl -i -w "PermitRootLogin no" "PermitRootLogin yes" /etc/ssh/sshd_config;
+fi
+sudo rpl -i -w "# AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "#AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "AuthorizedKeysFile" "#AuthorizedKeysFile" /etc/ssh/sshd_config
+sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "PasswordAuthentication" "#PasswordAuthentication" /etc/ssh/sshd_config
+
+sudo cat >> /etc/ssh/sshd_config <<EOF
+
+# Enable Keyless SSH Access for root accounts.
+
+PasswordAuthentication yes
+AuthorizedKeysFile      %h/.ssh/authorized_keys
+
+# Disable password only access to root.
+Match User root
+PasswordAuthentication no
+
+# Force the new root user to use public keys. Disable password only access to root.
+Match User $USER
+PasswordAuthentication no
+EOF
+
 sudo service sshd restart
 echo -e "\n"
 clear

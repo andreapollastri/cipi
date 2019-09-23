@@ -40,6 +40,7 @@ Route::post('/servers/create/','ServersController@create')->name('servercreate')
 Route::post('/servers/delete/','ServersController@delete')->name('serverdelete');
 
 Route::get('/scripts/install/{servercode}','ScriptsController@install')->name('serverinstall');
+Route::get('/scripts/authorizedkeys/{servercode}','ScriptsController@authorizedkeys');
 Route::get('/scripts/hostadd/{servercode}','ScriptsController@hostadd');
 Route::get('/scripts/hostdel/{servercode}','ScriptsController@hostdel');
 Route::get('/scripts/hostssl/{servercode}','ScriptsController@hostssl');
