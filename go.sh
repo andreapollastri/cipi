@@ -7,6 +7,10 @@ echo "Wait..."
 sleep 3s
 echo -e "\n"
 
+sudo echo $DBPASS > /root/MYSQL_PWD
+
+sudo apt-get -y install dnsutils
+
 #VARS
 IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
