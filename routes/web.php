@@ -40,6 +40,7 @@ Route::post('/servers/create/','ServersController@create')->name('servercreate')
 Route::post('/servers/delete/','ServersController@delete')->name('serverdelete');
 
 Route::get('/scripts/install/{servercode}','ScriptsController@install')->name('serverinstall');
+Route::get('/scripts/authorizedkeys/{servercode}','ScriptsController@authorizedkeys');
 Route::get('/scripts/hostadd/{servercode}','ScriptsController@hostadd');
 Route::get('/scripts/hostdel/{servercode}','ScriptsController@hostdel');
 Route::get('/scripts/hostssl/{servercode}','ScriptsController@hostssl');
@@ -52,8 +53,6 @@ Route::get('/databases','DatabasesController@index')->name('databases');
 
 Route::get('/users','UsersController@index')->name('users');
 Route::post('/users/reset/','UsersController@reset')->name('usersreset');
-
-Route::get('/backups','BackupsController@index')->name('backups');
 
 Route::get('/applications','ApplicationsController@index')->name('applications');
 Route::post('/applications','ApplicationsController@create')->name('applicationcreate');
