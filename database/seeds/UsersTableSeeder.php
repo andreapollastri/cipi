@@ -17,9 +17,9 @@ class UsersTableSeeder extends Seeder
     	User::query()->truncate();
 
 		return User::create([
-			'name' => env('USER_NAME', 'Cipi Admin'),
-			'email' => env('USER_EMAIL', 'admin@admin.com'),
-			'password' => Hash::make(env('USER_PASSWORD', '12345678')),
+			'name' => config('app.cipi_user'),
+			'email' => config('app.cipi_email'),
+			'password' => Hash::make(config('app.cipi_password')),
             'email_verified_at' => Carbon::now(),
 		 ]);
     }

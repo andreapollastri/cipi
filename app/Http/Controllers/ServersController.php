@@ -35,7 +35,7 @@ class ServersController extends Controller
         $this->validate($request, [
             'name' => 'required', 'ip' => 'required'
         ]);
-        
+
         if($request->ip == $request->server('SERVER_ADDR')) {
             $user = User::find(Auth::id());
             $profile = $user->name;
@@ -49,7 +49,7 @@ class ServersController extends Controller
             'provider'  => $request->provider,
             'location'  => $request->location,
             'ip'        => $request->ip,
-            'port'      => env('SSH_DEFAULT_PORT', '1759'),
+            'port'      => config('app.cipi_ssh_port'),
             'username'  => uniqid(),
             'password'  => str_random(32),
             'dbroot'    => str_random(32),
@@ -63,7 +63,7 @@ class ServersController extends Controller
 
     public function delete(Request $request)
     {
-        
+
         $this->validate($request, [
             'servercode' => 'required',
         ]);
