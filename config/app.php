@@ -249,5 +249,5 @@ return [
     'cipi_user'         => env('USER_NAME', 'Cipi Admin'),
     'cipi_email'        => env('USER_EMAIL', 'admin@admin.com'),
     'cipi_password'     => env('USER_PASSWORD', 12345678),
-    'cipi_ssh_port'     => env('SSH_DEFAULT_PORT', 1759),
+    'cipi_ssh_port'     => env('SSH_DEFAULT_PORT', 22),
 ];
