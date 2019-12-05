@@ -172,11 +172,6 @@ echo "Application installation: OK!"
 sleep 3s
 echo -e "\n"
 
-# SETUP SSH KEYLESS ACCESS INTO CHILD SERVERS
-cat /dev/zero | ssh-keygen -q -N "" > /dev/null
-AUTHORIZEDKEY=$(cat ~/.ssh/id_rsa.pub)
-sudo rpl -i -w "# CIPI-CONTROL-PANEL-PUBLIC-KEY" "$AUTHORIZEDKEY" /cipi/storage/app/configuration/authorized_keys
-sudo cp ~/.ssh/id_rsa /cipi/id_rsa
 
 #FINAL MESSAGGE
 clear

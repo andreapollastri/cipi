@@ -38,8 +38,12 @@ class ScriptsController extends Controller
             $server->password,
             $server->dbroot,
             $server->servercode,
+<<<<<<< HEAD
             $this->url->to('/'),
             config('app.cipi_ssh_root')
+=======
+            $this->url->to('/')
+>>>>>>> parent of eb51816... Merge pull request #28 from andreapollastri/develop
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
@@ -168,6 +172,7 @@ class ScriptsController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
 
     }
+<<<<<<< HEAD
 
 
 	public function authorizedkeys($servercode)
@@ -184,6 +189,8 @@ class ScriptsController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
 
     }
+=======
+>>>>>>> parent of eb51816... Merge pull request #28 from andreapollastri/develop
 
 
 

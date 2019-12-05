@@ -71,18 +71,10 @@ class ApplicationsController extends Controller
         $appcode= md5(uniqid().microtime().$request->name);
 
 
-        // Attempt to login with SSH key.
-        $ssh = new \phpseclib\Net\SSH2($server->ip, $server->port);
-        $key = new \phpseclib\Crypt\RSA();
-
-        $key->loadKey(file_get_contents('/cipi/id_rsa'));
-
-        if (!$ssh->login($server->username, $key)) {
-            // If login failed, default back to password.
-            if (!$ssh->login($server->username, $server->password)) {
-                $messagge = 'There was a problem with server connection. Try later!';
-                return view('generic', compact('profile','messagge'));
-            }
+        $ssh = New \phpseclib\Net\SSH2($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            $messagge = 'There was a problem with server connection. Try later!';
+            return view('generic', compact('profile','messagge'));
         }
 
 
@@ -153,18 +145,10 @@ class ApplicationsController extends Controller
 
         $application->delete();
 
-        // Attempt to login with SSH key.
-        $ssh = new \phpseclib\Net\SSH2($application->server->ip, $application->server->port);
-        $key = new \phpseclib\Crypt\RSA();
-
-        $key->loadKey(file_get_contents('/cipi/id_rsa'));
-
-        if (!$ssh->login($application->server->username, $key)) {
-            // If login failed, default back to password.
-            if (!$ssh->login($application->server->username, $application->server->password)) {
-                $messagge = 'There was a problem with server connection. Try later!';
-                return view('generic', compact('profile','messagge'));
-            }
+        $ssh = New \phpseclib\Net\SSH2($application->server->ip, $application->server->port);
+        if(!$ssh->login($application->server->username, $application->server->password)) {
+            $messagge = 'There was a problem with server connection. Try later!';
+            return view('generic', compact('profile','messagge'));
         }
 
         $ssh->setTimeout(60);
