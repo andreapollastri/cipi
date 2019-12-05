@@ -142,7 +142,7 @@ STATUS=/cipi/html/stats_$SERVERCODE.php
 sudo touch $STATUS
 sudo cat > "$STATUS" <<EOF
 <?php
-echo exec("sh /cipi/status.sh"); 
+echo exec("sh /cipi/status.sh");
 EOF
 
 #DEFAULT VIRTUALHOST
@@ -408,8 +408,6 @@ sleep 3s
 echo -e "\n"
 
 #SSH AND ROOT ACCESS CONFIGURATION
-PORT=1759
-#PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
@@ -425,15 +423,15 @@ echo -e "\n"
 WELCOME=/etc/motd
 sudo touch $WELCOME
 sudo cat > "$WELCOME" <<EOF
-  _____ _       _ 
+  _____ _       _
  / ____(_)     (_)
 | |     _ _ __  _
 | |    | |  _ \| |
 | |____| | |_) | |
  \_____|_| .__/|_|
          | |
-         |_|        
-    
+         |_|
+
     <\ WELCOME >
 You are into the server!
 Remember... "With great power comes great responsibility!"
