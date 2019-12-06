@@ -112,7 +112,13 @@
                     </li>
                     <li>{{ __('Run this command:') }}<br>
                         <code><i>wget -O - {{ url('/scripts/install') }}/<span class="server-id"></span>/ | bash</i></code>
-                    <li>{{ __('Installation requires about five minutes') }}</li>
+                    </li>
+                    <li>{{ __('Installation may take up to about 5 minutes minimum which may also depend on your server internet speed') }}</li>
+                    <li>{{ __('Before install Cipi, please make sure your server is an Ubuntu 18.04 x86_64 LTS (Fresh installation)') }}</li>
+                    <li>{{ __('Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address') }}</li>
+                    <li>{{ __('Please open port 22, 80 and 443 to install Cipi') }}</li>
+                    <li>{{ __('Cipi would not work with NAT VPN and OpenVZ') }}</li>
+                    <li>{{ __('AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s') }}</li>
                 </ul>
             </div>
             <div class="modal-footer">

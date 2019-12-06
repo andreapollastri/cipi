@@ -13,7 +13,6 @@ PASS=???
 DBPASS=???
 SERVERCODE=???
 REMOTEURL=???
-ENABLEROOT=???
 
 #REMOTE CURL
 curl --request GET --url $REMOTEURL/server/api/start/$SERVERCODE
@@ -55,23 +54,11 @@ echo "New root user: OK!"
 sleep 3s
 echo -e "\n"
 
-#SETUP KEYLESS AUTHENTICATION FOR NEW ROOT USER ACCOUNT
-mkdir /home/$USER/.ssh
-chmod 700 /home/$USER/.ssh
-wget $REMOTEURL/scripts/authorizedkeys/$SERVERCODE/  -O /home/$USER/.ssh/authorized_keys
-
-# If the current root account has SSH keys enabled, copy any current SSH key configurations to new root user.
-PREVIOUSKEYS=''
-[ -f ~/.ssh/authorized_keys ] && { PREVIOUSKEYS=$(cat ~/.ssh/authorized_keys); }
-echo "$PREVIOUSKEYS" >> /home/$USER/.ssh/authorized_keys
-sudo chown -R $USER:$USER /home/$USER/.ssh
-sudo chmod -R 700 /home/$USER/.ssh
-sudo chmod 600 /home/$USER/.ssh/authorized_keys
-
 #PHP7 PPA
+sudo apt-get -y install python-software-properties
+sudo apt-get -y install software-properties-common
 sudo add-apt-repository -y universe
 sudo apt-get -y install software-properties-common
-sudo apt-get -y install python-software-properties
 sudo add-apt-repository -y ppa:ondrej/php
 clear
 echo "Repositories: OK!"
@@ -130,35 +117,18 @@ echo "PHP-FPM configuration: OK!"
 sleep 3s
 echo -e "\n"
 
-#NGINX CONFIGURATION
-sudo rpl -i -w "Listen 80" "Listen 8000" /etc/apache2/ports.conf
-sudo apt-get -y install libapache2-mod-rpaf
+#PHPMYADMIN INSTALLATION
+set -euo pipefail
+IFS=$'\n\t'
+sudo apt-get update
+sudo DEBIAN_FRONTEND=noninteractive apt-get -yq install phpmyadmin
 sudo service apache2 restart
-sudo apt-get -y nginx
-sudo systemctl enable nginx.service
-sudo service nginx restart
-sudo unlink /etc/nginx/proxy_params
-sudo mkdir /etc/nginx/
-NGX=/etc/nginx/proxy_params
-sudo touch $NGX
-sudo cat > $NGX <<EOF
-proxy_set_header Host $http_host;
-proxy_set_header X-Real-IP $remote_addr;
-proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-proxy_set_header X-Forwarded-Proto $scheme;
-client_max_body_size 100M;
-client_body_buffer_size 1m;
-proxy_intercept_errors on;
-proxy_buffering on;
-proxy_buffer_size 128k;
-proxy_buffers 256 16k;
-proxy_busy_buffers_size 256k;
-proxy_temp_file_write_size 256k;
-proxy_max_temp_file_size 0;
-proxy_read_timeout 300;
-EOF
+sudo apt-get clean
+sudo ln -s /etc/phpmyadmin/apache.conf /etc/apache2/conf-available/phpmyadmin.conf
+sudo a2enconf phpmyadmin.conf
+sudo service apache2 reload
 clear
-echo "nginx configuration: OK!"
+echo "phpmyadmin installation: OK!"
 sleep 3s
 echo -e "\n"
 
@@ -172,7 +142,7 @@ STATUS=/cipi/html/stats_$SERVERCODE.php
 sudo touch $STATUS
 sudo cat > "$STATUS" <<EOF
 <?php
-echo exec("sh /cipi/status.sh"); 
+echo exec("sh /cipi/status.sh");
 EOF
 
 #DEFAULT VIRTUALHOST
@@ -364,7 +334,7 @@ CONF=/etc/apache2/sites-available/000-default.conf
 sudo touch $CONF
 
 sudo cat > "$CONF" <<EOF
-<VirtualHost *:8000>
+<VirtualHost *:80>
         ServerAdmin webmaster@localhost
         DocumentRoot /cipi/html
         <Directory />
@@ -385,33 +355,9 @@ sudo cat > "$CONF" <<EOF
         </Directory>
 </VirtualHost>
 EOF
-
-DNGX=/etc/nginx/default
-sudo touch $DNGX
-sudo cat > $DNGX <<EOF
-listen 80;
-    server_name default_server;
-    root /cipi/html;
-    index index.php index.htm index.html;
-
-    location / {
-        try_files $uri $uri/ /index.php;
-    }
-
-    location ~ \.php$ {
-        proxy_pass http://localhost:8000;
-        include /etc/nginx/proxy_params;
-    }
-
-    location ~* \.(js|css|jpg|jpeg|gif|png|svg|ico|pdf|html|htm)$ {
-                expires      30d;
-    }
-EOF
-
 #RESTART
 sudo a2ensite 000-default.conf
 sudo service apache2 reload
-sudo service nginx reload
 clear
 echo "Default virtualhost: OK!"
 sleep 3s
@@ -462,39 +408,10 @@ sleep 3s
 echo -e "\n"
 
 #SSH AND ROOT ACCESS CONFIGURATION
-#PORT is defined at top of server install script.
-#It is passed from the SSH_DEFAULT_PORT in the controller's .env file
-#PORT=$(( ((RANDOM<<15)|RANDOM) % 63001 + 2000 ))
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
 sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
-if [ "$ENABLEROOT" -eq "1" ] ; then
-    sudo rpl -i -w "PermitRootLogin no" "PermitRootLogin yes" /etc/ssh/sshd_config;
-fi
-sudo rpl -i -w "# AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
-sudo rpl -i -w "#AuthorizedKeysFile" "AuthorizedKeysFile" /etc/ssh/sshd_config
-sudo rpl -i -w "AuthorizedKeysFile" "#AuthorizedKeysFile" /etc/ssh/sshd_config
-sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "PasswordAuthentication" "#PasswordAuthentication" /etc/ssh/sshd_config
-
-sudo cat >> /etc/ssh/sshd_config <<EOF
-
-# Enable Keyless SSH Access for root accounts.
-
-PasswordAuthentication yes
-AuthorizedKeysFile      %h/.ssh/authorized_keys
-
-# Disable password only access to root.
-Match User root
-PasswordAuthentication no
-
-# Force the new root user to use public keys. Disable password only access to root.
-Match User $USER
-PasswordAuthentication no
-EOF
-
 sudo service sshd restart
 echo -e "\n"
 clear
@@ -506,15 +423,15 @@ echo -e "\n"
 WELCOME=/etc/motd
 sudo touch $WELCOME
 sudo cat > "$WELCOME" <<EOF
-  _____ _       _ 
+  _____ _       _
  / ____(_)     (_)
 | |     _ _ __  _
 | |    | |  _ \| |
 | |____| | |_) | |
  \_____|_| .__/|_|
          | |
-         |_|        
-    
+         |_|
+
     <\ WELCOME >
 You are into the server!
 Remember... "With great power comes great responsibility!"

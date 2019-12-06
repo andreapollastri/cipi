@@ -7,6 +7,8 @@ echo "Wait..."
 sleep 3s
 echo -e "\n"
 
+sudo apt-get -y install dnsutils
+
 #VARS
 IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
@@ -161,7 +163,7 @@ sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=cipi" /cipi/.env
 sudo rpl -i -w "APP_URL=http://localhost" "APP_URL=http://$IP" /cipi/.env
 cd /cipi/ && php artisan key:generate
 cd /cipi/ && php artisan storage:link
-cd /cipi/ && php artisan migrate --seed
+cd /cipi/ && php artisan migrate --seed --force
 sudo chmod -R o+rx /cipi/
 sudo chmod -R 777 /cipi/storage/
 sudo chmod -R 777 /cipi/public/storage/
@@ -170,11 +172,6 @@ echo "Application installation: OK!"
 sleep 3s
 echo -e "\n"
 
-# SETUP SSH KEYLESS ACCESS INTO CHILD SERVERS
-cat /dev/zero | ssh-keygen -q -N "" > /dev/null
-AUTHORIZEDKEY=$(cat ~/.ssh/id_rsa.pub)
-sudo rpl -i -w "# CIPI-CONTROL-PANEL-PUBLIC-KEY" "$AUTHORIZEDKEY" /cipi/storage/app/configuration/authorized_keys
-sudo cp ~/.ssh/id_rsa /cipi/id_rsa
 
 #FINAL MESSAGGE
 clear

@@ -39,7 +39,17 @@ class RegisterController extends Controller
     {
         $this->middleware('guest');
     }
-
+    
+    public function showRegistrationForm()
+    {
+        return redirect('login');
+    }    
+    
+    public function register()
+    {
+        abort(403);
+    }    
+        
     /**
      * Get a validator for an incoming registration request.
      *
@@ -62,9 +72,7 @@ class RegisterController extends Controller
      * @return \App\User
      */
     protected function create(array $data)
-    {
-        die(); //Not Used
-        
+    {        
         return User::create([
             'name' => $data['name'],
             'email' => $data['email'],

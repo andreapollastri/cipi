@@ -17,7 +17,7 @@ while [ -n "$1" ] ; do
             -d | --domain )
                     shift
                     DOMAIN=$1
-                    ;; 
+                    ;;
             -u | --user )
                     shift
                     USER_NAME=$1
@@ -33,7 +33,7 @@ while [ -n "$1" ] ; do
             -b |  --base )
                     shift
                     BASE_PATH=$1
-                    ;;                                                              
+                    ;;
             * )
                     echo "ERROR: Unknown option: $1"
                     exit -1
@@ -52,8 +52,8 @@ isUserExits(){
 }
 
 if ( ! isUserExits $USER_NAME )
-    then 
-        sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME 
+    then
+        sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
         echo "$USER_NAME:$PASSWORD"|chpasswd
     sudo chmod o-r /home/$USER_NAME
     else

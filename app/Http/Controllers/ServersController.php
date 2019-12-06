@@ -36,12 +36,20 @@ class ServersController extends Controller
             'name' => 'required', 'ip' => 'required'
         ]);
 
+        if($request->ip == $request->server('SERVER_ADDR')) {
+            $user = User::find(Auth::id());
+            $profile = $user->name;
+            $messagge = "You can't install a client server into the same Cipi Server";
+            return view('generic', compact('profile','messagge'));
+            die();
+        }
+
         Server::create([
             'name'      => $request->name,
             'provider'  => $request->provider,
             'location'  => $request->location,
             'ip'        => $request->ip,
-            'port'      => env('SSH_DEFAULT_PORT', '1759'),
+            'port'      => config('app.cipi_ssh_port'),
             'username'  => uniqid(),
             'password'  => str_random(32),
             'dbroot'    => str_random(32),
@@ -55,7 +63,7 @@ class ServersController extends Controller
 
     public function delete(Request $request)
     {
-        
+
         $this->validate($request, [
             'servercode' => 'required',
         ]);

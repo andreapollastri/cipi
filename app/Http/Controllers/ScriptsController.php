@@ -23,9 +23,9 @@ class ScriptsController extends Controller
 
     public function install($servercode)
     {
-        
+
         $server = Server::where([['servercode', $servercode]])->where([['complete', 0]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -38,8 +38,7 @@ class ScriptsController extends Controller
             $server->password,
             $server->dbroot,
             $server->servercode,
-            $this->url->to('/'),
-            env("ENABLE_SSH_ROOT_ACCESS", 0)
+            $this->url->to('/')
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
@@ -51,7 +50,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -71,7 +70,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -82,7 +81,7 @@ class ScriptsController extends Controller
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
+
     }
 
 
@@ -90,7 +89,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -102,7 +101,7 @@ class ScriptsController extends Controller
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
+
     }
 
 
@@ -110,7 +109,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -118,7 +117,7 @@ class ScriptsController extends Controller
         $script = Storage::get('scripts/passwd.sh');
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
+
     }
 
 
@@ -126,7 +125,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -134,7 +133,7 @@ class ScriptsController extends Controller
         $script = Storage::get('scripts/aliasadd.sh');
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
+
     }
 
 
@@ -142,7 +141,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -150,7 +149,7 @@ class ScriptsController extends Controller
         $script = Storage::get('scripts/aliasdel.sh');
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
+
     }
 
 
@@ -158,7 +157,7 @@ class ScriptsController extends Controller
     {
 
         $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
+
         if(!$server) {
             return abort(403);
         }
@@ -166,23 +165,7 @@ class ScriptsController extends Controller
         $script = Storage::get('scripts/status.sh');
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-        
-    }
-	
-	
-	public function authorizedkeys($servercode)
-    {
 
-        $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
-        
-        if(!$server) {
-            return response("")->withHeaders(['Content-Type' =>'text/plain']);
-        }
-
-        $script = Storage::get('configuration/authorized_keys');
-
-        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
-        
     }
 
 
