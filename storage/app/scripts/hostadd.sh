@@ -34,6 +34,10 @@ while [ -n "$1" ] ; do
                     shift
                     BASE_PATH=$1
                     ;;
+            -ai |  --autoinstall )
+                    shift
+                    AUTO_INSTALL=$1
+                    ;;
             * )
                     echo "ERROR: Unknown option: $1"
                     exit -1
@@ -283,8 +287,6 @@ chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/$BASE_PATH/
 
 
-
-
 #MYSQL USER AND DB
 /usr/bin/mysql -u root -p$DBROOT <<EOF
 CREATE DATABASE IF NOT EXISTS $DBNAME;
@@ -302,6 +304,18 @@ chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/
 sudo a2ensite $USER_NAME.conf
 sudo systemctl restart apache2
 sudo service apache2 restart
+
+
+#AUTOINSTALL
+if [ "$AUTO_INSTALL" = "laravel" ]; then
+    cd /home/$USER_NAME/web/
+    rm -rf $BASE_PATH
+    composer create-project laravel/laravel .
+fi
+if [ "$AUTO_INSTALL" = "wordpress" ]; then
+    cd /home/$USER_NAME/web/
+    composer create-project johnpbloch/wordpress $BASE_PATH
+fi
 
 #RESUME
 clear

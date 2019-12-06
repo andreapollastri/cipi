@@ -64,11 +64,14 @@ class ApplicationsController extends Controller
         }
 
 
-        $code   = uniqid();
-        $pass   = str_random(16);
-        $dbpass = str_random(16);
+        $code   = 'u'.hash('crc32', uniqid()).str_random(5);
+        $pass   = str_random(40);
+        $dbpass = str_random(32);
         $base   = $request->basepath;
-        $appcode= md5(uniqid().microtime().$request->name);
+        $appcode= sha1(uniqid().microtime().$request->name);
+
+
+        $autoinstall = $request->autoinstall;
 
 
         $ssh = New \phpseclib\Net\SSH2($server->ip, $server->port);
@@ -79,17 +82,17 @@ class ApplicationsController extends Controller
 
 
         $ssh->setTimeout(60);
-        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$code.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base);
+        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$code.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -ai '.$autoinstall);
 
 
         if(strpos($response, '###CIPI###') === false) {
             $messagge = 'There was a problem with server. Try later!';
-            return view('generic', compact('profile','messagge'));      
+            return view('generic', compact('profile','messagge'));
         }
 
 
         $response = explode('###CIPI###', $response);
-        if(strpos($response[1], 'Ok') === false) {	
+        if(strpos($response[1], 'Ok') === false) {
             $messagge = 'There was a problem with server. Try later!';
             return view('generic', compact('profile','messagge'));
         }

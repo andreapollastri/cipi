@@ -50,9 +50,9 @@ class ServersController extends Controller
             'location'  => $request->location,
             'ip'        => $request->ip,
             'port'      => config('app.cipi_ssh_port'),
-            'username'  => uniqid(),
-            'password'  => str_random(32),
-            'dbroot'    => str_random(32),
+            'username'  => uniqid().hash('crc32', str_random(64)),
+            'password'  => str_random(64),
+            'dbroot'    => str_random(48),
             'servercode'=> md5(uniqid().microtime().$request->name),
         ]);
 
