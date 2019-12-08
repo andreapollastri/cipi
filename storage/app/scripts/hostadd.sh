@@ -364,6 +364,7 @@ if [ "$AUTO_INSTALL" = "git" ]; then
     mkdir /home/$USER_NAME/git/deploy.git
     ssh-keygen -t rsa -f git/deploy -q -P ""
     chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
+    sudo cp /cipi/git/deploy.pub /home/$USER_NAME/deploy_key.pub
     sudo cp /cipi/deploy.sh /home/$USER_NAME/deploy.sh
     sudo rpl -i -w "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/deploy.sh
     sudo rpl -i -w "###CIPI-PATH###" "$BASE_PATH" /home/$USER_NAME/deploy.sh
