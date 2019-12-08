@@ -387,7 +387,7 @@ echo -e "\n"
 #GIT INSTALL
 sudo apt-get update
 sudo apt-get -y install git
-sudo ssh-keygen -t rsa -b 4096 -C "git@github.com" -f /cipi/github  -q -P ""
+sudo ssh-keygen -t rsa -C "git@github.com" -f /cipi/github -q -P ""
 clear
 echo "GIT installation: OK!"
 sleep 3s
@@ -410,6 +410,9 @@ sleep 3s
 echo -e "\n"
 
 #SSH AND ROOT ACCESS CONFIGURATION
+sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "PasswordAuthentication no" "PasswordAuthentication yes" /etc/ssh/sshd_config
 sudo rpl -i -w "# Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "#Port 22" "Port 22" /etc/ssh/sshd_config
 sudo rpl -i -w "Port 22" "Port $PORT" /etc/ssh/sshd_config
