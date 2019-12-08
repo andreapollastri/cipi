@@ -75,21 +75,28 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }}<br><span style="color:red"><b>(beta feature)</b></span></label>
+                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }}</label>
                         <div class="col-md-6">
                             <select class="form-control" name="autoinstall">
                                 <option value="none">{{ __('None... just pure web!') }}</option>
-                                <option value="git">{{ __('Init a GIT project') }}</option>
                                 <option value="laravel">{{ __('Install Laravel') }}</option>
                                 <option value="wordpress">{{ __('Install Wordpress') }}</option>
+                                <option value="git">{{ __('Init a GIT project (coming soon)') }}</option>
                             </select>
                         </div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Create application') }}</button>
+                    <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
+                    <button type="button" class="btn btn-danger" id="app-coming" style="display: none;">{{ __('Application is coming... Hold On!') }}</button>
                 </div>
+                <script>
+                    $("#app-create").click(function() {
+                        $(this).hide();
+                        $("#app-coming").show();
+                    });
+                </script>
             </form>
         </div>
     </div>
