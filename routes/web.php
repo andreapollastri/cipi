@@ -47,6 +47,7 @@ Route::get('/scripts/passwd/{servercode}','ScriptsController@passwd');
 Route::get('/scripts/aliasadd/{servercode}','ScriptsController@aliasadd');
 Route::get('/scripts/aliasdel/{servercode}','ScriptsController@aliasdel');
 Route::get('/scripts/status/{servercode}','ScriptsController@status');
+Route::get('/scripts/deploy/{servercode}','ScriptsController@deploy');
 
 Route::get('/databases','DatabasesController@index')->name('databases');
 

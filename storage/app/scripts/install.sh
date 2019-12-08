@@ -26,9 +26,9 @@ echo -e "\n"
 #CIPI CORE
 sudo mkdir /cipi/
 sudo mkdir /cipi/html/
-wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/deploy.sh
-wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/host-add.sh
-wget $REMOTEURL/scripts/hostdel/$SERVERCODE/  -O /cipi/host-del.sh
+wget $REMOTEURL/scripts/deploy/$SERVERCODE/  -O /cipi/deploy.sh
+wget $REMOTEURL/scripts/hostadd/$SERVERCODE/ -O /cipi/host-add.sh
+wget $REMOTEURL/scripts/hostdel/$SERVERCODE/ -O /cipi/host-del.sh
 wget $REMOTEURL/scripts/hostssl/$SERVERCODE/ -O /cipi/ssl.sh
 wget $REMOTEURL/scripts/passwd/$SERVERCODE/  -O /cipi/passwd.sh
 wget $REMOTEURL/scripts/status/$SERVERCODE/  -O /cipi/status.sh
@@ -387,6 +387,7 @@ echo -e "\n"
 #GIT INSTALL
 sudo apt-get update
 sudo apt-get -y install git
+sudo ssh-keygen -t rsa -b 4096 -C "git@github.com" -f /cipi/github
 clear
 echo "GIT installation: OK!"
 sleep 3s
