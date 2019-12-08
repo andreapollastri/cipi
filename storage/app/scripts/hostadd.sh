@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
-DBROOT=LLLe3y6iF3HNTyxwQbEsug5xsGlI32jqUFfLWuM73XNmIZ0m
-IP=3.10.203.14
+DBROOT=???
+IP=???
 
 BASE_PATH=
 USER_SHELL=/bin/bash
