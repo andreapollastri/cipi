@@ -7,9 +7,21 @@ echo "Wait..."
 sleep 3s
 echo -e "\n"
 
-sudo apt-get -y install dnsutils
+#ROOT Check
+if [ "$(id -u)" = "0" ]; then
+    clear
+    echo "Running as root :)"
+    sleep 6s
+    echo -e "\n"
+else
+    clear
+    echo "You have to run this script as root. In AWS digit 'sudo -s'"
+    echo -e "\n"
+    exit 1
+fi
 
 #VARS
+sudo apt-get -y install dnsutils
 IP=$(dig +short myip.opendns.com @resolver1.opendns.com)
 
 #START
