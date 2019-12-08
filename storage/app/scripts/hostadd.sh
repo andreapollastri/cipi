@@ -360,9 +360,7 @@ fi
 
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
-    cd /home/$USER_NAME/
-    mkdir /home/$USER_NAME/git/deploy.git
-    ssh-keygen -t rsa -f git/deploy -q -P ""
+    ssh-keygen -t rsa -f /home/$USER_NAME/git/deploy -q -P ""
     chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
     sudo cp /home/$USER_NAME/git/deploy.pub /home/$USER_NAME/deployment_key.pub
     sudo cp /cipi/deploy.sh /home/$USER_NAME/deploy.sh

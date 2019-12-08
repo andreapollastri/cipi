@@ -10,6 +10,7 @@ WORK_TREE="/home/###CIPI-USER###/web"
 GIT_DIR="/home/###CIPI-USER###/git/deploy.git"
 chmod 600 $SSH_KEY
 eval $(ssh-agent -s)
+ssh-add $SSH_KEY
 if [ -d "$GIT_DIR" ]; then
     cd $WORK_TREE
     git --work-tree=$WORK_TREE --git-dir=$GIT_DIR fetch
@@ -19,6 +20,7 @@ if [ -d "$GIT_DIR" ]; then
 else
     git init --bare $GIT_DIR
     rm -rf $WORK_TREE
+    mkdir $WORK_TREE
     git --work-tree=$WORK_TREE --git-dir=$GIT_DIR remote add origin $REPO
     git --work-tree=$WORK_TREE --git-dir=$GIT_DIR fetch
     git --work-tree=$WORK_TREE --git-dir=$GIT_DIR fetch origin --tags --force
