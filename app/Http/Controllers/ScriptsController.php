@@ -168,5 +168,21 @@ class ScriptsController extends Controller
     }
 
 
+    public function deploy($servercode)
+    {
+
+        $server = Server::where([['servercode', $servercode]])->where([['complete', 1]])->get()->first();
+
+        if(!$server) {
+            return abort(403);
+        }
+
+        $script = Storage::get('scripts/deploy.sh');
+
+        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+    }
+
+
 
 }
