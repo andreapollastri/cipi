@@ -46,9 +46,6 @@ while [ -n "$1" ] ; do
             shift
 done
 
-DBNAME=$USER_NAME
-DBUSER=$USER_NAME
-
 #AUTOINSTALL BASE_PATH MOD
 if [ "$AUTO_INSTALL" = "laravel" ]; then
     BASE_PATH="public"
@@ -78,8 +75,6 @@ chown -R $USER_NAME:$USER_NAME /home/$USER_NAME
 
 CONF=/etc/apache2/sites-available/$USER_NAME.conf
 touch $CONF
-
-
 
 mkdir /home/$USER_NAME/web/$BASE_PATH
 cat > "$CONF" <<EOF
@@ -290,12 +285,14 @@ sudo cat > "$BASE" <<EOF
 </html>
 EOF
 
-#PERMISSIONS
-chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
-chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/$BASE_PATH/
-
+#RESTART
+sudo a2ensite $USER_NAME.conf
+sudo systemctl restart apache2
+sudo service apache2 restart
 
 #MYSQL USER AND DB
+DBNAME=$USER_NAME
+DBUSER=$USER_NAME
 /usr/bin/mysql -u root -p$DBROOT <<EOF
 CREATE DATABASE IF NOT EXISTS $DBNAME;
 CREATE USER $DBUSER@'localhost' IDENTIFIED BY '$DBPASS';
@@ -303,21 +300,9 @@ GRANT USAGE ON *.* TO '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS' WITH MAX_QUE
 GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'localhost';
 EOF
 
-
-#PERMISSIONS
-chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/
-
-
-#RESTART
-sudo a2ensite $USER_NAME.conf
-sudo systemctl restart apache2
-sudo service apache2 restart
-
-
 #RESUME
 clear
 echo "###CIPI###Ok"
-
 
 #AUTOINSTALL
 if [ "$AUTO_INSTALL" = "laravel" ]; then
@@ -330,4 +315,13 @@ if [ "$AUTO_INSTALL" = "wordpress" ]; then
     cd /home/$USER_NAME/web/
     rm -rf $BASE_PATH
     composer create-project johnpbloch/wordpress .
+    cd wordpress
+    cp wp-config-sample.php wp-config.php
+    sudo rpl -i -w "database_name_here" "$DBNAME" wp-config.php
+    sudo rpl -i -w "username_here" "$DBUSER" wp-config.php
+    sudo rpl -i -w "password_here" "$DBPASS" wp-config.php
 fi
+
+#PERMISSIONS
+chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
+chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/$BASE_PATH/
