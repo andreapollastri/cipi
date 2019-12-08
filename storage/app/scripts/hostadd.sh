@@ -103,6 +103,19 @@ cat > "$CONF" <<EOF
 </VirtualHost>
 EOF
 
+HTACCESS=/home/$USER_NAME/web/$BASE_PATH/.htaccess
+sudo touch $HTACCESS
+sudo cat > "$HTACCESS" <<EOF
+<IfModule mod_rewrite.c>
+RewriteEngine On
+RewriteBase /
+RewriteRule ^index\.php$ - [L]
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule . /index.php [L]
+</IfModule>
+EOF
+
 BASE=/home/$USER_NAME/web/$BASE_PATH/index.php
 sudo touch $BASE
 sudo cat > "$BASE" <<EOF
@@ -341,54 +354,6 @@ EOF
     find . -type d -exec chmod 755 {} \;
     chmod 777 -R wordpress/wp-content/uploads/
 fi
-
-#CIPI CUSTOM HTACCESS
-HTACCESS=/home/$USER_NAME/web/$BASE_PATH/.htaccess
-sudo touch $HTACCESS
-sudo cat > "$HTACCESS" <<EOF
-Header always append X-Frame-Options SAMEORIGIN
-Header set X-Content-Type-Options "nosniff"
-Header set X-XSS-Protection "1; mode=block"
-Header set X-Content-Security-Policy "allow 'self';"
-
-<IfModule mod_deflate.c>
-    <IfModule mod_headers.c>
-        Header append Vary User-Agent env=!dont-vary
-    </IfModule>
-    AddOutputFilterByType DEFLATE text/css text/x-component application/x-javascript application/javascript text/javascript text/x-js text/html text/richtext image/svg+xml text/plain text/xsd text/xsl text/xml image/x-icon application/json
-    <IfModule mod_mime.c>
-        AddOutputFilter DEFLATE js css htm html xml
-    </IfModule>
-</IfModule>
-
-<IfModule mod_expires.c>
-    ExpiresActive On
-    ExpiresByType image/jpeg						"access 1 year"
-    ExpiresByType image/jpeg						"access 1 year"
-    ExpiresByType image/gif							"access 1 year"
-    ExpiresByType image/png							"access 1 year"
-    ExpiresByType text/css							"access 1 month"
-    ExpiresByType application/pdf					"access 1 month"
-    ExpiresByType text/x-javascript					"access 1 month"
-    ExpiresByType application/x-shockwave-flash		"access 1 month"
-    ExpiresByType image/x-icon 						"access 1 year"
-    ExpiresDefault 									"access 2 days"
-</IfModule>
-
-<IfModule mod_negotiation.c>
-    Options -MultiViews -Indexes
-</IfModule>
-
-RewriteEngine On
-RewriteCond %{HTTP:Authorization} .
-RewriteRule .* - [E=HTTP_AUTHORIZATION:%{HTTP:Authorization}]
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_URI} (.+)/$
-RewriteRule ^ %1 [L,R=301]
-RewriteCond %{REQUEST_FILENAME} !-d
-RewriteCond %{REQUEST_FILENAME} !-f
-RewriteRule ^ index.php [L]
-EOF
 
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
