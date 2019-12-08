@@ -96,8 +96,7 @@ class ScriptsController extends Controller
 
         $script = Storage::get('scripts/hostssl.sh');
         $script = Str::replaceArray('???', [
-            env('USER_EMAIL', 'admin@admin.com'),
-            env('USER_EMAIL', 'admin@admin.com'),
+            config('app.cipi_email'),
         ], $script);
 
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);

@@ -4,7 +4,7 @@
 <!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">{{ __('Applications') }}</h1>
-    <a href="#" class="btn btn-sm btn-secondary shadow-sm " data-toggle="modal" data-target="#createModal" ><i class="fas fa-plus"></i><span class="d-none d-md-inline"> {{ __('CREATE NEW') }}</span></a> 
+    <a href="#" class="btn btn-sm btn-secondary shadow-sm " data-toggle="modal" data-target="#createModal" ><i class="fas fa-plus"></i><span class="d-none d-md-inline"> {{ __('CREATE NEW') }}</span></a>
 </div>
 <div class="card shadow mb-4">
     <div class="card-body">
@@ -31,14 +31,14 @@
                         <i class="fab fa-expeditedssl ssl-click" style="margin-right: 18px; cursor: pointer; color: gray;" data-application="{{ $application->appcode }}" id="ssl-{{ $application->appcode }}"></i>
                     	<i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-app-code="{{ $application->appcode }}" data-app-domain="{{ $application->domain }}" style="color:gray; cursor: pointer;"></i>
                         </td>
-                    </tr>  
+                    </tr>
                     @endforeach
-                    
+
                 </tbody>
             </table>
         </div>
     </div>
-</div> 
+</div>
 
 
 <!-- CREATE -->
@@ -72,6 +72,17 @@
                         <label for="basepath" class="col-md-4 col-form-label text-md-right">{{ __('Basepath') }}*</label>
                         <div class="col-md-6">
                             <input id="basepath" type="text" class="form-control @error('name') is-invalid @enderror" name="basepath" autocomplete="off" required autofocus placeholder="E.g. 'public'" value="public">
+                        </div>
+                    </div>
+                    <div class="form-group row">
+                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }} <span style="color:red"><b>(beta feature)</b></span></label>
+                        <div class="col-md-6">
+                            <select class="form-control" name="server_id" required id="server-list">
+                                <option value="none">{{ __('None') }}</option>
+                                <option value="git">{{ __('GIT project') }}</option>
+                                <option value="laravel">{{ __('Laravel') }}</option>
+                                <option value="wordpress">{{ __('Wordpress') }}</option>
+                            </select>
                         </div>
                     </div>
                 </div>
@@ -124,7 +135,7 @@
 	});
 </script>
 <script>
-    $.get("{{ url('/') }}/ajaxservers/", function(servers) { 
+    $.get("{{ url('/') }}/ajaxservers/", function(servers) {
         JSON.parse(servers).forEach(server => {
             $("#server-list").append("<option value='"+server["id"]+"'>"+server["name"]+" ("+server["ip"]+")</option>");
         });
@@ -137,7 +148,7 @@ function generatessl(application) {
     $.ajax({
         url: "{{ url('/') }}/server/api/sslapplication/"+application,
         type: "GET",
-        success: function(response){ 
+        success: function(response){
             if(response != "OK") {
                 $("#ssl-"+application).removeClass("fa-spinner fa-spin");
                 $("#ssl-"+application).removeClass("ssl-click");

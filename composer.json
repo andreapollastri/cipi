@@ -8,7 +8,7 @@
         "laravel",
         "control panel",
         "server",
-        "managment"
+        "management"
     ],
     "license": "MIT",
     "require": {
