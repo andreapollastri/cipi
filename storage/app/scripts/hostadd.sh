@@ -360,23 +360,14 @@ fi
 
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
-    GIT_FOLDER="/home/$USER_NAME/git/"
-    mkdir $GIT_FOLDER
-    git init --bare $GIT_FOLDER
-    chown -R $USER_NAME:$USER_NAME $GIT_FOLDER
     cd /home/$USER_NAME/
-    ssh-keygen -t rsa -f deploy -q -P ""
-    cp /home/$USER_NAME/deploy.pub /home/$USER_NAME/$BASE_PATH/$USER_NAME_key.txt
-    GIT_WELCOME=/home/$USER_NAME/web/$BASE_PATH/index.php
-    sudo touch $GIT_WELCOME
-    sudo cat > $GIT_WELCOME <<EOF
-    <?php echo 'TEMP WELCOME PAGE:'.file_get_contents('$USER_NAME_key.txt');
-EOF
-    cd web
-    rm -rf $BASE_PATH
-    mkdir $BASE_PATH
+    mkdir /home/$USER_NAME/git/deploy.git
+    ssh-keygen -t rsa -f git/deploy -q -P ""
+    chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
+    sudo cp /cipi/deploy.sh /home/$USER_NAME/deploy.sh
+    sudo rpl -i -w "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/deploy.sh
+    sudo rpl -i -w "###CIPI-PATH###" "$BASE_PATH" /home/$USER_NAME/deploy.sh
 fi
-
 
 #PERMISSIONS
 chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/

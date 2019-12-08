@@ -26,6 +26,7 @@ echo -e "\n"
 #CIPI CORE
 sudo mkdir /cipi/
 sudo mkdir /cipi/html/
+wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/deploy.sh
 wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/host-add.sh
 wget $REMOTEURL/scripts/hostdel/$SERVERCODE/  -O /cipi/host-del.sh
 wget $REMOTEURL/scripts/hostssl/$SERVERCODE/ -O /cipi/ssl.sh
@@ -441,6 +442,7 @@ EOF
 sudo /bin/dd if=/dev/zero of=/var/swap.1 bs=1M count=1024
 sudo /sbin/mkswap /var/swap.1
 sudo /sbin/swapon /var/swap.1
+dos2unix /cipi/deploy.sh
 dos2unix /cipi/passwd.sh
 dos2unix /cipi/host-add.sh
 dos2unix /cipi/host-del.sh
