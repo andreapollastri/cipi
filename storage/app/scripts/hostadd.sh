@@ -360,10 +360,11 @@ fi
 
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
-    sudo cp /cipi/github.pub /home/$USER_NAME/deployment_key.pub
-    sudo cp /cipi/deploy.sh /home/$USER_NAME/deploy.sh
-    chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
-    sudo rpl -i -w "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/deploy.sh
+    sudo mkdir /home/$USER_NAME/git/
+    sudo cp /cipi/github.pub /home/$USER_NAME/git/deploy.pub
+    sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
+    sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/deploy.sh
+    sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
 fi
 
 #PERMISSIONS

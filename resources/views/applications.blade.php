@@ -81,7 +81,7 @@
                                 <option value="none">{{ __('None... just pure web!') }}</option>
                                 <option value="laravel">{{ __('Install Laravel') }}</option>
                                 <option value="wordpress">{{ __('Install Wordpress') }}</option>
-                                <option value="git">{{ __('Init a GIT project (coming soon)') }}</option>
+                                <option value="git">{{ __('Install a GitHub project') }}</option>
                             </select>
                         </div>
                     </div>

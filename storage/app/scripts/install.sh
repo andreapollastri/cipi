@@ -387,7 +387,7 @@ echo -e "\n"
 #GIT INSTALL
 sudo apt-get update
 sudo apt-get -y install git
-sudo ssh-keygen -t rsa -b 4096 -C "git@github.com" -f /cipi/github
+sudo ssh-keygen -t rsa -b 4096 -C "git@github.com" -f /cipi/github  -q -P ""
 clear
 echo "GIT installation: OK!"
 sleep 3s
