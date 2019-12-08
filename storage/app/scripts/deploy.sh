@@ -6,7 +6,7 @@ BRANCH="master" #Choose your branch
 
 ######### DO NOT CHANGE ANYTHING IN THIS AREA #########
 SSH_KEY="/home/###CIPI-USER###/git/deploy"
-WORK_TREE="/home/###CIPI-USER###/web/###CIPI-PATH###"
+WORK_TREE="/home/###CIPI-USER###/web"
 GIT_DIR="/home/###CIPI-USER###/git/deploy.git"
 chmod 600 $SSH_KEY
 eval $(ssh-agent -s)

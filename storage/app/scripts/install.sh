@@ -26,9 +26,9 @@ echo -e "\n"
 #CIPI CORE
 sudo mkdir /cipi/
 sudo mkdir /cipi/html/
-wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/deploy.sh
-wget $REMOTEURL/scripts/hostadd/$SERVERCODE/  -O /cipi/host-add.sh
-wget $REMOTEURL/scripts/hostdel/$SERVERCODE/  -O /cipi/host-del.sh
+wget $REMOTEURL/scripts/deploy/$SERVERCODE/  -O /cipi/deploy.sh
+wget $REMOTEURL/scripts/hostadd/$SERVERCODE/ -O /cipi/host-add.sh
+wget $REMOTEURL/scripts/hostdel/$SERVERCODE/ -O /cipi/host-del.sh
 wget $REMOTEURL/scripts/hostssl/$SERVERCODE/ -O /cipi/ssl.sh
 wget $REMOTEURL/scripts/passwd/$SERVERCODE/  -O /cipi/passwd.sh
 wget $REMOTEURL/scripts/status/$SERVERCODE/  -O /cipi/status.sh
