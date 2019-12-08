@@ -14,6 +14,19 @@ DBPASS=???
 SERVERCODE=???
 REMOTEURL=???
 
+#ROOT Check
+if [ "$(id -u)" = "0" ]; then
+    clear
+    echo "Running as root :)"
+    sleep 6s
+    echo -e "\n"
+else
+    clear
+    echo "You have to run this script as root. In AWS digit 'sudo -s'"
+    echo -e "\n"
+    exit 1
+fi
+
 #REMOTE CURL
 curl --request GET --url $REMOTEURL/server/api/start/$SERVERCODE
 
