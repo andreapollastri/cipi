@@ -361,6 +361,7 @@ fi
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
     sudo mkdir /home/$USER_NAME/git/
+    sudo cp /cipi/github /home/$USER_NAME/git/deploy
     sudo cp /cipi/github.pub /home/$USER_NAME/git/deploy.pub
     sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
     sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
