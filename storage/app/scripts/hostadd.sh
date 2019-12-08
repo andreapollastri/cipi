@@ -49,6 +49,14 @@ done
 DBNAME=$USER_NAME
 DBUSER=$USER_NAME
 
+#AUTOINSTALL BASE_PATH MOD
+if [ "$AUTO_INSTALL" = "laravel" ]; then
+    BASE_PATH="public"
+fi
+if [ "$AUTO_INSTALL" = "wordpress" ]; then
+    BASE_PATH="wordpress"
+fi
+
 #CREATE USER
 isUserExits(){
     grep $1 /etc/passwd > /dev/null
@@ -320,5 +328,6 @@ if [ "$AUTO_INSTALL" = "laravel" ]; then
 fi
 if [ "$AUTO_INSTALL" = "wordpress" ]; then
     cd /home/$USER_NAME/web/
-    composer create-project johnpbloch/wordpress $BASE_PATH
+    rm -rf $BASE_PATH
+    composer create-project johnpbloch/wordpress .
 fi

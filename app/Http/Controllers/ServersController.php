@@ -49,7 +49,7 @@ class ServersController extends Controller
             'provider'  => $request->provider,
             'location'  => $request->location,
             'ip'        => $request->ip,
-            'port'      => config('app.cipi_ssh_port'),
+            'port'      => 22,
             'username'  => uniqid().hash('crc32', str_random(64)),
             'password'  => str_random(64),
             'dbroot'    => str_random(48),

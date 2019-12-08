@@ -64,9 +64,9 @@ class ApplicationsController extends Controller
         }
 
 
-        $code   = 'u'.hash('crc32', uniqid()).str_random(5);
-        $pass   = str_random(40);
-        $dbpass = str_random(32);
+        $code   = hash('crc32', uniqid()).str_random(2);
+        $pass   = str_random(32);
+        $dbpass = str_random(16);
         $base   = $request->basepath;
         $appcode= sha1(uniqid().microtime().$request->name);
 
@@ -81,7 +81,7 @@ class ApplicationsController extends Controller
         }
 
 
-        $ssh->setTimeout(60);
+        $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$code.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -ai '.$autoinstall);
 
 
