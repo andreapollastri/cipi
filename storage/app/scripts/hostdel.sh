@@ -34,6 +34,9 @@ sudo crontab -u $USER_NAME -r
 
 #APACHE
 sudo a2dissite $USER_NAME.conf
+sudo a2dissite $USER_NAME-le-ssl.conf
+sudo unlink /etc/apache2/sites-available/$USER_NAME.conf
+sudo unlink /etc/apache2/sites-available/$USER_NAME-le-ssl.conf
 
 #RESTART
 sudo service apache2 reload

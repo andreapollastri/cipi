@@ -51,14 +51,14 @@ class UsersController extends Controller
             return view('generic', compact('profile','messagge'));
         }
 
-        $pass   = str_random(16);
-        $dbpass = str_random(16);
+        $pass   = str_random(40);
+        $dbpass = str_random(32);
 
         $ssh->setTimeout(60);
         $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/passwd.sh -u '.$request->username.' -p '.$pass.' -dbp '.$dbpass. ' -dbop '.$application->dbpass);
 
         $response = explode('###CIPI###', $response);
-        if(strpos($response[1], 'Ok') === false) {  
+        if(strpos($response[1], 'Ok') === false) {
             $messagge = 'There was a problem with server. Try later!';
             return view('generic', compact('profile','messagge'));
         }

@@ -77,7 +77,7 @@
                     <div class="form-group row">
                         <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }} <span style="color:red"><b>(beta feature)</b></span></label>
                         <div class="col-md-6">
-                            <select class="form-control" name="server_id" required id="server-list">
+                            <select class="form-control" name="autoinstall">
                                 <option value="none">{{ __('None') }}</option>
                                 <option value="git">{{ __('GIT project') }}</option>
                                 <option value="laravel">{{ __('Laravel') }}</option>

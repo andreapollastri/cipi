@@ -81,7 +81,7 @@ class ApplicationsController extends Controller
         }
 
 
-        $ssh->setTimeout(60);
+        $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$code.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -ai '.$autoinstall);
 
 
