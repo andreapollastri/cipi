@@ -306,17 +306,19 @@ sudo systemctl restart apache2
 sudo service apache2 restart
 
 
+#RESUME
+clear
+echo "###CIPI###Ok"
+
+
 #AUTOINSTALL
 if [ "$AUTO_INSTALL" = "laravel" ]; then
     cd /home/$USER_NAME/web/
     rm -rf $BASE_PATH
     composer create-project laravel/laravel .
+    chmod 777 -R storage
 fi
 if [ "$AUTO_INSTALL" = "wordpress" ]; then
     cd /home/$USER_NAME/web/
     composer create-project johnpbloch/wordpress $BASE_PATH
 fi
-
-#RESUME
-clear
-echo "###CIPI###Ok"

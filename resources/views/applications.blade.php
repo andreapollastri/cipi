@@ -75,9 +75,14 @@
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }}*</label>
+                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }} <span style="color:red"><b>(beta feature)</b></span></label>
                         <div class="col-md-6">
-                            <input id="autoinstall" type="text" class="form-control @error('name') is-invalid @enderror" name="autoinstall" autocomplete="off" required autofocus placeholder="E.g. 'laravel'">
+                            <select class="form-control" name="server_id" required id="server-list">
+                                <option value="none">{{ __('None') }}</option>
+                                <option value="git">{{ __('GIT project') }}</option>
+                                <option value="laravel">{{ __('Laravel') }}</option>
+                                <option value="wordpress">{{ __('Wordpress') }}</option>
+                            </select>
                         </div>
                     </div>
                 </div>
