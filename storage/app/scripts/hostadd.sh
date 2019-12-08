@@ -360,10 +360,9 @@ fi
 
 #GIT INIT
 if [ "$AUTO_INSTALL" = "git" ]; then
-    ssh-keygen -t rsa -f /home/$USER_NAME/git/deploy -q -P ""
-    chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
-    sudo cp /home/$USER_NAME/git/deploy.pub /home/$USER_NAME/deployment_key.pub
+    sudo cp /cipi/github.pub /home/$USER_NAME/deployment_key.pub
     sudo cp /cipi/deploy.sh /home/$USER_NAME/deploy.sh
+    chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
     sudo rpl -i -w "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/deploy.sh
 fi
 
