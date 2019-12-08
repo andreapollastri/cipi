@@ -48,7 +48,7 @@ done
 
 #AUTOINSTALL BASE_PATH MOD
 if [ "$AUTO_INSTALL" = "laravel" ]; then
-    BASE_PATH="public"
+    BASE_PATH="laravel/public"
 fi
 if [ "$AUTO_INSTALL" = "wordpress" ]; then
     BASE_PATH="wordpress"
@@ -304,23 +304,79 @@ EOF
 clear
 echo "###CIPI###Ok"
 
-#AUTOINSTALL
+
+#LARAVEL
 if [ "$AUTO_INSTALL" = "laravel" ]; then
     cd /home/$USER_NAME/web/
     rm -rf $BASE_PATH
-    composer create-project laravel/laravel .
+    composer create-project laravel/laravel laravel
+    find . -type f -exec chmod 644 {} \;
+    find . -type d -exec chmod 755 {} \;
     chmod 777 -R storage
 fi
+
+
+#WORDPRESS
 if [ "$AUTO_INSTALL" = "wordpress" ]; then
     cd /home/$USER_NAME/web/
     rm -rf $BASE_PATH
     composer create-project johnpbloch/wordpress .
-    cd wordpress
-    cp wp-config-sample.php wp-config.php
-    sudo rpl -i -w "database_name_here" "$DBNAME" wp-config.php
-    sudo rpl -i -w "username_here" "$DBUSER" wp-config.php
-    sudo rpl -i -w "password_here" "$DBPASS" wp-config.php
+    WPSalts=$(wget https://api.wordpress.org/secret-key/1.1/salt/ -q -O -)
+    TablePrefx=$(cat /dev/urandom | tr -dc 'a-zA-Z0-9' | fold -w 9 | head -n 1)_
+    cat <<EOF > wordpress/wp-config-sample.php
+    <?php
+        define('DB_NAME', '$DBNAME');
+        define('DB_USER', '$DBUSER');
+        define('DB_PASSWORD', '$DBPASS');
+        define('DB_HOST', 'localhost');
+        define('DB_CHARSET', 'utf8');
+        define('DB_COLLATE', '');
+        #define('WP_SITEURL', 'http://$DOMAIN/' );
+        #define('WP_HOME', 'http://$DOMAIN/' );
+        #define('ALTERNATE_WP_CRON', true );
+        #define('DISABLE_WP_CRON', 'true');
+        #define('WP_CRON_LOCK_TIMEOUT', 900);
+        #define('AUTOSAVE_INTERVAL', 300);
+        #define('WP_MEMORY_LIMIT', '256M' );
+        #define('FS_CHMOD_DIR', ( 0755 & ~ umask() ) );
+        #define('FS_CHMOD_FILE', ( 0644 & ~ umask() ) );
+        #define('WP_ALLOW_REPAIR', true);
+        #define('FORCE_SSL_ADMIN', false);
+        #define('AUTOMATIC_UPDATER_DISABLED', false);
+        #define('WP_AUTO_UPDATE_CORE', true);
+        $WPSalts
+        \$table_prefix = '$TablePrefx';
+        define('WP_DEBUG', false);
+        if ( !defined('ABSPATH') )
+            define('ABSPATH', dirname(__FILE__) . '/');
+        require_once(ABSPATH . 'wp-settings.php');
+EOF
+    mv wordpress/wp-config-sample.php wordpress/wp-config.php
+    find . -type f -exec chmod 644 {} \;
+    find . -type d -exec chmod 755 {} \;
+    chmod 777 -R wordpress/wp-content/uploads/
 fi
+
+
+#GIT INIT
+if [ "$AUTO_INSTALL" = "git" ]; then
+    GIT_FOLDER="/home/$USER_NAME/git/"
+    mkdir $GIT_FOLDER
+    git init --bare $GIT_FOLDER
+    chown -R $USER_NAME:$USER_NAME $GIT_FOLDER
+    cd /home/$USER_NAME/
+    ssh-keygen -t rsa -f deploy -q -P ""
+    cp /home/$USER_NAME/deploy.pub /home/$USER_NAME/$BASE_PATH/$USER_NAME_key.txt
+    GIT_WELCOME=/home/$USER_NAME/web/$BASE_PATH/index.php
+    sudo touch $GIT_WELCOME
+    sudo cat > $GIT_WELCOME <<EOF
+    <?php echo 'TEMP WELCOME PAGE:'.file_get_contents('$USER_NAME_key.txt');
+EOF
+    cd web
+    rm -rf $BASE_PATH
+    mkdir $BASE_PATH
+fi
+
 
 #PERMISSIONS
 chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
