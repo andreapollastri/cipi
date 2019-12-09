@@ -11,7 +11,7 @@ echo -e "\n"
 if [ "$(id -u)" = "0" ]; then
     clear
     echo "Running as root :)"
-    sleep 6s
+    sleep 2s
     echo -e "\n"
 else
     clear
