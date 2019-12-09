@@ -306,13 +306,12 @@ echo "###CIPI###Ok"
 
 #LARAVEL
 if [ "$AUTO_INSTALL" = "laravel" ]; then
-    cd /home/$USER_NAME/web/
-    rm -rf $/home/$USER_NAME/web/BASE_PATH
-    composer create-project laravel/laravel /home/$USER_NAME/web/$BASE_PATH
-    cd /home/$USER_NAME/web/$BASE_PATH
+    rm -rf $/home/$USER_NAME/web/laravel
+    composer create-project laravel/laravel /home/$USER_NAME/web/laravel
+    cd /home/$USER_NAME/web/laravel
     find . -type f -exec chmod 644 {} \;
     find . -type d -exec chmod 755 {} \;
-    chmod 777 -R /home/$USER_NAME/web/$BASE_PATH/storage
+    chmod 777 -R /home/$USER_NAME/web/laravel/storage
 fi
 
 #WORDPRESS

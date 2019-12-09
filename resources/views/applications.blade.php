@@ -91,12 +91,6 @@
                     <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
                     <button type="button" class="btn btn-danger" id="app-coming" style="display: none;">{{ __('Your application is coming... Hold On!') }}</button>
                 </div>
-                <script>
-                    $("#form-app-create").submit(function() {
-                        $("#app-create").hide();
-                        $("#app-coming").show();
-                    });
-                </script>
             </form>
         </div>
     </div>
@@ -192,5 +186,11 @@ $('#deleteModal').on('show.bs.modal', function (event) {
     modal.find('#app-domain').text(appdomain)
     modal.find('#app-code').val(appcode)
 })
+</script>
+<script>
+    $("#form-app-create").submit(function() {
+        $("#app-create").hide();
+        $("#app-coming").show();
+    });
 </script>
 @endsection
