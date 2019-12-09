@@ -45,7 +45,7 @@
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form action="{{ route('applicationcreate') }}" method="POST">
+            <form action="{{ route('applicationcreate') }}" method="POST" id="form-app-create">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createModalLabel">{{ __('Create a new application') }}</h5>
@@ -89,11 +89,11 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
-                    <button type="button" class="btn btn-danger" id="app-coming" style="display: none;">{{ __('Application is coming... Hold On!') }}</button>
+                    <button type="button" class="btn btn-danger" id="app-coming" style="display: none;">{{ __('Your application is coming... Hold On!') }}</button>
                 </div>
                 <script>
-                    $("#app-create").click(function() {
-                        $(this).hide();
+                    $("#form-app-create").submit(function() {
+                        $("#app-create").hide();
                         $("#app-coming").show();
                     });
                 </script>
