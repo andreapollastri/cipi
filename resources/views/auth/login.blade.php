@@ -10,6 +10,7 @@
                     <div class="col-lg-6">
                         <div class="p-5">
                             <div class="text-center">
+                                <div class="sidebar-brand-text">CIPI</div>
                                 <h1 class="h4 text-gray-900 mb-4">{{ __('Login') }}</h1>
                             </div>
                             <form method="POST" action="{{ route('login') }}">
