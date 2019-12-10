@@ -89,7 +89,7 @@
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="app-close" data-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
-                    <div id="app-coming" style="display: none;"><h3><i class="fas fa-spinner fa-spin"></i>  <b>{{ __('Application is coming, hold on!') }}</b></h3></div>
+                    <div id="app-coming" style="display: none; color: #224abe;"><h3><i class="fas fa-spinner fa-spin"></i>  <b>{{ __('Your app is coming... Hold On!!!') }}</b></h3></div>
                 </div>
             </form>
         </div>
