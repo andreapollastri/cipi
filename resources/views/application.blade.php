@@ -69,21 +69,23 @@
         <div style="min-height: 20px"></div>
             @switch($app["autoinstall"])
                 @case('wordpress')
-                    Your Wordpress is ready! Visit <b>{{ $app["domain"] }}</b> and complete its setup!
+                    Your Wordpress is ready! Visit <i>{{ $app["domain"] }}</i> and complete its setup!
                     @break
                 @case('laravel')
-                    Your Laravel is ready! Happy code on <b>{{ $app["domain"] }}</b>!
+                    Your Laravel is ready! Happy code at <i>{{ $app["domain"] }}</i>!
                     @break
                 @case('git')
-                    Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "<b>sh deploy.sh</b>" to deploy your repo!
+                    - Configure deploy.sh script into <i>/home/{{ $app["user"] }}/git/</i><br>
+                    - Copy <i>deploy.pub</i> key into your Github SSH keys<br>
+                    - Run <i>sh deploy.sh</i> to deploy your repo
                     @break
                 @case('none')
-                    Your application <b>{{ $app["domain"] }}</b> is ready!
+                    Your application <i>{{ $app["domain"] }}</i> is ready!
                     @break
                 @default
 
             @endswitch
-            <p>You can manage you cronjobs via SSH using "crontab -e" command.</p>
+            <p>You can manage you cronjobs via SSH using <i>crontab -e</i> command.</p>
         <div style="min-height: 20px"></div>
     </div>
 </div>
