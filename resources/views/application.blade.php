@@ -23,7 +23,7 @@
                 <div style="min-height: 15px"></div>
                 <b>Pass</b> {{ $app["pass"] }}<br>
                 <div style="min-height: 15px"></div>
-                @switch($autoinstall)
+                @switch($app["autoinstall"])
                     @case('wordpress')
                         <b>Path</b> /home/{{ $app["user"] }}/web/wordpress/<br>
                         @break
@@ -67,7 +67,7 @@
 <div class="row">
     <div class="col-sm-12 text-center">
         <div style="min-height: 20px"></div>
-            @switch($autoinstall)
+            @switch($app["autoinstall"])
                 @case('wordpress')
                     <i>Your Wordpress is ready! Visit <b>{{ $app["domain"] }}</b> and complete its setup!</i>
                     @break

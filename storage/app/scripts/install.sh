@@ -18,7 +18,7 @@ REMOTEURL=???
 if [ "$(id -u)" = "0" ]; then
     clear
     echo "Running as root :)"
-    sleep 6s
+    sleep 2s
     echo -e "\n"
 else
     clear
@@ -493,6 +493,20 @@ echo -e "\n"
 
 #FINAL MESSAGGE
 clear
+echo ""
+echo "***********************************************************"
+echo "SERVER DATA"
+echo "***********************************************************"
+echo "Cipi User:"
+echo "$USER"
+echo ""
+echo "Cipi Pass:"
+echo "$PASS"
+echo ""
+echo "DB root:"
+echo "$DBPASS"
+echo "***********************************************************"
+echo ""
 echo ""
 echo "  _____ _       _ "
 echo " / ____(_)     (_)"
