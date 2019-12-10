@@ -69,16 +69,16 @@
         <div style="min-height: 20px"></div>
             @switch($autoinstall)
                 @case('wordpress')
-                    <i>Your Wordpress is ready! Digit {{ $app["host"] }} and configure it!</i>
+                    <i>Your Wordpress is ready! Visit <b>{{ $app["domain"] }}</b> and complete its setup!</i>
                     @break
                 @case('laravel')
-                    <i>Your Laravel is ready at {{ $app["host"] }}!</i>
+                    <i>Your Laravel is ready! Happy code on <b>{{ $app["domain"] }}</b>!</i>
                     @break
                 @case('git')
-                    <i>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
+                    <i>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "<b>sh deploy.sh</b>" to deploy your repo!</i>
                     @break
                 @case('none')
-                    <i>Your application {{ $app["host"] }} is ready!</i>
+                    <i>Your application <b>{{ $app["domain"] }}</b> is ready!</i>
                     @break
                 @default
 
