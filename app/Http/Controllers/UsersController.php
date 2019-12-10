@@ -69,15 +69,16 @@ class UsersController extends Controller
         ]);
 
         $app = [
-            'user'      => $request->username,
-            'pass'      => $pass,
-            'dbname'    => $request->username,
-            'dbuser'    => $request->username,
-            'dbpass'    => $dbpass,
-            'path'      => $application->base,
-            'domain'    => $application->domain,
-            'host'      => $application->server->ip,
-            'port'      => $application->server->port,
+            'user'          => $request->username,
+            'pass'          => $pass,
+            'dbname'        => $request->username,
+            'dbuser'        => $request->username,
+            'dbpass'        => $dbpass,
+            'path'          => $application->basepath,
+            'domain'        => $application->domain,
+            'autoinstall'   => $application->autoinstall,
+            'host'          => $application->server->ip,
+            'port'          => $application->server->port,
         ];
 
         $appcode = $application->appcode;

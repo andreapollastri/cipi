@@ -23,7 +23,7 @@
                 <div style="min-height: 15px"></div>
                 <b>Pass</b> {{ $app["pass"] }}<br>
                 <div style="min-height: 15px"></div>
-                @switch($autoinstall)
+                @switch($app["autoinstall"])
                     @case('wordpress')
                         <b>Path</b> /home/{{ $app["user"] }}/web/wordpress/<br>
                         @break
@@ -67,22 +67,23 @@
 <div class="row">
     <div class="col-sm-12 text-center">
         <div style="min-height: 20px"></div>
-            @switch($autoinstall)
+            @switch($app["autoinstall"])
                 @case('wordpress')
-                    <i>Your Wordpress is ready! Visit <b>{{ $app["domain"] }}</b> and complete its setup!</i>
+                    Your Wordpress is ready! Visit <b>{{ $app["domain"] }}</b> and complete its setup!
                     @break
                 @case('laravel')
-                    <i>Your Laravel is ready! Happy code on <b>{{ $app["domain"] }}</b>!</i>
+                    Your Laravel is ready! Happy code on <b>{{ $app["domain"] }}</b>!
                     @break
                 @case('git')
-                    <i>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "<b>sh deploy.sh</b>" to deploy your repo!</i>
+                    Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "<b>sh deploy.sh</b>" to deploy your repo!
                     @break
                 @case('none')
-                    <i>Your application <b>{{ $app["domain"] }}</b> is ready!</i>
+                    Your application <b>{{ $app["domain"] }}</b> is ready!
                     @break
                 @default
 
             @endswitch
+            <p>You can manage you cronjobs via SSH using "crontab -e" command.</p>
         <div style="min-height: 20px"></div>
     </div>
 </div>
