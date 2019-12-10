@@ -42,9 +42,12 @@
 		<li><b>User</b> {{$username}}</li>
 		<li><b>Pass</b> {{$dbpass}}</li>
 		<li><b>Name</b> {{$username}}</li>
-	</ul>
-	<center>
-        @switch($autoinstall)
+    </ul>
+    <br>
+	<hr>
+    <br>
+    <center>
+        <p>@switch($autoinstall)
             @case('wordpress')
                 This is a Wordpress pre-installation.<br>Visit {{ $domain }} the first time to complete the setup!
                 @break
@@ -52,31 +55,28 @@
                 This is a Laravel pre-installation.<br>Happy code!
                 @break
             @case('git')
-                This is a Github repositoy.<br>Configure deploy.sh script into /home/{{$username}}/git/, copy deploy.pub key into your Github SSH keys<br>and run "sh deploy.sh" to deploy your repo!
+                This is a Github repositoy.<br>Configure deploy.sh script into /home/{{$username}}/git/, copy deploy.pub key into your Github SSH keys<br>and run <i>sh deploy.sh</i> to deploy your repo!
                 @break
             @case('none')
                 This is a pure PHP/MySql web application!
                 @break
             @default
 
-        @endswitch
-        <p>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/.</p>
-        <p>You can manage you cronjobs via SSH using "crontab -e" command.</p>
-	</center>
+        @endswitch</p>
+        <p>Phpmyadmin is avaiable at: http://{{$ip}}/phpmyadmin/.</p>
+        <p>You can manage you cronjobs via SSH using <i>crontab -e</i> command.</p>
+    </center>
 	<br>
-	<br>
-	<br>
-	<br>
-	<br>
+    <br>
+    <br>
 	<center>
 		<p>Take care about this data :)</p>
 	</center>
-	<br>
-	<br>
-	<br>
+    <br>
+    <br>
 	<br>
 	<center>
-		<h6>Cipi Control Panel</h6>
+		<h6>Cipi Control Panel (cipi.sh for more info)</h6>
 	</center>
 </body>
 </html>
