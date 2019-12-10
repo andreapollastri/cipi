@@ -312,6 +312,9 @@ if [ "$AUTO_INSTALL" = "laravel" ]; then
     find . -type f -exec chmod 644 {} \;
     find . -type d -exec chmod 755 {} \;
     chmod 777 -R /home/$USER_NAME/web/laravel/storage
+    sudo rpl -q "dbname" "$DBNAME" /home/$USER_NAME/web/laravel/.env
+    sudo rpl -q "dbuser" "$DBUSER" /home/$USER_NAME/web/laravel/.env
+    sudo rpl -q "dbpass" "$DBPASS" /home/$USER_NAME/web/laravel/.env
 fi
 
 #WORDPRESS

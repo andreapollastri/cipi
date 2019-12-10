@@ -15,7 +15,22 @@
 		<li><b>Port</b> {{$port}}</li>
 		<li><b>User</b> {{$username}}</li>
         <li><b>Pass</b> {{$password}}</li>
-		<li><b>Path</b> /home/{{ $username }}/</li>
+        @switch({{$autoinstall}})
+            @case('wordpress')
+                <li><b>Path</b> /home/{{ $username }}/web/wordpress/</li>
+                @break
+            @case('laravel')
+                <li><b>Path</b> /home/{{ $username }}/web/laravel/public</li>
+                @break
+            @case('git')
+                <li><b>Path</b> /home/{{ $username }}/web/{{$path}}</li>
+                @break
+            @case('none')
+                <li><b>Path</b> /home/{{ $username }}/web/{{$path}}</li>
+                @break
+            @default
+
+        @endswitch
 	</ul>
 	<br>
 	<hr>

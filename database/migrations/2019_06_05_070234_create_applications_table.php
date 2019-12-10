@@ -22,6 +22,7 @@ class CreateApplicationsTable extends Migration
             $table->text('password');
             $table->text('dbpass');
             $table->text('appcode');
+            $table->text('autoinstall');
             $table->text('basepath')->nullable();
             $table->timestamps();
         });

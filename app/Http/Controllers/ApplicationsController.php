@@ -67,11 +67,23 @@ class ApplicationsController extends Controller
         $code   = hash('crc32', uniqid()).str_random(2);
         $pass   = str_random(32);
         $dbpass = str_random(16);
-        $base   = $request->basepath;
         $appcode= sha1(uniqid().microtime().$request->name);
 
 
         $autoinstall = $request->autoinstall;
+
+
+        switch ($autoinstall) {
+            case 'laravel':
+                $base = 'laravel/public';
+                break;
+            case 'wordpress':
+                $base = 'wordpress';
+                break;
+            default:
+                $base = $request->basepath;
+                break;
+        }
 
 
         $ssh = New \phpseclib\Net\SSH2($server->ip, $server->port);
@@ -99,29 +111,30 @@ class ApplicationsController extends Controller
 
 
         Application::create([
-            'domain'    => $request->domain,
-            'server_id' => $request->server_id,
-            'username'  => $code,
-            'password'  => $pass,
-            'dbpass'    => $dbpass,
-            'basepath'  => $base,
-            'appcode'   => $appcode,
+            'domain'        => $request->domain,
+            'server_id'     => $request->server_id,
+            'username'      => $code,
+            'password'      => $pass,
+            'dbpass'        => $dbpass,
+            'basepath'      => $base,
+            'autoinstall'   => $autoinstall,
+            'appcode'       => $appcode,
         ]);
 
-
         $app = [
-            'user'      => $code,
-            'pass'      => $pass,
-            'dbname'    => $code,
-            'dbuser'    => $code,
-            'dbpass'    => $dbpass,
-            'path'      => $base,
-            'domain'    => $request->domain,
-            'host'      => $server->ip,
-            'port'      => $server->port,
+            'user'          => $code,
+            'pass'          => $pass,
+            'dbname'        => $code,
+            'dbuser'        => $code,
+            'dbpass'        => $dbpass,
+            'path'          => $base,
+            'autoinstall'   => $autoinstall,
+            'domain'        => $request->domain,
+            'host'          => $server->ip,
+            'port'          => $server->port,
         ];
 
-        return view('application', compact('profile','app','appcode', 'autoinstall'));
+        return view('application', compact('profile','app','appcode'));
 
     }
 
@@ -176,13 +189,14 @@ class ApplicationsController extends Controller
 
         $application = Application::where('appcode', $applicationcode)->get()->first();
         $data = [
-            'username' => $application->username,
-            'password' => $application->password,
-            'path'     => $application->basepath,
-            'ip'       => $application->server->ip,
-            'port'     => $application->server->port,
-            'domain'   => $application->domain,
-            'dbpass'   => $application->dbpass,
+            'username'      => $application->username,
+            'password'      => $application->password,
+            'path'          => $application->basepath,
+            'ip'            => $application->server->ip,
+            'port'          => $application->server->port,
+            'domain'        => $application->domain,
+            'dbpass'        => $application->dbpass,
+            'autoinstall'   => $application->autoinstall,
         ];
 
         $pdf = PDF::loadView('pdf', $data);
