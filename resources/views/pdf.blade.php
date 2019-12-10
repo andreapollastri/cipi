@@ -52,7 +52,7 @@
                 <i>This is a Laravel pre-installation.<br>Happy code!</i>
                 @break
             @case('git')
-                <i>This is a Github repositoy.<br>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
+                <i>This is a Github repositoy.<br>Configure deploy.sh script into /home/{{$username}}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
                 @break
             @case('none')
                 <i>This is a pure PHP/MySql web application!</i>
@@ -60,9 +60,8 @@
             @default
 
         @endswitch
-		<p>
-			<i>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/</i>
-		</p>
+        <p><i>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/.</i></p>
+        <p>You can manage you cronjobs via SSH using "crontab -e" command.</p>
 	</center>
 	<br>
 	<br>
