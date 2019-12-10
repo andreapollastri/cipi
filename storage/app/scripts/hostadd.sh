@@ -315,6 +315,7 @@ if [ "$AUTO_INSTALL" = "laravel" ]; then
     sudo rpl -q "DB_DATABASE=laravel" "DB_DATABASE=$DBNAME" /home/$USER_NAME/web/laravel/.env
     sudo rpl -q "DB_USERNAME=root" "DB_USERNAME=$DBUSER" /home/$USER_NAME/web/laravel/.env
     sudo rpl -q "DB_PASSWORD=" "DB_PASSWORD=$DBPASS" /home/$USER_NAME/web/laravel/.env
+    sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 fi
 
 #WORDPRESS
@@ -356,6 +357,7 @@ EOF
     find . -type f -exec chmod 644 {} \;
     find . -type d -exec chmod 755 {} \;
     chmod 777 -R wordpress/wp-content/uploads/
+    sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 fi
 
 #GIT INIT
@@ -366,6 +368,7 @@ if [ "$AUTO_INSTALL" = "git" ]; then
     sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
     sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
     sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
+    sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 fi
 
 #PERMISSIONS

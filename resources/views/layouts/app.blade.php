@@ -107,7 +107,7 @@
             <footer class="sticky-footer bg-white">
                 <div class="container my-auto">
                     <div class="copyright text-center my-auto">
-                        <span><b>CIPI</b><br>Cloud Control Panel</span>
+                        <span><b>CIPI</b><br>Cloud Control Panel<br><a href="https://cipi.sh/" target="_blank">cipi.sh</a></span>
                     </div>
                 </div>
             </footer>
