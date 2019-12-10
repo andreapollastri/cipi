@@ -21,10 +21,25 @@
                 <div style="min-height: 15px"></div>
                 <b>User</b> {{ $app["user"] }}<br>
                 <div style="min-height: 15px"></div>
-                <b>Pass</b> {{ $app["pass"] }}<br> 
+                <b>Pass</b> {{ $app["pass"] }}<br>
                 <div style="min-height: 15px"></div>
-                <b>Path</b> /home/{{ $app["user"] }}/web/{{ $app["path"] }}/<br>
-                <div style="min-height: 15px"></div> 
+                @switch($autoinstall)
+                    @case('wordpress')
+                        <b>Path</b> /home/{{ $app["user"] }}/web/wordpress/<br>
+                        @break
+                    @case('laravel')
+                        <b>Path</b> /home/{{ $app["user"] }}/web/laravel/<br>
+                        @break
+                    @case('git')
+                        <b>Path</b> /home/{{ $app["user"] }}/web/{{ $app["path"] }}/<br>
+                        @break
+                    @case('none')
+                        <b>Path</b> /home/{{ $app["user"] }}/web/{{ $app["path"] }}/<br>
+                        @break
+                    @default
+
+                @endswitch
+                <div style="min-height: 15px"></div>
             </div>
         </div>
     </div>
@@ -41,7 +56,7 @@
                 <div style="min-height: 15px"></div>
                 <b>User</b> {{ $app["dbuser"] }}<br>
                 <div style="min-height: 15px"></div>
-                <b>Pass</b> {{ $app["dbpass"] }}<br> 
+                <b>Pass</b> {{ $app["dbpass"] }}<br>
                 <div style="min-height: 15px"></div>
                 <b>Name</b> {{ $app["dbname"] }}
                 <div style="min-height: 15px"></div>
@@ -52,9 +67,31 @@
 <div class="row">
     <div class="col-sm-12 text-center">
         <div style="min-height: 20px"></div>
+            @switch($autoinstall)
+                @case('wordpress')
+                    <i>Your Wordpress is ready! Digit {{ $app["host"] }} and configure it!</i>
+                    @break
+                @case('laravel')
+                    <i>Your Laravel is ready at {{ $app["host"] }}!</i>
+                    @break
+                @case('git')
+                    <i>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
+                    @break
+                @case('none')
+                    <i>Your application {{ $app["host"] }} is ready!</i>
+                    @break
+                @default
+
+            @endswitch
+        <div style="min-height: 20px"></div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm-12 text-center">
+        <div style="min-height: 20px"></div>
             <a href="{{ route('applications') }}" class="btn btn-secondary btn-sm"><i class="fas fa-arrow-left"></i> Application list</a>
             <a href="{{ route('pdf', $appcode) }}" class="btn btn-primary btn-sm" style="margin-left: 20px;"><i class="fas fa-file-pdf"></i> Download PDF</a>
         <div style="min-height: 20px"></div>
-    </div>    
+    </div>
 </div>
 @endsection

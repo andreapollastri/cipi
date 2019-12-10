@@ -87,9 +87,9 @@
                     </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="button" class="btn btn-secondary" id="app-close" data-dismiss="modal">{{ __('Close') }}</button>
                     <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
-                    <button type="button" class="btn btn-danger" id="app-coming" style="display: none;">{{ __('Your application is coming... Hold On!') }}</button>
+                    <div id="app-coming" style="display: none;"><h3><i class="fas fa-spinner fa-spin"></i>  <b>{{ __('Application is coming, hold on!') }}</b></h3></div>
                 </div>
             </form>
         </div>
@@ -190,6 +190,7 @@ $('#deleteModal').on('show.bs.modal', function (event) {
 <script>
     $("#form-app-create").submit(function() {
         $("#app-create").hide();
+        $("#app-close").hide();
         $("#app-coming").show();
     });
 </script>

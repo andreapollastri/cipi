@@ -14,8 +14,8 @@
 		<li><b>Host</b> {{$ip}}</li>
 		<li><b>Port</b> {{$port}}</li>
 		<li><b>User</b> {{$username}}</li>
-		<li><b>Pass</b> {{$password}}</li>
-		<li><b>Path</b> /home/{{ $username }}/web/{{ $path }}</li>
+        <li><b>Pass</b> {{$password}}</li>
+		<li><b>Path</b> /home/{{ $username }}/</li>
 	</ul>
 	<br>
 	<hr>

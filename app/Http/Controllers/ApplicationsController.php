@@ -121,7 +121,7 @@ class ApplicationsController extends Controller
             'port'      => $server->port,
         ];
 
-        return view('application', compact('profile','app','appcode'));
+        return view('application', compact('profile','app','appcode', 'autoinstall'));
 
     }
 
