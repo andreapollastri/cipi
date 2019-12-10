@@ -76,7 +76,7 @@
     <br>
 	<br>
 	<center>
-		<h6>Cipi Control Panel (cipi.sh for more info)</h6>
+		<h5>Cipi Control Panel (cipi.sh for more info)</h5>
 	</center>
 </body>
 </html>
