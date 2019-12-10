@@ -46,21 +46,21 @@
 	<center>
         @switch($autoinstall)
             @case('wordpress')
-                <i>This is a Wordpress pre-installation.<br>Visit {{ $domain }} the first time to complete the setup!</i>
+                This is a Wordpress pre-installation.<br>Visit {{ $domain }} the first time to complete the setup!
                 @break
             @case('laravel')
-                <i>This is a Laravel pre-installation.<br>Happy code!</i>
+                This is a Laravel pre-installation.<br>Happy code!
                 @break
             @case('git')
-                <i>This is a Github repositoy.<br>Configure deploy.sh script into /home/{{$username}}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
+                This is a Github repositoy.<br>Configure deploy.sh script into /home/{{$username}}/git/, copy deploy.pub key into your Github SSH keys<br>and run "sh deploy.sh" to deploy your repo!
                 @break
             @case('none')
-                <i>This is a pure PHP/MySql web application!</i>
+                This is a pure PHP/MySql web application!
                 @break
             @default
 
         @endswitch
-        <p><i>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/.</i></p>
+        <p>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/.</p>
         <p>You can manage you cronjobs via SSH using "crontab -e" command.</p>
 	</center>
 	<br>
