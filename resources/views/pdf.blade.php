@@ -7,15 +7,15 @@
 	<center>
 		<h4>APPLICATION</h4>
 		<h1>{{ $domain }}</h1>
-	</center>
+    </center>
 	<br>
-	<h3>SSH/SFTP</h3>
+    <h3>SSH/SFTP</h3>
 	<ul>
 		<li><b>Host</b> {{$ip}}</li>
 		<li><b>Port</b> {{$port}}</li>
 		<li><b>User</b> {{$username}}</li>
         <li><b>Pass</b> {{$password}}</li>
-        @switch({{$autoinstall}})
+        @switch($autoinstall)
             @case('wordpress')
                 <li><b>Path</b> /home/{{ $username }}/web/wordpress/</li>
                 @break
@@ -23,10 +23,10 @@
                 <li><b>Path</b> /home/{{ $username }}/web/laravel/public</li>
                 @break
             @case('git')
-                <li><b>Path</b> /home/{{ $username }}/web/{{$path}}</li>
+                <li><b>Path</b> /home/{{ $username }}/web/{{ $path }}</li>
                 @break
             @case('none')
-                <li><b>Path</b> /home/{{ $username }}/web/{{$path}}</li>
+                <li><b>Path</b> /home/{{ $username }}/web/{{ $path }}</li>
                 @break
             @default
 
@@ -44,12 +44,26 @@
 		<li><b>Name</b> {{$username}}</li>
 	</ul>
 	<center>
+        @switch($autoinstall)
+            @case('wordpress')
+                <i>This is a Wordpress pre-installation.<br>Visit {{ $domain }} the first time to complete the setup!</i>
+                @break
+            @case('laravel')
+                <i>This is a Laravel pre-installation.<br>Happy code!</i>
+                @break
+            @case('git')
+                <i>This is a Github repositoy.<br>Configure deploy.sh script into /home/{{ $app["user"] }}/git/, copy deploy.pub key into your Github SSH keys and run "sh deploy.sh" to deploy your repo!</i>
+                @break
+            @case('none')
+                <i>This is a pure PHP/MySql web application!</i>
+                @break
+            @default
+
+        @endswitch
 		<p>
 			<i>phpmyadmin avaiable on: http://{{$ip}}/phpmyadmin/</i>
 		</p>
 	</center>
-	<br>
-	<br>
 	<br>
 	<br>
 	<br>

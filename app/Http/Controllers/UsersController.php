@@ -74,7 +74,7 @@ class UsersController extends Controller
             'dbname'        => $request->username,
             'dbuser'        => $request->username,
             'dbpass'        => $dbpass,
-            'path'          => $application->base,
+            'path'          => $application->basepath,
             'domain'        => $application->domain,
             'autoinstall'   => $application->autoinstall,
             'host'          => $application->server->ip,

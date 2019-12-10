@@ -8,7 +8,7 @@ class Application extends Model
 {
 
 	protected $fillable = [
-		'domain', 'server_id', 'username', 'password', 'dbpass', 'basepath', 'appcode',
+		'domain', 'server_id', 'username', 'password', 'dbpass', 'basepath', 'autoinstall', 'appcode',
     ];
 
 
@@ -26,9 +26,9 @@ class Application extends Model
 
     	return $this->hasMany(Alias::class);
 
-    } 
+    }
 
 
-    
+
 
 }
