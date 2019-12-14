@@ -4,7 +4,7 @@
 <!-- Page Heading -->
 <div class="d-sm-flex align-items-center justify-content-between mb-4">
     <h1 class="h3 mb-0 text-gray-800">{{ __('Servers') }}</h1>
-    <a href="#" class="btn btn-sm btn-secondary shadow-sm " data-toggle="modal" data-target="#createModal" ><i class="fas fa-plus"></i><span class="d-none d-md-inline"> {{ __('CREATE NEW') }}</span></a>   
+    <a href="#" class="btn btn-sm btn-secondary shadow-sm " data-toggle="modal" data-target="#createModal" ><i class="fas fa-plus"></i><span class="d-none d-md-inline"> {{ __('CREATE NEW') }}</span></a>
 </div>
 <div class="card shadow mb-4">
     <div class="card-body">
@@ -31,11 +31,14 @@
                                     {{ $server->name }}
                                 @endif
                             </td>
-                            <td class="text-center">{{ $server->ip }}</td>
+                            <td class="text-center">
+                                {{ $server->ip }}
+                                <i data-toggle="modal" data-target="#changeipModal" class="far fa-edit" data-servercode="{{ $server->servercode }}" data-serverip="{{ $server->ip }}" style="color:gray; cursor: pointer;"></i>
+                            </td>
                             <td class="text-center d-none d-lg-table-cell">{{ $server->provider }}</td>
                             <td class="text-center d-none d-lg-table-cell">{{ $server->location }}</td>
                             <td class="text-center">
-                            <i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
+                            <i data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
                             </td>
                         </tr>
                     @endforeach
@@ -129,6 +132,36 @@
 </div>
 
 
+<!-- CHANGE IP -->
+<div class="modal fade" id="changeipModal" tabindex="-1" role="dialog" aria-labelledby="changeipModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="{{ route('serverchangeip') }}" method="POST">
+                @csrf
+                <input type="hidden" name="servercode" id="server-code" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changeipModalLabel">{{ __('Update Server IP') }}</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class=" row">
+                        <div class="col-sm-12">
+                            <input type="text" id="server-ip" required class="form-control @error('ip') is-invalid @enderror" name="ip">
+                            <i class="fas fa-exclamation-circle" style="margin-left: 5px;"></i> {{ __('Before submit changes, be shure about your new IP!') }}
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary">{{ __('Update') }}</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 <!-- DELETE -->
 <div class="modal fade" id="deleteModal" tabindex="-1" role="dialog" aria-labelledby="deleteModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
@@ -194,6 +227,14 @@ $('#deleteModal').on('show.bs.modal', function (event) {
     var modal = $(this)
     modal.find('#server-code').val(servercode)
     modal.find('#server-name').text(servername)
+})
+$('#changeipModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget)
+    var servercode = button.data('servercode')
+    var serverip = button.data('serverip')
+    var modal = $(this)
+    modal.find('#server-code').val(servercode)
+    modal.find('#server-ip').val(serverip)
 })
 </script>
 @endsection
