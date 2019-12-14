@@ -38,6 +38,7 @@ Route::get('/ajaxapplications/{server}','ApisController@ajaxapplications')->name
 Route::get('/servers','ServersController@index')->name('servers');
 Route::post('/servers/create/','ServersController@create')->name('servercreate');
 Route::post('/servers/delete/','ServersController@delete')->name('serverdelete');
+Route::post('/servers/changeip/','ServersController@changeip')->name('serverchangeip');
 
 Route::get('/scripts/install/{servercode}','ScriptsController@install')->name('serverinstall');
 Route::get('/scripts/hostadd/{servercode}','ScriptsController@hostadd');

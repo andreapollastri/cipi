@@ -60,6 +60,22 @@ class ServersController extends Controller
     }
 
 
+    public function changeip(Request $request)
+    {
+
+        $this->validate($request, [
+            'servercode' => 'required',
+            'ip'         => 'required'
+        ]);
+
+        $server = Server::where('servercode', $request->servercode)->get()->first();
+        $server->ip = $request->input('ip');
+        $server->save();
+
+        return redirect()->route('servers');
+
+    }
+
 
     public function delete(Request $request)
     {

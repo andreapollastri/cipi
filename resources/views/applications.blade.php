@@ -16,6 +16,7 @@
                         <th class="text-center">{{ __('User') }}</th>
                         <th class="text-center d-none d-lg-table-cell">{{ __('Server') }}</th>
                         <th class="text-center d-none d-lg-table-cell">{{ __('IP') }}</th>
+                        <th class="text-center d-none d-lg-table-cell">{{ __('Type') }}</th>
                         <th class="text-center">{{ __('Actions') }}</th>
                     </tr>
                 </thead>
@@ -27,6 +28,24 @@
                         <td class="text-center">{{ $application->username }}</td>
                         <td class="text-center d-none d-lg-table-cell">{{ $application->server->name }}</td>
                         <td class="text-center d-none d-lg-table-cell">{{ $application->server->ip }}</td>
+                        <td class="text-center d-none d-lg-table-cell">
+                            @switch($application->autoinstall)
+                                @case('wordpress')
+                                    <i class="fab fa-wordpress"></i>
+                                    @break
+                                @case('laravel')
+                                    <i class="fab fa-laravel"></i>
+                                    @break
+                                @case('git')
+                                    <i class="fab fa-github-alt"></i>
+                                    @break
+                                @case('none')
+                                    <i class="fab fa-php"></i>
+                                    @break
+                                @default
+
+                            @endswitch
+                        </td>
                         <td class="text-center">
                         <i class="fab fa-expeditedssl ssl-click" style="margin-right: 18px; cursor: pointer; color: gray;" data-application="{{ $application->appcode }}" id="ssl-{{ $application->appcode }}"></i>
                     	<i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-app-code="{{ $application->appcode }}" data-app-domain="{{ $application->domain }}" style="color:gray; cursor: pointer;"></i>
