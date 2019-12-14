@@ -85,7 +85,7 @@
                 @default
 
             @endswitch
-            <p>You can manage you cronjobs via SSH using <i>crontab -e</i> command.</p>
+            <p>You can manage your cronjobs via SSH using <i>crontab -e</i> command.</p>
         <div style="min-height: 20px"></div>
     </div>
 </div>

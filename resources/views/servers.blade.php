@@ -35,7 +35,111 @@
                                 {{ $server->ip }}
                                 <i data-toggle="modal" data-target="#changeipModal" class="far fa-edit" data-servercode="{{ $server->servercode }}" data-serverip="{{ $server->ip }}" style="color:gray; cursor: pointer;"></i>
                             </td>
-                            <td class="text-center d-none d-lg-table-cell">{{ $server->provider }}</td>
+                            <td class="text-center d-none d-lg-table-cell">
+                                @switch($server->provider)
+                                    @case('aws')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('Aws')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('AWS')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('Amazon')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('amazon')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('AMAZON')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('AmazonWebService')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('Amazon web service')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('amazonwebservice')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('AMAZONWEBSERVICE')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('Amazon Web Service')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('amazon web service')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('AMAZON WEB SERVICE')
+                                        <i class="fab fa-aws"></i>
+                                        @break
+                                    @case('DO')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('do')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('Digital Ocean')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('digitalocean')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('DIGITAL OCEAN')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('digital ocean')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('DigitalOcean')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('DIGITALOCEAN')
+                                        <i class="fab fa-digital-ocean"></i>
+                                        @break
+                                    @case('Google')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('google')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('GOOGLE')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('GoogleCloud')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('Google Cloud')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('google cloud')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('GOOGLE CLOUD')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('GOOGLECLOUD')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('googlecloud')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('glg')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('GLG')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @case('Glg')
+                                        <i class="fab fa-google"></i>
+                                        @break
+                                    @default
+                                    {{ $server->provider }}
+                                @endswitch
+                            </td>
                             <td class="text-center d-none d-lg-table-cell">{{ $server->location }}</td>
                             <td class="text-center">
                             <i data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>

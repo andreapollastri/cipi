@@ -64,7 +64,7 @@
 
         @endswitch</p>
         <p>Phpmyadmin is avaiable at: http://{{$ip}}/phpmyadmin/.</p>
-        <p>You can manage you cronjobs via SSH using <i>crontab -e</i> command.</p>
+        <p>You can manage your cronjobs via SSH using <i>crontab -e</i> command.</p>
     </center>
 	<br>
     <br>
