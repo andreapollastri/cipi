@@ -36,12 +36,11 @@
     </div>
 </div> 
 
-
 <!-- CREATE -->
 <div class="modal fade" id="createModal" tabindex="-1" role="dialog" aria-labelledby="createModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
-            <form action="{{ route('applicationcreate') }}" method="POST">
+            <form action="{{ route('applicationcreate') }}" method="POST" id="form-app-create">
                 @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="createModalLabel">{{ __('Create a new application') }}</h5>
@@ -60,7 +59,7 @@
                         <label for="server_id" class="col-md-4 col-form-label text-md-right">{{ __('Server') }}*</label>
                         <div class="col-md-6">
                             <select class="form-control" name="server_id" required id="server-list">
-                                <option value="{{ $server->id }}" selected>{{ $server->name }} - {{ $server->ip }}</option>
+                                <option value="">{{ __('Select...') }}</option>
                             </select>
                         </div>
                     </div>
@@ -70,10 +69,22 @@
                             <input id="basepath" type="text" class="form-control @error('name') is-invalid @enderror" name="basepath" autocomplete="off" required autofocus placeholder="E.g. 'public'" value="public">
                         </div>
                     </div>
+                    <div class="form-group row">
+                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">{{ __('Autoinstall') }}</label>
+                        <div class="col-md-6">
+                            <select class="form-control" name="autoinstall">
+                                <option value="none">{{ __('None... just pure web!') }}</option>
+                                <option value="laravel">{{ __('Install Laravel') }}</option>
+                                <option value="wordpress">{{ __('Install Wordpress') }}</option>
+                                <option value="git">{{ __('Install a GitHub project') }}</option>
+                            </select>
+                        </div>
+                    </div>
                 </div>
                 <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ __('Close') }}</button>
-                    <button type="submit" class="btn btn-primary">{{ __('Create application') }}</button>
+                    <button type="button" class="btn btn-secondary" id="app-close" data-dismiss="modal">{{ __('Close') }}</button>
+                    <button type="submit" class="btn btn-primary" id="app-create">{{ __('Create application') }}</button>
+                    <div id="app-coming" style="display: none; color: #224abe;"><h3><i class="fas fa-spinner fa-spin"></i>  <b>{{ __('Your app is coming... Hold On!!!') }}</b></h3></div>
                 </div>
             </form>
         </div>
@@ -164,5 +175,12 @@ $('#deleteModal').on('show.bs.modal', function (event) {
     modal.find('#app-domain').text(appdomain)
     modal.find('#app-code').val(appcode)
 })
+</script>
+<script>
+    $("#form-app-create").submit(function() {
+        $("#app-create").hide();
+        $("#app-close").hide();
+        $("#app-coming").show();
+    });
 </script>
 @endsection
