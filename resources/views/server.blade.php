@@ -132,6 +132,13 @@
     });
 </script>
 <script>
+    $.get("{{ url('/') }}/ajaxservers/", function(servers) {
+        JSON.parse(servers).forEach(server => {
+            $("#server-list").append("<option value='"+server["id"]+"'>"+server["name"]+" ("+server["ip"]+")</option>");
+        });
+    });
+</script>
+<script>
 function generatessl(application) {
     $("#ssl-"+application).removeClass("fab fa-expeditedssl");
     $("#ssl-"+application).addClass("fas fa-spinner fa-spin");
