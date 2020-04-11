@@ -49,6 +49,9 @@
     .space {
         min-height: 25px;
     }
+    .spacex {
+        margin-right: 20px;
+    }
     .green {
         color: darkolivegreen;
     }
@@ -167,6 +170,7 @@
 
 
     <!-- FOOTER -->
+    <div class="space"></div>
     <footer class="footer">
         <div class="container">
             <div class="row">
@@ -188,7 +192,7 @@
 
 
     <!-- JS -->
-    <script src="https://allyoucan.cloud/cdn/jquery/core/3.1.1/jquery.js"></script>
+    <script src="https://allyoucan.cloud/cdn/jquery/core/3.4.1/jquery.js"></script>
     <script src="https://allyoucan.cloud/cdn/bootstrap/core/3.3.7/js/bootstrap.js"></script>
     <script src="https://allyoucan.cloud/cdn/webshim/1.16.0/polyfiller.js"></script>
     <script>

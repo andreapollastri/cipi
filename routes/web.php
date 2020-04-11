@@ -20,3 +20,15 @@ Route::get('/', function () {
 Route::get('/home', function () {
     return view('dashboard');
 });
+
+Route::get('/cloud', function () {
+    return view('cloud');
+});
+
+Route::get('/cloud/api/list', function () {
+    $test = [
+        ['name' => 'server1', 'code' => '123', 'ip' => '123.123.123.123', 'provider' => 'AWS', 'location' => 'AMS3', 'apps' => "11"],
+        ['name' => 'production', 'code' => '54345', 'ip' => '324.123.434.241', 'provider' => 'Google Cloud', 'location' => 'MIL', 'apps' => "14"]
+    ];
+    return response()->json($test);
+});
