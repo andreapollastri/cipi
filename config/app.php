@@ -39,7 +39,7 @@ return [
     |
     */
 
-    'debug' => env('APP_DEBUG', false),
+    'debug' => (bool) env('APP_DEBUG', false),
 
     /*
     |--------------------------------------------------------------------------
@@ -134,7 +134,6 @@ return [
     |
     */
 
-
     'providers' => [
 
         /*
@@ -176,10 +175,6 @@ return [
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
 
-        //CUSTOM
-        Karlmonson\Ping\PingServiceProvider::class,
-        Barryvdh\DomPDF\ServiceProvider::class,
-
     ],
 
     /*
@@ -212,6 +207,7 @@ return [
         'File' => Illuminate\Support\Facades\File::class,
         'Gate' => Illuminate\Support\Facades\Gate::class,
         'Hash' => Illuminate\Support\Facades\Hash::class,
+        'Http' => Illuminate\Support\Facades\Http::class,
         'Lang' => Illuminate\Support\Facades\Lang::class,
         'Log' => Illuminate\Support\Facades\Log::class,
         'Mail' => Illuminate\Support\Facades\Mail::class,
@@ -231,22 +227,6 @@ return [
         'Validator' => Illuminate\Support\Facades\Validator::class,
         'View' => Illuminate\Support\Facades\View::class,
 
-        //CUSTOM
-        'Ping' => Karlmonson\Ping\Facades\Ping::class,
-        'Helper' => App\Helpers\Helper::class,
-        'PDF' => Barryvdh\DomPDF\Facade::class,
-
-
     ],
 
-
-    /*
-    |--------------------------------------------------------------------------
-    | Custom Config
-    |--------------------------------------------------------------------------
-    |
-    */
-    'cipi_user'         => env('USER_NAME', 'Cipi Admin'),
-    'cipi_email'        => env('USER_EMAIL', 'admin@admin.com'),
-    'cipi_password'     => env('USER_PASSWORD', 12345678),
 ];
