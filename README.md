@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 <p align="center"><img src="https://res.cloudinary.com/dtfbvvkyp/image/upload/v1566331377/laravel-logolockup-cmyk-red.svg" width="400"></p>
 
 <p align="center">
@@ -61,6 +62,9 @@ We would like to extend our thanks to the following sponsors for funding Laravel
 - [Appoly](https://www.appoly.co.uk)
 - [OP.GG](https://op.gg)
 - [云软科技](http://www.yunruan.ltd/)
+=======
+# CIPI - (VERSION 2 IS COMING... 1th May, 2020) :)
+>>>>>>> master
 
 ## Contributing
 
