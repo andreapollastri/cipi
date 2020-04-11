@@ -1,4 +1,4 @@
-# CIPI - Cloud Control Panel
+# CIPI - Cloud Control Panel (VERSION 2 IS COMING... 1th May, 2020) :)
 
 ## About
 Cipi is a Laravel Based VPS manager.
