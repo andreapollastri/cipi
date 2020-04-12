@@ -52,6 +52,18 @@
     .spacex {
         margin-right: 20px;
     }
+    .limitch {
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 50ch;
+    }
+    .upper {
+        text-transform: uppercase;
+    }
+    .lower {
+        text-transform: lowercase;
+    }
     .green {
         color: darkolivegreen;
     }
@@ -76,6 +88,7 @@
         display: block;
         font-weight: bold;
         font-size: 20px;
+        min-height: 30px;
     }
     .dashbox-hr {
         border-bottom: #555 1px solid;
@@ -131,8 +144,8 @@
             </div>
             <div id="navbar" class="collapse navbar-collapse">
                 <ul class="nav navbar-nav navbar-right">
-                    <li {{ request()->is('home') ? 'class=active' : '' }}>
-                        <a href="/home"><i class="fas fa-tachometer-alt fa-fw"></i> dashboard</a>
+                    <li {{ request()->is('dashboard') ? 'class=active' : '' }}>
+                        <a href="/dashboard"><i class="fas fa-tachometer-alt fa-fw"></i> dashboard</a>
                     </li>
                     <li {{ request()->is('cloud') ? 'class=active' : '' }}>
                         <a href="/cloud"><i class="fas fa-cloud fa-fw"></i> cloud</a>
@@ -216,6 +229,30 @@
     //load forms polyfill + iVal feature
     webshim.polyfill('forms');
     })();
+
+    //cloud icon
+    function cloudicon(provider) {
+        switch (provider) {
+            case 'aws':
+                return '<i class="fa-fw fab fa-aws"></i><span style="display:none">'+provider+'</span>';
+                break;
+            case 'linode':
+                return '<i class="fa-fw fab fa-linode"></i><span style="display:none">'+provider+'</span>';
+                break;
+            case 'do':
+                return '<i class="fa-fw fab fa-digital-ocean"></i><span style="display:none">'+provider+'</span>';
+                break;
+            case 'google':
+                return '<i class="fa-fw fab fa-google"></i><span style="display:none">'+provider+'</span>';
+                break;
+            case 'azure':
+                return '<i class="fa-fw fab fa-microsoft"></i><span style="display:none">'+provider+'</span>';
+                break;
+            default:
+                return '<span style="font-size:10px;font-weight:400;text-transform:capitalize;">'+provider+'</span>';
+                break;
+        }
+    }
     </script>
     @yield('js')
     <!-- JS -->

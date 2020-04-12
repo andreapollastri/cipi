@@ -29,7 +29,7 @@
                         <th class="text-center">Apps</th>
                         <th class="text-center">Provider</th>
                         <th class="text-center">Location</th>
-                        <th class="text-center" data-priority="2">Actions</th>
+                        <th class="text-center" data-priority="2">Manage</th>
                     </tr>
                 </thead>
             </table>
@@ -55,7 +55,7 @@ $(document).ready(function() {
         $('#clouds').DataTable( {
             "responsive": true,
             "ajax": {
-                "url": '/cloud/api/list',
+                "url": '/cloud/api',
                 "dataSrc": ""
             },
             'columns': [
@@ -67,6 +67,12 @@ $(document).ready(function() {
                 { data: 'code' }
             ],
             'columnDefs': [
+                {
+                    'targets': 0,
+                    'render': function ( data, type, row, meta ) {
+                        return '<div class="limitch upper">'+data+'</div>';
+                    }
+                },
                 {
                     'targets': 1,
                     'render': function ( data, type, row, meta ) {
@@ -82,19 +88,20 @@ $(document).ready(function() {
                 {
                     'targets': 3,
                     'render': function ( data, type, row, meta ) {
-                        return '<div class="text-center">'+data+'</div>';
+                        icon = cloudicon(data);
+                        return '<div class="text-center">'+icon+'</div>';
                     }
                 },
                 {
                     'targets': 4,
                     'render': function ( data, type, row, meta ) {
-                        return '<div class="text-center">'+data+'</div>';
+                        return '<div class="text-center upper">'+data+'</div>';
                     }
                 },
                 {
                     'targets': 5,
                     'render': function ( data, type, row, meta ) {
-                        return '<div class="text-center"><a href="/apps/'+data+'"><i class="fas fa-laptop-code fa-fw spacex"></i></a><a href="/cloud/'+data+'"><i class="fas fa-edit fa-fw"></i></a></div>';
+                        return '<div class="text-center"><a href="/cloud/'+data+'"><i class="fas fa-arrow-right"></i></a></div>';
                     }
                 }
             ],
