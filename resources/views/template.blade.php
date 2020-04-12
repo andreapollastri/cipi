@@ -4,6 +4,7 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="description" content="Cloud Control Panel">
     <meta name="author" content="Andrea Pollastri - andrea@pollastri.dev">
@@ -195,13 +196,6 @@
         </div>
     </footer>
     <!-- FOOTER -->
-
-
-    <!-- MODALS -->
-
-
-    @yield('modals')
-    <!-- MODALS -->
 
 
     <!-- JS -->

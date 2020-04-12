@@ -1,0 +1,9 @@
+- pagina "gestisci" server con Datatable con elenco applicazioni & inserimento app diretta sul server gestito + sotto FORM di editing info (nome & ip) + tasto elimina (comparsa div di conferma pre-cancellazione)
+
+- API status (diretta) sul server (<IP>/check-<SERVERCODE>.php)
+
+- installazione con progress bar! Aumentare numero di chiamate step (+ ajax a 2/3 secondi di interval) - memo valore su campo DB
++ verifica se 0 --- invita ad installazione / se parziale --- progress bar / se 100 -- attivo!
+
+- eliminare la disibitalizzazione del root login dall'autoinstaller
+

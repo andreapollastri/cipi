@@ -29,7 +29,7 @@
 
     <!-- DASHBOX -->
     <div class="col-md-6 col-lg-4" id="dashbox" style="display:none;">
-        <div class="dashbox" data-id="">
+        <div class="dashbox" data-id="" data-ip="">
             <div class="row">
                 <div class="col-xs-12">
                     <div class="row">
@@ -74,19 +74,15 @@
     </div>
     <!-- DASHBOX -->
 
-    <div class="row" id="boxes">
+    <div class="row" id="boxes"></div>
 
-    </div>
 </div>
-@endsection
-
-@section('modals')
-
 @endsection
 
 
 @section('js')
 <script>
+
     function loadinfo() {
         $('#boxes').empty();
         $('#dashbox-loading').show();
@@ -100,6 +96,7 @@
                     box.attr('id','dashbox-'+item.id);
                     box.addClass('dashbox-checkable');
                     box.find('.dashbox').attr('data-id',item.code);
+                    box.find('.dashbox').attr('data-ip',item.ip);
                     box.find('.dashbox-title').append(item.name);
                     box.find('.dashbox-ip').append(item.ip);
                     box.find('.dashbox-provider').append(cloudicon(item.provider));
@@ -115,18 +112,6 @@
             }
         });
     }
-
-    $(document).ready(function() {
-        loadinfo();
-    });
-
-    $('#reload').click(function() {
-        loadinfo();
-    });
-
-    $(document).on('click', '.dashbox', function() {
-        window.location.href = '/cloud/'+$(this).attr('data-id');
-    });
 
     function statuscheck() {
         $('.dashbox-checkable').each(function() {
@@ -144,7 +129,7 @@
             $(item).find('.dashbox-hdd').empty();
             $(item).find('.dashbox-hdd').addClass('fas fa-hdd fa-spin');
             $.ajax({
-                url: '/cloud/'+$(item).find('.dashbox').attr('data-id')+'/api',
+                url: 'http://'+$(item).find('.dashbox').attr('data-ip')+'/check-'+$(item).find('.dashbox').attr('data-id')+'.php',
                 type: 'GET',
                 success: function(data) {
                     $(item).find('.dashbox-status').removeClass('fas fa-circle-notch fa-spin');
@@ -170,9 +155,21 @@
         });
     }
 
+    $(document).ready(function() {
+        loadinfo();
+    });
+
+    $('#reload').click(function() {
+        loadinfo();
+    });
+
+    $(document).on('click', '.dashbox', function() {
+        window.location.href = '/cloud/'+$(this).attr('data-id');
+    });
+
     setInterval(function() {
         statuscheck();
-    }, 10000);
+    }, 60000);
 
 </script>
 @endsection
