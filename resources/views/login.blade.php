@@ -25,6 +25,17 @@
     body {
         margin-bottom: 60px;
     }
+    .space {
+        min-height: 25px;
+    }
+    .loginbox {
+        width: 95%;
+        max-width: 400px;
+        border: 1px #555 solid;
+        min-height: 375px;
+        margin: 0 auto;
+        margin-top: 90px;
+    }
     </style>
     <!-- CSS -->
 
@@ -43,9 +54,40 @@
     <!-- MAIN -->
     <div class="container">
         <div class="row">
+            <div class="col-xs-12">
 
-            <!-- TODO: login area! -->
+                <div class="loginbox">
+                    <div class="row">
+                        <div class="col-xs-12 text-center">
+                            <div class="space"></div>
+                            <div class="space"></div>
+                            <img src="/logo.png" class="center-block">
+                            <h5>Cloud Control Panel</h5>
+                            <div class="space"></div>
+                            <form action="#" method="POST">
+                                @csrf
+                                <div class="row">
+                                    <div class="col-xs-4" style="background: red">
+                                        username
+                                    </div>
+                                    <div class="col-xs-8">
+                                        form
+                                    </div>
+                                </div>
+                                <div class="row">
+                                    <div class="col-xs-4">
+                                        password
+                                    </div>
+                                    <div class="col-xs-8">
+                                        form
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
 
+            </div>
         </div>
     </div>
     <!-- MAIN -->
