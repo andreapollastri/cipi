@@ -174,7 +174,7 @@ sleep 3s
 
 #NGINX
 clear
-echo "nginix installation..."
+echo "nginx installation..."
 sleep 3s
 
 sudo apt-get -y install nginx
