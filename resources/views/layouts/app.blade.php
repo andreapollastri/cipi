@@ -5,7 +5,6 @@
     <meta charset="utf-8">
     <title>{{ config('app.name', 'Cipi') }} | @yield('title')</title>
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <meta http-equiv="Content-Security-Policy" content="upgrade-insecure-requests">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <link rel="stylesheet" href="https://allyoucan.cloud/cdn/fontawesome/5.11.2/css/all.css">
