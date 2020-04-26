@@ -255,7 +255,6 @@ server {
     }
 }
 EOF
-sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /var/www/html/.env
 sudo systemctl restart nginx.service
 
 echo "PHP: OK!"
