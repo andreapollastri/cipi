@@ -229,4 +229,14 @@ return [
 
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Custom Config
+    |--------------------------------------------------------------------------
+    |
+    */
+    'cipi_user'         => env('USER_NAME', 'Cipi Admin'),
+    'cipi_email'        => env('USER_EMAIL', 'admin@admin.com'),
+    'cipi_password'     => env('USER_PASSWORD', 12345678),
+
 ];

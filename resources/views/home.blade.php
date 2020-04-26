@@ -1,23 +1,25 @@
 @extends('layouts.app')
 
+@section('title')
+Test
+@endsection
+
 @section('content')
-<div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">Dashboard</div>
+Loren ipsum
+@endsection
 
-                <div class="card-body">
-                    @if (session('status'))
-                        <div class="alert alert-success" role="alert">
-                            {{ session('status') }}
-                        </div>
-                    @endif
+@section('extra')
+<!-- NO EXTRA -->
+@endsection
 
-                    You are logged in!
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+@section('css')
+<style>
+    /* no style */
+</style>
+@endsection
+
+@section('js')
+<script>
+    //no scripts
+</script>
 @endsection
