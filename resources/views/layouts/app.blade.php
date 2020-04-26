@@ -75,9 +75,7 @@
                     <h1 class="h3 mb-4 text-gray-800"><i class="fas fa-terminal"></i> @yield('title')</h1>
                 </div>
                 <div class="container float-left">
-                    <div class="row">
-                        @yield('content')
-                    </div>
+                    @yield('content')
                 </div>
             </div>
             <footer class="sticky-footer bg-white">
