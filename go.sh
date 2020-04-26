@@ -321,7 +321,7 @@ EOF
 clear
 sudo rm -rf /var/www/html
 sudo mkdir /var/www/html
-echo "Downloading last version of Cipi Control Panel from packagist.org... It may takes some time! Hold on :)"
+echo "Downloading Cipi from packagist.org... It may takes some time! Hold on :)"
 sleep 1s
 composer create-project andreapollastri/cipi /var/www/html
 cd /var/www/html && sudo cp .env.example .env
@@ -335,9 +335,11 @@ sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 775 /var/www/html/bootstrap/cache
 sudo chown -R www-data:www-data /var/www/html
 cd /var/www/html && php artisan cache:clear
-composer dump-autoload
 cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan storage:link
+cd /var/www/html && composer dump-autoload
+cd /var/www/html && npm install
+cd /var/www/html && npm run dev
 cd /var/www/html && php artisan migrate --seed --force
 
 clear
