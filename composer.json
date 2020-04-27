@@ -1,20 +1,26 @@
 {
-    "name": "laravel/laravel",
+    "name": "andreapollastri/cipi",
     "type": "project",
-    "description": "The Laravel Framework.",
+    "description": "Cloud Control Panel",
     "keywords": [
-        "framework",
-        "laravel"
+        "cloud",
+        "vps",
+        "laravel",
+        "control panel",
+        "server",
+        "management"
     ],
     "license": "MIT",
     "require": {
         "php": "^7.2.5",
-        "fideloper/proxy": "^4.2",
+        "barryvdh/laravel-dompdf": "^0.8.6",
+        "fideloper/proxy": "^4.3",
         "fruitcake/laravel-cors": "^1.0",
         "guzzlehttp/guzzle": "^6.3",
         "laravel/framework": "^7.0",
         "laravel/tinker": "^2.0",
-        "laravel/ui": "^2.0"
+        "laravel/ui": "^2.0",
+        "phpseclib/phpseclib": "^2.0"
     },
     "require-dev": {
         "facade/ignition": "^2.0",
