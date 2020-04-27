@@ -36,17 +36,13 @@ fi
 
 #ROOT Check
 if [ "$(id -u)" = "0" ]; then
-
     clear
     echo "Running as root :)"
     sleep 2s
-
 else
-
     clear
     echo -e "You have to run this script as root. In AWS digit 'sudo -s'"
     exit 1
-
 fi
 
 
@@ -74,16 +70,16 @@ REMOTEURL=???
 sudo apt-get update
 sudo apt-get -y install curl wget
 
-curl --request GET --url $REMOTEURL/server/api/start/$SERVERCODE
+curl --request GET --url $REMOTEURL/remote/start/$SERVERCODE
 
 sudo mkdir /cipi/
 sudo mkdir /cipi/html/
-wget $REMOTEURL/scripts/deploy/$SERVERCODE/  -O /cipi/deploy.sh
-wget $REMOTEURL/scripts/hostadd/$SERVERCODE/ -O /cipi/host-add.sh
-wget $REMOTEURL/scripts/hostdel/$SERVERCODE/ -O /cipi/host-del.sh
-wget $REMOTEURL/scripts/hostssl/$SERVERCODE/ -O /cipi/ssl.sh
-wget $REMOTEURL/scripts/passwd/$SERVERCODE/  -O /cipi/passwd.sh
-wget $REMOTEURL/scripts/status/$SERVERCODE/  -O /cipi/status.sh
+wget $REMOTEURL/sh/dy/$SERVERCODE/ -O /cipi/deploy.sh
+wget $REMOTEURL/sh/ha/$SERVERCODE/ -O /cipi/host-add.sh
+wget $REMOTEURL/sh/hm/$SERVERCODE/ -O /cipi/host-mod.sh
+wget $REMOTEURL/sh/hd/$SERVERCODE/ -O /cipi/host-del.sh
+wget $REMOTEURL/sh/pw/$SERVERCODE/ -O /cipi/passwd.sh
+wget $REMOTEURL/sh/st/$SERVERCODE/ -O /cipi/status.sh
 sudo chmod o-r /cipi
 
 clear
@@ -137,8 +133,8 @@ sudo chmod o-r /cipi
 sudo dos2unix /cipi/deploy.sh
 sudo dos2unix /cipi/passwd.sh
 sudo dos2unix /cipi/host-add.sh
+sudo dos2unix /cipi/host-mod.sh
 sudo dos2unix /cipi/host-del.sh
-sudo dos2unix /cipi/ssl.sh
 
 shopt -s expand_aliases
 alias ll='ls -alF'
@@ -428,7 +424,7 @@ echo "User creation..."
 sleep 3s
 
 sudo useradd -m -s /bin/bash cipi
-echo "cipi:$PASS"|chpasswd
+echo "$USER:$PASS"|chpasswd
 sudo usermod -aG sudo cipi
 
 clear
@@ -437,10 +433,23 @@ sleep 3s
 echo -e "\n"
 
 
-#WELCOME PAGE
+#CIPI PAGES
 clear
-echo "Welcome page creation..."
+echo "Cipi pages creation..."
 sleep 3s
+
+PING=/var/www/ping_$SERVERCODE.php
+sudo touch $PING
+sudo cat > "$PING" <<EOF
+    UP!
+EOF
+
+STATUS=/var/www/stats_$SERVERCODE.php
+sudo touch $STATUS
+sudo cat > "$STATUS" <<EOF
+    <?php
+    echo exec("sh /cipi/status.sh");
+EOF
 
 WELCOME=/var/www/html/index.php
 sudo touch $WELCOME
@@ -610,10 +619,9 @@ sudo cat > "$WELCOME" <<EOF
 </html>
 EOF
 clear
-echo "Welcome page creation: OK!"
+echo "Cipi pages creation: OK!"
 sleep 3s
 echo -e "\n"
-
 
 
 
@@ -630,7 +638,7 @@ crontab -l | { cat; echo "5 4 * * sun DEBIAN_FRONTEND=noninteractive DEBIAN_PRIO
 
 sudo systemctl restart nginx.service
 
-curl --request GET --url $REMOTEURL/server/api/finalize/$SERVERCODE
+curl --request GET --url $REMOTEURL/remote/finalize/$SERVERCODE
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"

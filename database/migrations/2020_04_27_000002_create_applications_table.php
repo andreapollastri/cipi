@@ -21,9 +21,10 @@ class CreateApplicationsTable extends Migration
             $table->string('username');
             $table->string('password');
             $table->string('dbpass');
-            $table->string('appcode')->index();
+            $table->string('basepath')->nullable()->default('public');
+            $table->string('php')->default('7.4');
             $table->text('nginx')->nullable();
-            $table->string('basepath')->nullable();
+            $table->string('appcode')->index();
             $table->timestamps();
         });
 
