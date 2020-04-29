@@ -6,13 +6,17 @@ DBROOT=???
 while [ -n "$1" ] ; do
     case $1 in
     -u | --user* )
-            shift
-            USER_NAME=$1
-            ;;
+        shift
+        USER_NAME=$1
+        ;;
+    -d | --domain* )
+        shift
+        DOMAIN=$1
+        ;;
     * )
-            echo "ERROR: Unknown option: $1"
-            exit -1
-            ;;
+        echo "ERROR: Unknown option: $1"
+        exit -1
+        ;;
     esac
     shift
 done
@@ -27,8 +31,7 @@ DROP USER '$USER_NAME'@'localhost';
 EOF
 
 #SSL & CRON
-sudo unlink /etc/cron.d/certbot_renew_$USER_NAME.crontab
-sudo crontab -u $USER_NAME -r
+sudo unlink /etc/cron.d/certbot_renew_$DOMAIN.crontab
 
 #NGINX
 sudo unlink /etc/nginx/sites-enabled/$USER_NAME.conf

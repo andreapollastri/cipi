@@ -6,42 +6,36 @@ DBROOT=???
 BASE_PATH=
 USER_SHELL=/bin/bash
 
-# Check if user is root
-if [ $(id -u) != "0" ]; then
-    echo "Error: You must be root to run this script."
-    exit 1
-fi
-
 while [ -n "$1" ] ; do
     case $1 in
     -d | --domain )
-            shift
-            DOMAIN=$1
-            ;;
+        shift
+        DOMAIN=$1
+        ;;
     -u | --user )
-            shift
-            USER_NAME=$1
-            ;;
+        shift
+        USER_NAME=$1
+        ;;
     -p | --pass )
-            shift
-            PASSWORD=$1
-            ;;
+        shift
+        PASSWORD=$1
+        ;;
     -dbp | --dbpass )
-            shift
-            DBPASS=$1
-            ;;
+        shift
+        DBPASS=$1
+        ;;
     -b |  --base )
-            shift
-            BASE_PATH=$1
-            ;;
+        shift
+        BASE_PATH=$1
+        ;;
     -a |  --appcode )
-            shift
-            APPCODE=$1
-            ;;
+        shift
+        APPCODE=$1
+        ;;
     * )
-            echo "ERROR: Unknown option: $1"
-            exit -1
-            ;;
+        echo "ERROR: Unknown option: $1"
+        exit -1
+        ;;
     esac
     shift
 done
@@ -51,14 +45,13 @@ isUserExits() {
     grep $1 /etc/passwd > /dev/null
     [ $? -eq 0 ] && return $TRUE || return $FALSE
 }
-if(!isUserExits $USER_NAME)
-    then
-        sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
-        echo "$USER_NAME:$PASSWORD"|chpasswd
-        sudo chmod o-r /home/$USER_NAME
-    else
-        echo "Error: Retry!"
-        exit 1
+if(!isUserExits $USER_NAME) then
+    sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
+    echo "$USER_NAME:$PASSWORD"|chpasswd
+    sudo chmod o-r /home/$USER_NAME
+else
+    echo "Error: Retry!"
+    exit 1
 fi
 
 #WELCOME PAGE

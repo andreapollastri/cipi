@@ -7,29 +7,29 @@ exit 1
 fi
 
 while [ -n "$1" ] ; do
-  case $1 in
-  -u | --user )
-      shift
-      USER=$1
-      ;;
-  -p | --pass )
-      shift
-      PASS=$1
-      ;;
-  -dbp | --dbpass )
-      shift
-      DBPASS=$1
-      ;;
-  -dbop | --dboldpass )
-      shift
-      DBOLDPASS=$1
-      ;;
-  * )
-      echo "ERROR: Unknown option: $1"
-      exit -1
-      ;;
-  esac
-  shift
+    case $1 in
+    -u | --user )
+        shift
+        USER=$1
+        ;;
+    -p | --pass )
+        shift
+        PASS=$1
+        ;;
+    -dbp | --dbpass )
+        shift
+        DBPASS=$1
+        ;;
+    -dbop | --dboldpass )
+        shift
+        DBOLDPASS=$1
+        ;;
+    * )
+        echo "ERROR: Unknown option: $1"
+        exit -1
+        ;;
+    esac
+    shift
 done
 
 #CHANGE LINUX USER PASSWORD
