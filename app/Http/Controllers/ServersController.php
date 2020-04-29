@@ -24,7 +24,7 @@ class ServersController extends Controller
             return redirect('/servers');
         }
         $usrchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
-        $pwdchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890-_!?^#()[]{}');
+        $pwdchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890-_+!?');
         Server::create([
             'name'      => $request->name,
             'provider'  => $request->provider,
