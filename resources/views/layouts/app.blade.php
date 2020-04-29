@@ -39,10 +39,10 @@
                     <span>Applications</span>
                 </a>
             </li>
-            <li class="nav-item {{ request()->is('domains') ? 'active' : '' }}">
-                <a class="nav-link" href="/domains">
+            <li class="nav-item {{ request()->is('alises') ? 'active' : '' }}">
+                <a class="nav-link" href="/alises">
                     <i class="fas fa-fw fa-globe"></i>
-                    <span>Domains</span>
+                    <span>Alises</span>
                 </a>
             </li>
             <li class="nav-item {{ request()->is('users') ? 'active' : '' }}">

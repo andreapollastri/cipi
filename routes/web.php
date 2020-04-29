@@ -8,14 +8,14 @@ Route::get('/', function () {
 
 Auth::routes(['register' => false]);
 
-Route::group(['prefix' => 'tools'], function () use ($router) {
+Route::group(['prefix' => 'tools'], function () {
     Route::get('/start/{servercode}','ApisController@start');
     Route::get('/finalize/{servercode}','ApisController@finalize');
     Route::get('/status/{servercode}','ApisController@status');
     Route::get('/ping/{servercode}','ApisController@ping');
 });
 
-Route::group(['prefix' => 'sh'], function () use ($router) {
+Route::group(['prefix' => 'sh'], function () {
     Route::get('/go/{servercode}','ShellController@install');
     Route::get('/ha/{servercode}','ShellController@hostadd');
     Route::get('/hd/{servercode}','ShellController@hostdel');
@@ -30,6 +30,11 @@ Route::group(['prefix' => 'sh'], function () use ($router) {
     Route::get('/nx','ShellController@nginx');
 });
 
-Route::group(['middleware' => 'auth'], function () use ($router) {
+Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', 'DashboardController@index');
+    Route::group(['prefix' => 'settings'], function () {
+        Route::get('/', 'SetupController@index');
+        Route::post('/profile', 'SetupController@profile');
+        Route::post('/password', 'SetupController@password');
+    });
 });
