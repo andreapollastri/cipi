@@ -40,7 +40,7 @@ class RemoteController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $remote = Http::get('http://'.$server->ip.'/ping_'.$server->servercode.'.php');
+        $remote = Http::get('http://'.$server->ip.'/status_'.$server->servercode.'.php');
         return $remote->body();
     }
 

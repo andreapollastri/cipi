@@ -448,7 +448,7 @@ sudo cat > "$PING" <<EOF
     UP!
 EOF
 
-STATUS=/var/www/html/stats_$SERVERCODE.php
+STATUS=/var/www/html/status_$SERVERCODE.php
 sudo touch $STATUS
 sudo cat > "$STATUS" <<EOF
     <?php

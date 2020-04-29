@@ -98,7 +98,7 @@ Dashboard
 @section('js')
 <script>
     function statusdetail(serverid) {
-        $.get("/tools/status/"+serverid, function(status) {
+        $.get("/remote/status/"+serverid, function(status) {
             status = status.split(";");
             $("#cpu-"+serverid).text(status[0]);
             $("#ram-"+serverid).text(status[1]);
@@ -107,7 +107,7 @@ Dashboard
     }
     function statusping(serverid) {
         $.ajax({
-            url: "/tools/ping/"+serverid,
+            url: "/remote/ping/"+serverid,
             type: "GET",
             success: function(ping){
                 if(ping != 200) {
