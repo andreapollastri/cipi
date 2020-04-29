@@ -8,7 +8,7 @@ use Illuminate\Support\Facades\Storage;
 use App\Application;
 use App\Server;
 
-class ScriptsController extends Controller
+class ShellController extends Controller
 {
 
     protected $url;
