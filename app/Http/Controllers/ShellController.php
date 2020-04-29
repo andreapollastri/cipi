@@ -25,7 +25,6 @@ class ShellController extends Controller
         $script = Storage::get('scripts/install.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/'),
-            $server->ip,
             $server->port,
             $server->username,
             $server->password,
