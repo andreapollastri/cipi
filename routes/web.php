@@ -8,11 +8,11 @@ Route::get('/', function () {
 
 Auth::routes(['register' => false]);
 
-Route::group(['prefix' => 'tools'], function () {
-    Route::get('/start/{servercode}','ApisController@start');
-    Route::get('/finalize/{servercode}','ApisController@finalize');
-    Route::get('/status/{servercode}','ApisController@status');
-    Route::get('/ping/{servercode}','ApisController@ping');
+Route::group(['prefix' => 'remote'], function () {
+    Route::get('/start/{servercode}','RemoteController@start');
+    Route::get('/finalize/{servercode}','RemoteController@finalize');
+    Route::get('/status/{servercode}','RemoteController@status');
+    Route::get('/ping/{servercode}','RemoteController@ping');
 });
 
 Route::group(['prefix' => 'sh'], function () {

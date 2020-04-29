@@ -298,7 +298,7 @@ server {
     listen 80 default_server;
     listen [::]:80 default_server;
 
-    root /var/www/html/public;
+    root /var/www/html;
 
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
@@ -442,13 +442,13 @@ clear
 echo "Cipi pages creation..."
 sleep 3s
 
-PING=/var/www/ping_$SERVERCODE.php
+PING=/var/www/html/ping_$SERVERCODE.php
 sudo touch $PING
 sudo cat > "$PING" <<EOF
     UP!
 EOF
 
-STATUS=/var/www/stats_$SERVERCODE.php
+STATUS=/var/www/html/stats_$SERVERCODE.php
 sudo touch $STATUS
 sudo cat > "$STATUS" <<EOF
     <?php
