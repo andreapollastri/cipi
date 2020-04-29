@@ -11,7 +11,8 @@ class RemoteController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $server->update(['complete' => 1]);
+        $server->complete = 1;
+        $server->save();
         return 'OK';
     }
 
@@ -20,7 +21,8 @@ class RemoteController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $server->update(['complete' => 2]);
+        $server->complete = 2;
+        $server->save();
         return 'OK';
     }
 
