@@ -13,37 +13,37 @@ if [ $(id -u) != "0" ]; then
 fi
 
 while [ -n "$1" ] ; do
-            case $1 in
-            -d | --domain )
-                    shift
-                    DOMAIN=$1
-                    ;;
-            -u | --user )
-                    shift
-                    USER_NAME=$1
-                    ;;
-            -p | --pass )
-                    shift
-                    PASSWORD=$1
-                    ;;
-            -dbp | --dbpass )
-                    shift
-                    DBPASS=$1
-                    ;;
-            -b |  --base )
-                    shift
-                    BASE_PATH=$1
-                    ;;
-            -a |  --appcode )
-                    shift
-                    APPCODE=$1
-                    ;;
-            * )
-                    echo "ERROR: Unknown option: $1"
-                    exit -1
-                    ;;
-            esac
+    case $1 in
+    -d | --domain )
             shift
+            DOMAIN=$1
+            ;;
+    -u | --user )
+            shift
+            USER_NAME=$1
+            ;;
+    -p | --pass )
+            shift
+            PASSWORD=$1
+            ;;
+    -dbp | --dbpass )
+            shift
+            DBPASS=$1
+            ;;
+    -b |  --base )
+            shift
+            BASE_PATH=$1
+            ;;
+    -a |  --appcode )
+            shift
+            APPCODE=$1
+            ;;
+    * )
+            echo "ERROR: Unknown option: $1"
+            exit -1
+            ;;
+    esac
+    shift
 done
 
 #CREATE USER
@@ -121,10 +121,6 @@ GRANT USAGE ON *.* TO '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS' WITH MAX_QUE
 GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'localhost';
 EOF
 
-#RESUME
-clear
-echo "###CIPI###Ok"
-
 #GIT
 sudo mkdir /home/$USER_NAME/git/
 sudo cp /cipi/github /home/$USER_NAME/git/deploy
@@ -136,3 +132,7 @@ sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME
+
+#RESUME
+clear
+echo "###CIPI###Ok"

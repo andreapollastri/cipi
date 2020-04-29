@@ -53,13 +53,16 @@ class ScriptsController extends Controller
         if(!$application) {
             return abort(403);
         }
+        if($application->basepath) {
+            $basepath = '/home/'.$application->username.'/web/'.$application->basepath;
+        } else {
+            $basepath = '/home/'.$application->username.'/web';
+        }
         $script = Storage::get('scripts/haget.sh');
-        $script = Str::replaceArray('???', [
-            $application->username,
-            $application->basepath,
-            $application->php,
-            $application->domain
-        ], $script);
+        $script = Str::replace('???USER???', $application->username, $script);
+        $script = Str::replace('???BASE???', $basepath, $script);
+        $script = Str::replace('???PHP???', $application->php, $script);
+        $script = Str::replace('???DOMAIN???', $application->domain, $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
@@ -108,23 +111,26 @@ class ScriptsController extends Controller
         if(!$application) {
             return abort(403);
         }
-        $script = Storage::get('scripts/haget.sh');
-        $script = Str::replaceArray('???', [
-            $application->username,
-            $application->basepath,
-            $application->php,
-            $domain
-        ], $script);
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+        if($application->basepath) {
+            $basepath = '/home/'.$application->username.'/web/'.$application->basepath;
+        } else {
+            $basepath = '/home/'.$application->username.'/web';
+        }
+        $script = Storage::get('scripts/haget.conf');
+        $script = Str::replace('???USER???', $application->username, $script);
+        $script = Str::replace('???BASE???', $basepath, $script);
+        $script = Str::replace('???PHP???', $application->php, $script);
+        $script = Str::replace('???DOMAIN???', $domain, $script);
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+    }
+
+    public function nginx() {
+        $script = Storage::get('scripts/nginx.conf');
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
     public function ssl() {
         $script = Storage::get('scripts/ssl.sh');
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-    }
-
-    public function nginx() {
-        $script = Storage::get('scripts/nginx.sh');
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 

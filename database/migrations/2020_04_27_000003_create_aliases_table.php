@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateAliasTable extends Migration
+class CreateAliasesTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class CreateAliasTable extends Migration
     public function up()
     {
 
-        Schema::create('alias', function (Blueprint $table) {
+        Schema::create('aliases', function (Blueprint $table) {
             $table->id();
             $table->string('domain');
             $table->bigInteger('application_id')->unsigned()->index();
@@ -22,8 +22,8 @@ class CreateAliasTable extends Migration
         });
 
 
-        Schema::table('alias', function (Blueprint $table) {
-            $table->foreign('application_id', 'alias_application_id_foreign')
+        Schema::table('aliases', function (Blueprint $table) {
+            $table->foreign('application_id', 'aliases_application_id_foreign')
                 ->references('id')
                 ->on('applications')
                 ->onDelete('cascade');
@@ -38,6 +38,6 @@ class CreateAliasTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('alias');
+        Schema::dropIfExists('aliases');
     }
 }
