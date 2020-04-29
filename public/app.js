@@ -77,27 +77,3 @@
     //load forms polyfill + iVal feature
     webshim.polyfill('forms');
 })();
-
-//Cipi cloud icon
-function cloudicon(provider) {
-    switch (provider) {
-        case 'aws':
-            return '<i class="fa-fw fab fa-aws"></i><span style="display:none">'+provider+'</span>';
-            break;
-        case 'linode':
-            return '<i class="fa-fw fab fa-linode"></i><span style="display:none">'+provider+'</span>';
-            break;
-        case 'do':
-            return '<i class="fa-fw fab fa-digital-ocean"></i><span style="display:none">'+provider+'</span>';
-            break;
-        case 'google':
-            return '<i class="fa-fw fab fa-google"></i><span style="display:none">'+provider+'</span>';
-            break;
-        case 'azure':
-            return '<i class="fa-fw fab fa-microsoft"></i><span style="display:none">'+provider+'</span>';
-            break;
-        default:
-            return '<span style="font-size:10px;font-weight:400;text-transform:capitalize;">'+provider+'</span>';
-            break;
-    }
-}

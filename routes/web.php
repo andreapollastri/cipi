@@ -32,6 +32,12 @@ Route::group(['prefix' => 'sh'], function () {
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', 'DashboardController@index');
+    Route::get('/servers', 'ServersController@index');
+    Route::group(['prefix' => 'server'], function () {
+        Route::post('/create', 'ServersController@create');
+        Route::post('/destroy', 'ServersController@destroy');
+        Route::post('/changeip', 'ServersController@changeip');
+    });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');
         Route::post('/profile', 'SetupController@profile');

@@ -24,7 +24,7 @@ class SetupController extends Controller
         $user->name  = $request->name;
         $user->email = $request->email;
         $user->save();
-        $request->session()->flash('alert-success','Profile has been updated!');
+        $request->session()->flash('alert-success', 'Profile has been updated!');
         return redirect('/settings');
     }
 
@@ -39,12 +39,12 @@ class SetupController extends Controller
             return redirect('/settings');
         }
         if (!Hash::check($request->current, $user->password)) {
-            $request->session()->flash('alert-error','Wrong password!');
+            $request->session()->flash('alert-error', 'Wrong password!');
             return redirect('/settings');
         }
         $user->password = Hash::make($request->password);
         $user->save();
-        $request->session()->flash('alert-success','Password has been updated!');
+        $request->session()->flash('alert-success', 'Password has been updated!');
         return redirect('/settings');
     }
 
