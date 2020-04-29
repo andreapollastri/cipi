@@ -59,27 +59,28 @@ clear
 echo "Cipi remote configuration..."
 sleep 3s
 
-IP=???
+REMOTE=???
 PORT=???
 USER=???
 PASS=???
 DBPASS=???
 SERVERCODE=???
-REMOTEURL=???
 
 sudo apt-get update
 sudo apt-get -y install curl wget
 
-curl --request GET --url $REMOTEURL/remote/start/$SERVERCODE
+curl --request GET --url $REMOTE/remote/start/$SERVERCODE
 
 sudo mkdir /cipi/
 sudo mkdir /cipi/html/
-wget $REMOTEURL/sh/dy/$SERVERCODE/ -O /cipi/deploy.sh
-wget $REMOTEURL/sh/ha/$SERVERCODE/ -O /cipi/host-add.sh
-wget $REMOTEURL/sh/hm/$SERVERCODE/ -O /cipi/host-mod.sh
-wget $REMOTEURL/sh/hd/$SERVERCODE/ -O /cipi/host-del.sh
-wget $REMOTEURL/sh/pw/$SERVERCODE/ -O /cipi/passwd.sh
-wget $REMOTEURL/sh/st/$SERVERCODE/ -O /cipi/status.sh
+wget $REMOTE/sh/ha/$SERVERCODE/ -O /cipi/host-add.sh
+wget $REMOTE/sh/hd/$SERVERCODE/ -O /cipi/host-del.sh
+wget $REMOTE/sh/aa/$SERVERCODE/ -O /cipi/alias-add.sh
+wget $REMOTE/sh/ad/$SERVERCODE/ -O /cipi/alias-del.sh
+wget $REMOTE/sh/pw/$SERVERCODE/ -O /cipi/passwd.sh
+wget $REMOTE/sh/st/ -O /cipi/status.sh
+wget $REMOTE/sh/dy/ -O /cipi/deploy.sh
+wget $REMOTE/sh/sc/ -O /cipi/host-ssl.sh
 sudo chmod o-r /cipi
 
 clear
@@ -132,9 +133,12 @@ sudo chmod o-r /cipi
 
 sudo dos2unix /cipi/deploy.sh
 sudo dos2unix /cipi/passwd.sh
+sudo dos2unix /cipi/status.sh
+sudo dos2unix /cipi/host-ssl.sh
 sudo dos2unix /cipi/host-add.sh
-sudo dos2unix /cipi/host-mod.sh
 sudo dos2unix /cipi/host-del.sh
+sudo dos2unix /cipi/alias-add.sh
+sudo dos2unix /cipi/alias-del.sh
 
 shopt -s expand_aliases
 alias ll='ls -alF'
@@ -638,7 +642,7 @@ crontab -l | { cat; echo "5 4 * * sun DEBIAN_FRONTEND=noninteractive DEBIAN_PRIO
 
 sudo systemctl restart nginx.service
 
-curl --request GET --url $REMOTEURL/remote/finalize/$SERVERCODE
+curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"
@@ -661,7 +665,7 @@ echo " \_____|_| .__/|_|"
 echo "         | |      "
 echo "         |_|      "
 echo ""
-echo "Use $REMOTEURL to manage your server."
+echo "Use $REMOTE to manage your server."
 echo ""
 echo "The root user SSH login was disabled for security reasons."
 echo "Use this user to login into your server."

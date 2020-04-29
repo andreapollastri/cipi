@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
+REMOTE=???
 DBROOT=???
-IP=???
 
 BASE_PATH=
 USER_SHELL=/bin/bash
@@ -34,11 +34,7 @@ while [ -n "$1" ] ; do
                     shift
                     BASE_PATH=$1
                     ;;
-            -r |  --remote )
-                    shift
-                    REMOTE=$1
-                    ;;
-            -r |  --appcode )
+            -a |  --appcode )
                     shift
                     APPCODE=$1
                     ;;
@@ -65,6 +61,7 @@ if(!isUserExits $USER_NAME)
         exit 1
 fi
 
+#WELCOME PAGE
 if [ $BASE_PATH != "" ]; then
     WELCOME=/home/$USER_NAME/web/$BASE_PATH/index.php
 else
@@ -101,15 +98,17 @@ sudo cat > "$WELCOME" <<EOF
 </html>
 EOF
 
-#VIRTUALHOST
-HOST="'wget -qO- http://$REMOTE/sh/hg/'"
+#VIRTUAL HOST
 NGINX=/etc/nginx/sites-available/$USER_NAME.conf
-sudo touch $NGINX
-sudo cat > "$NGINX" <<EOF
-    $HOST
-EOF
+wget $REMOTE/sh/hg/$APPCODE/ $NGINX
 sudo dos2unix $NGINX
-sudo ln -s $NGINX /etc/nginx/sites-enabled/
+CUSTOM=/home/$USER_NAME/nginx/custom.conf
+wget $REMOTE/sh/nx/ $CUSTOM
+sudo dos2unix $CUSTOM
+sudo chown -R www-data: /home/$USER_NAME
+sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
+mkdir /home/$USER_NAME/nginx
+mkdir /home/$USER_NAME/nginx/log
 sudo systemctl restart nginx.service
 
 #MYSQL
@@ -132,8 +131,8 @@ sudo cp /cipi/github /home/$USER_NAME/git/deploy
 sudo cp /cipi/github.pub /home/$USER_NAME/git/deploy.pub
 sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
 sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
-sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
-sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 
 #PERMISSIONS
-chown -R $USER_NAME:$USER_NAME /home/$USER_NAME
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME

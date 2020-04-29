@@ -4,7 +4,7 @@ namespace App;
 
 use Illuminate\Database\Eloquent\Model;
 
-class Domain extends Model
+class Alias extends Model
 {
 
 	protected $fillable = [

@@ -4,7 +4,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
 
-class CreateDomainsTable extends Migration
+class CreateAliasTable extends Migration
 {
     /**
      * Run the migrations.
@@ -14,7 +14,7 @@ class CreateDomainsTable extends Migration
     public function up()
     {
 
-        Schema::create('domains', function (Blueprint $table) {
+        Schema::create('alias', function (Blueprint $table) {
             $table->id();
             $table->string('domain');
             $table->bigInteger('application_id')->unsigned()->index();
@@ -22,7 +22,7 @@ class CreateDomainsTable extends Migration
         });
 
 
-        Schema::table('domains', function (Blueprint $table) {
+        Schema::table('alias', function (Blueprint $table) {
             $table->foreign('application_id', 'alias_application_id_foreign')
                 ->references('id')
                 ->on('applications')
@@ -38,6 +38,6 @@ class CreateDomainsTable extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('domains');
+        Schema::dropIfExists('alias');
     }
 }
