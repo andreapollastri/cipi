@@ -31,7 +31,7 @@ class ServersController extends Controller
             'location'  => $request->location,
             'ip'        => $request->ip,
             'port'      => 22,
-            'username'  => hash('crc32', substr($usrchars, 0, 64)).uniqid().substr($pwdchars, 0, 11),
+            'username'  => hash('crc32', substr($usrchars, 0, 64)).uniqid().substr($usrchars, 0, 11),
             'password'  => substr($pwdchars, 0, 64),
             'dbroot'    => substr($pwdchars, 0, 48),
             'servercode'=> md5(uniqid().microtime().$request->name),
