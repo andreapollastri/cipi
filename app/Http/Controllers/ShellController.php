@@ -57,12 +57,12 @@ class ShellController extends Controller
         } else {
             $basepath = '/home/'.$application->username.'/web';
         }
-        $script = Storage::get('scripts/haget.sh');
+        $script = Storage::get('scripts/haget.conf');
         $script = Str::replace('???USER???', $application->username, $script);
         $script = Str::replace('???BASE???', $basepath, $script);
         $script = Str::replace('???PHP???', $application->php, $script);
         $script = Str::replace('???DOMAIN???', $application->domain, $script);
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
     public function hostdel($servercode) {
