@@ -93,7 +93,7 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'appcode' => 'required',
         ]);
-        $application = Application::where('appcode', $request->appcode)->get()->first();
+        $application = Application::where('appcode', $request->appcode)->first();
         if(!$application) {
             return abort(403);
         }
@@ -102,7 +102,7 @@ class ApplicationsController extends Controller {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
             return redirect('/applications');
         }
-        $ssh->setTimeout(60);
+        $ssh->setTimeout(360);
         foreach ($application->aliases as $alias) {
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-enabled/'.$alias->domain.'.conf');
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-available/'.$alias->domain.'.conf');
@@ -146,7 +146,7 @@ class ApplicationsController extends Controller {
             return abort(403);
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-ssl.sh -d '.$application->domain);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$application->domain);
         $response = explode('###CIPI###', $response);
         if($response[1] == "Ok\n" && $this->sslcheck($application->domain)) {
             return 'OK';

@@ -80,7 +80,7 @@ wget $REMOTE/sh/ad/$SERVERCODE/ -O /cipi/alias-del.sh
 wget $REMOTE/sh/pw/$SERVERCODE/ -O /cipi/passwd.sh
 wget $REMOTE/sh/st/ -O /cipi/status.sh
 wget $REMOTE/sh/dy/ -O /cipi/deploy.sh
-wget $REMOTE/sh/sc/ -O /cipi/host-ssl.sh
+wget $REMOTE/sh/sc/ -O /cipi/ssl.sh
 sudo chmod o-r /cipi
 
 clear
@@ -134,7 +134,7 @@ sudo chmod o-r /cipi
 sudo dos2unix /cipi/deploy.sh
 sudo dos2unix /cipi/passwd.sh
 sudo dos2unix /cipi/status.sh
-sudo dos2unix /cipi/host-ssl.sh
+sudo dos2unix /cipi/ssl.sh
 sudo dos2unix /cipi/host-add.sh
 sudo dos2unix /cipi/host-del.sh
 sudo dos2unix /cipi/alias-add.sh
