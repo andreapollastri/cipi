@@ -42,16 +42,15 @@ class ApplicationsController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $chars  = str_shuffle('+?!-_#^abcdefghjklmnopqrstuvwxyz+?!-_#^ABCDEFGHJKLMNOPQRSTUVWXYZ+?!-_#^1234567890+?!-_#^');
-        $code   = hash('crc32', $request->domain).uniqid();
-        $pass   = substr($chars, 0, 24);
-        $dbpass = substr($chars, 0, 16);
-        $appcode= sha1(uniqid().microtime().$request->domain);
+        $user   = sha1($request->ip.uniqid().$request->server_id.microtime().$request->domain);
+        $pass   = sha1(uniqid().microtime().$request->domain);
+        $dbpass = sha1(microtime().uniqid().$request->ip);
+        $appcode= sha1(uniqid().$request->domain.microtime().$request->server_id);
         $base   = $request->basepath;
         Application::create([
             'domain'        => $request->domain,
             'server_id'     => $request->server_id,
-            'username'      => $code,
+            'username'      => $user,
             'password'      => $pass,
             'dbpass'        => $dbpass,
             'basepath'      => $base,
@@ -64,7 +63,7 @@ class ApplicationsController extends Controller {
             return redirect('/applications');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$code.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
+        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
             return redirect('/applications');
@@ -75,10 +74,10 @@ class ApplicationsController extends Controller {
             return redirect('/applications');
         }
         $app = [
-            'user'          => $code,
+            'user'          => $user,
             'pass'          => $pass,
-            'dbname'        => $code,
-            'dbuser'        => $code,
+            'dbname'        => $user,
+            'dbuser'        => $user,
             'dbpass'        => $dbpass,
             'path'          => $base,
             'php'           => $request->php,

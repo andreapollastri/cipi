@@ -38,17 +38,16 @@ class ServersController extends Controller
             $request->session()->flash('alert-error', 'You can\'t install a client server into the same Cipi Server!');
             return redirect('/servers');
         }
-        $chars = str_shuffle('+?!-_#^abcdefghjklmnopqrstuvwxyz+?!-_#^ABCDEFGHJKLMNOPQRSTUVWXYZ+?!-_#^1234567890+?!-_#^');
         Server::create([
             'name'      => $request->name,
             'provider'  => $request->provider,
             'location'  => $request->location,
             'ip'        => $request->ip,
             'port'      => 22,
-            'username'  => sha1(substr($chars, 0, 256).$request->ip.uniqid()),
-            'password'  => substr($chars, 0, 32),
-            'dbroot'    => substr($chars, 0, 24),
-            'servercode'=> md5(uniqid().microtime().$request->name),
+            'username'  => 'cipi',
+            'password'  => sha1(uniqid().microtime().$request->ip),
+            'dbroot'    => sha1(microtime().uniqid().$request->name),
+            'servercode'=> sha1(uniqid().$request->name.microtime().$request->ip)
         ]);
         $request->session()->flash('alert-success', 'Server '.$request->name.' has been created!');
         return redirect('/servers');

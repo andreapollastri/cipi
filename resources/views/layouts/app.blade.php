@@ -51,6 +51,11 @@
                     <span>Users</span>
                 </a>
             </li>
+            <li class="nav-item {{ request()->is('databases') ? 'active' : '' }}">
+                <a class="nav-link" href="{{ route('databases') }}">
+                    <i class="fas fa-database fa-fw"></i>
+                    <span>Databases</span></a>
+            </li>
             <li class="nav-item {{ request()->is('settings') ? 'active' : '' }}">
                 <a class="nav-link" href="/settings">
                     <i class="fas fa-fw fa-cog"></i>
