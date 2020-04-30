@@ -19,10 +19,10 @@ Route::group(['prefix' => 'sh'], function () {
     Route::get('/go/{servercode}','ShellController@install');
     Route::get('/ha/{servercode}','ShellController@hostadd');
     Route::get('/hd/{servercode}','ShellController@hostdel');
-    Route::get('/hg/{servercode}','ShellController@hostget');
+    Route::get('/hg/{appcode}','ShellController@hostget');
     Route::get('/aa/{servercode}','ShellController@aliasadd');
     Route::get('/ad/{servercode}','ShellController@aliasdel');
-    Route::get('/ag/{servercode}/{domain}','ShellController@aliasget');
+    Route::get('/ag/{appcode}/{domain}','ShellController@aliasget');
     Route::get('/pw/{servercode}','ShellController@passwd');
     Route::get('/sc','ShellController@ssl');
     Route::get('/st','ShellController@status');
