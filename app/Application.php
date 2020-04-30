@@ -13,8 +13,9 @@ class Application extends Model
         'username',
         'password',
         'dbpass',
+        'domain',
         'basepath',
-        'ngnix',
+        'php',
         'appcode',
     ];
 
@@ -22,8 +23,8 @@ class Application extends Model
         return $this->belongsTo(Server::class, 'server_id');
     }
 
-    public function domains() {
-    	return $this->hasMany(Domain::class);
+    public function aliases() {
+    	return $this->hasMany(Alias::class);
     }
 
 }
