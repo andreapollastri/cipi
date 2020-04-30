@@ -58,10 +58,10 @@ class ShellController extends Controller
             $basepath = '/home/'.$application->username.'/web';
         }
         $script = Storage::get('scripts/haget.conf');
-        $script = Str::replace('???USER???', $application->username, $script);
-        $script = Str::replace('???BASE???', $basepath, $script);
-        $script = Str::replace('???PHP???', $application->php, $script);
-        $script = Str::replace('???DOMAIN???', $application->domain, $script);
+        $script = str_replace('???USER???', $application->username, $script);
+        $script = str_replace('???BASE???', $basepath, $script);
+        $script = str_replace('???PHP???', $application->php, $script);
+        $script = str_replace('???DOMAIN???', $application->domain, $script);
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
@@ -116,10 +116,10 @@ class ShellController extends Controller
             $basepath = '/home/'.$application->username.'/web';
         }
         $script = Storage::get('scripts/haget.conf');
-        $script = Str::replace('???USER???', $application->username, $script);
-        $script = Str::replace('???BASE???', $basepath, $script);
-        $script = Str::replace('???PHP???', $application->php, $script);
-        $script = Str::replace('???DOMAIN???', $domain, $script);
+        $script = str_replace('???USER???', $application->username, $script);
+        $script = str_replace('???BASE???', $basepath, $script);
+        $script = str_replace('???PHP???', $application->php, $script);
+        $script = str_replace('???DOMAIN???', $domain, $script);
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 

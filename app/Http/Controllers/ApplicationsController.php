@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Application;
 use App\Server;
@@ -42,7 +43,7 @@ class ApplicationsController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $user   = sha1($request->ip.uniqid().$request->server_id.microtime().$request->domain);
+        $user   = 'u'.hash('crc32', (Str::uuid()->toString())).rand(1,9);
         $pass   = sha1(uniqid().microtime().$request->domain);
         $dbpass = sha1(microtime().uniqid().$request->ip);
         $appcode= sha1(uniqid().$request->domain.microtime().$request->server_id);
