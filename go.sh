@@ -166,6 +166,7 @@ sudo ufw --force enable
 sudo ufw allow ssh
 sudo ufw allow http
 sudo ufw allow https
+sudo ufw allow "Nginx Full"
 
 echo "Firewall: OK!"
 sleep 3s

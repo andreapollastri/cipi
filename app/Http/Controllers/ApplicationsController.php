@@ -68,7 +68,7 @@ class ApplicationsController extends Controller {
             return redirect('/applications');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
+        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
         $response = explode('###CIPI###', $response);
         if(strpos($response[1], 'Ok') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
@@ -104,12 +104,10 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(60);
         foreach ($application->aliases as $alias) {
-            $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/cron.d/certbot_renew_'.$alias->domain.'.crontab');
-            $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /cipi/certbot_renew_'.$alias->domain.'.sh');
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-enabled/'.$alias->domain.'.conf');
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-available/'.$alias->domain.'.conf');
         }
-        $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-del.sh -u '.$application->username.' -d '.$application->domain);
+        $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-del.sh -u '.$application->username);
         $application->delete();
         $request->session()->flash('alert-success', 'Application has been removed!');
         return redirect('/applications');

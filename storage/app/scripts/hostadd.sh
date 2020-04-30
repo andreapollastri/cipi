@@ -8,10 +8,6 @@ USER_SHELL=/bin/bash
 
 while [ -n "$1" ] ; do
     case $1 in
-    -d | --domain )
-        shift
-        DOMAIN=$1
-        ;;
     -u | --user )
         shift
         USER_NAME=$1

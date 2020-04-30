@@ -9,10 +9,6 @@ while [ -n "$1" ] ; do
         shift
         USER_NAME=$1
         ;;
-    -d | --domain* )
-        shift
-        DOMAIN=$1
-        ;;
     * )
         echo "ERROR: Unknown option: $1"
         exit -1
@@ -29,9 +25,6 @@ sudo userdel -r $USER_NAME
 DROP DATABASE $USER_NAME;
 DROP USER '$USER_NAME'@'localhost';
 EOF
-
-#SSL & CRON
-sudo unlink /etc/cron.d/certbot_renew_$DOMAIN.crontab
 
 #NGINX
 sudo unlink /etc/nginx/sites-enabled/$USER_NAME.conf

@@ -221,6 +221,7 @@ sudo ufw --force enable
 sudo ufw allow ssh
 sudo ufw allow http
 sudo ufw allow https
+sudo ufw allow "Nginx Full"
 
 echo "Firewall: OK!"
 sleep 3s
@@ -639,8 +640,14 @@ sleep 3s
 sudo apt-get upgrade -y
 sudo apt-get update
 
-crontab -l | { cat; echo "5 4 * * sun DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical sudo apt-get -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
-* 3 * * sun apt-get -y update"; } | crontab -
+TASK=/etc/cron.d/cipi.crontab
+touch $TASK
+cat > "$TASK" <<EOF
+0 5 * * 7 certbot renew --nginx --non-interactive --post-hook "systemctl restart nginx.service"
+5 4 * * sun DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical sudo apt-get -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
+* 3 * * sun apt-get -y update"
+EOF
+crontab $TASK
 
 sudo systemctl restart nginx.service
 
