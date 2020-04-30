@@ -52,7 +52,7 @@
                 </a>
             </li>
             <li class="nav-item {{ request()->is('databases') ? 'active' : '' }}">
-                <a class="nav-link" href="{{ route('databases') }}">
+                <a class="nav-link" href="/databases">
                     <i class="fas fa-database fa-fw"></i>
                     <span>Databases</span></a>
             </li>
