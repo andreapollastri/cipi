@@ -12,7 +12,7 @@ Applications
 <div class="row">
     <div class="col">
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#createModal">
-            <i class="fas fa-plus fa-sm text-white-50"></i> CREATE APP
+            <i class="fas fa-plus fa-sm text-white-50"></i> NEW APPLICATION
         </a>
     </div>
 </div>

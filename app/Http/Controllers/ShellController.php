@@ -93,6 +93,9 @@ class ShellController extends Controller
             return abort(403);
         }
         $script = Storage::get('scripts/aliasadd.sh');
+        $script = Str::replaceArray('???', [
+            $this->url->to('/')
+        ], $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 

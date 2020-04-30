@@ -12,7 +12,7 @@ Servers
 <div class="row">
     <div class="col">
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#createModal">
-            <i class="fas fa-plus fa-sm text-white-50"></i> ADD SERVER
+            <i class="fas fa-plus fa-sm text-white-50"></i> NEW SERVER
         </a>
     </div>
 </div>
@@ -317,16 +317,16 @@ Servers
                     <div class=" row">
                         <div class="col-sm-12">
                             <h4>Are you sure to delete server <b><span id="server-name"></span></b>?</h4>
-                            <div style="min-height: 20px;"></div>
+                            <div class="space"></div>
                             <div class="form-group">
                                 <select class="form-control" name="server_id" required id="server-list">
                                     <option value="">Select...</option>
                                     <option value="">YES! I'm sure!!!</option>
                                 </select>
                             </div>
-                            <div style="min-height: 20px;"></div>
-                            <h6 class="text-danger">You can not reverse this action.</h6>
-                            <h6 class="text-danger">You will lose control on this server</h6>
+                            <div class="space"></div>
+                            <h6 class="text-danger">This action is irreversible.</h6>
+                            <h6 class="text-danger">You will lose control on this server.</h6>
                         </div>
                     </div>
                 </div>
