@@ -427,9 +427,9 @@ clear
 echo "User creation..."
 sleep 3s
 
-sudo useradd -m -s /bin/bash cipi
+sudo useradd -m -s /bin/bash $USER
 echo "$USER:$PASS"|chpasswd
-sudo usermod -aG sudo cipi
+sudo usermod -aG sudo $USER
 
 clear
 echo "User creation: OK!"
