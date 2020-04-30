@@ -155,6 +155,25 @@ sleep 3s
 
 
 
+#CIPI USER
+clear
+echo "User creation..."
+sleep 3s
+
+sudo pam-auth-update --package
+sudo mount -o remount,rw /
+sudo chmod 640 /etc/shadow
+sudo useradd -m -s /bin/bash $USER
+echo "$USER:$PASS"|sudo chpasswd
+sudo usermod -aG sudo $USER
+
+clear
+echo "User creation: OK!"
+sleep 3s
+echo -e "\n"
+
+
+
 #REPOSITORIES
 clear
 echo "Repositories update..."
@@ -418,23 +437,6 @@ sudo apt-get -y install nodejs
 clear
 echo "node.js & npm: OK!"
 sleep 3s
-
-
-
-
-#CIPI USER
-clear
-echo "User creation..."
-sleep 3s
-
-sudo useradd -m -s /bin/bash $USER
-echo "$USER:$PASS"|chpasswd
-sudo usermod -aG sudo $USER
-
-clear
-echo "User creation: OK!"
-sleep 3s
-echo -e "\n"
 
 
 #CIPI PAGES

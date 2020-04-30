@@ -42,11 +42,11 @@ class ApplicationsController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $chars  = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
-        $code   = hash('crc32', substr($chars, 0, 64)).uniqid().substr($chars, 0, 3);
-        $pass   = substr($chars, 0, 32);
-        $dbpass = substr($chars, 0, 24);
-        $appcode= sha1(uniqid().microtime().$request->name);
+        $chars  = str_shuffle('+?!-_#^abcdefghjklmnopqrstuvwxyz+?!-_#^ABCDEFGHJKLMNOPQRSTUVWXYZ+?!-_#^1234567890+?!-_#^');
+        $code   = hash('crc32', $request->domain).uniqid();
+        $pass   = substr($chars, 0, 24);
+        $dbpass = substr($chars, 0, 16);
+        $appcode= sha1(uniqid().microtime().$request->domain);
         $base   = $request->basepath;
         Application::create([
             'domain'        => $request->domain,
