@@ -3,7 +3,7 @@
 
 
 @section('title')
-Application {{ $app["domain"] }}
+{{ $app["domain"] }}
 @endsection
 
 

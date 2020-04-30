@@ -3,7 +3,7 @@
 
 
 @section('title')
-Server {{ $server->name }}
+{{ $server->name }}
 @endsection
 
 
