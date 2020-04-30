@@ -129,4 +129,8 @@ class ApplicationsController extends Controller {
         return $pdf->download($application->username.'_'.date('YmdHi').'_'.date('s').'.pdf');
     }
 
+    public function ssl($appcode) {
+        //TO DO
+    }
+
 }

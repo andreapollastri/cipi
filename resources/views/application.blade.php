@@ -54,7 +54,7 @@ Application {{ $app["domain"] }}
 <div class="row">
     <div class="col-sm-12 text-center">
         <div class="space"></div>
-            <p>Your application <i>{{ $app["domain"] }}</i> is ready and is based on PHP <i>{{ $app["php"] }}</i>!</p>
+            <p>Your application <i>{{ $app["domain"] }}</i> is PHP {{ $app["php"] }} based!</p>
         <div class="space"></div>
     </div>
 </div>
