@@ -99,8 +99,8 @@ Aliases
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" id="app-close" data-dismiss="modal">Close</button>
-                    <button type="submit" class="btn btn-primary" id="app-create">Create application</button>
-                    <div id="app-coming" style="display: none;"><i class="fas fa-spinner fa-spin"></i>  <b>Your app is coming... Hold On!!!</b></div>
+                    <button type="submit" class="btn btn-primary" id="app-create">Create alias</button>
+                    <div id="app-coming" style="display: none;"><i class="fas fa-spinner fa-spin"></i>  <b>Your alias is coming... Hold On!!!</b></div>
                 </div>
             </form>
         </div>

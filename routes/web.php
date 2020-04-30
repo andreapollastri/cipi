@@ -52,6 +52,12 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/pdf/{appcode}', 'ApplicationsController@pdf');
         Route::get('/ssl/{appcode}', 'ApplicationsController@ssl');
     });
+    Route::get('/aliases', 'AliasesController@index');
+    Route::group(['prefix' => 'alias'], function () {
+        Route::post('/create', 'AliasesController@create');
+        Route::post('/destroy', 'AliasesController@destroy');
+        Route::get('/ssl/{id}', 'AliasesController@ssl');
+    });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');
         Route::post('/profile', 'SetupController@profile');

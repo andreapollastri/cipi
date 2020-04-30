@@ -2,18 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Application;
-use App\Server;
 use App\Alias;
 use phpseclib\Net\SSH2 as SSH;
-use PDF;
 
-class ApplicationsController extends Controller {
+class AliasesController extends Controller {
 
     public function index() {
-        $aliases = Alias::with('server')->with('application')->get();
+        $aliases = Alias::orderBy('domain')->orderBy('application_id')->with('application')->get();
         return view('aliases', compact('aliases'));
     }
 
@@ -22,11 +19,11 @@ class ApplicationsController extends Controller {
             'domain' => 'required',
             'application_id' => 'required'
         ]);
-        $application = Application::find($request->application_id);
+        $application = Application::where('id', $request->application_id)->with('server')->with('aliases')->first();
         if(!$application) {
             abort(403);
         }
-        if(Application::where('server_id', $request->server)->where('domain', $request->domain)->first()) {
+        if(Application::where('server_id', $application->server_id)->where('domain', $request->domain)->first()) {
             $request->session()->flash('alert-error', 'This domain is already taken on this server');
             return redirect('/aliases');
         }
@@ -37,9 +34,9 @@ class ApplicationsController extends Controller {
                 return redirect('/aliases');
             }
         }
-        $application = Alias::create([
+        Alias::create([
             'domain'        => $request->domain,
-            'application_id'=> $request->server_id
+            'application_id'=> $request->application_id
         ]);
         $ssh = New SSH($application->server->ip, $application->server->port);
         if(!$ssh->login($application->server->username, $application->server->password)) {
@@ -47,11 +44,15 @@ class ApplicationsController extends Controller {
             return redirect('/aliases');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode);
+        if(strpos($response, '###CIPI###') === false) {
+            $request->session()->flash('alert-error', 'There was a problem with server scripts.');
+            return redirect('/aliases');
+        }
         $response = explode('###CIPI###', $response);
         if(strpos($response[1], 'Ok') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
-            return redirect('/applications');
+            return redirect('/aliases');
         }
         $request->session()->flash('alert-success', 'Alias '.$request->domain.' has been added!');
         return redirect('/aliases');
@@ -61,7 +62,7 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'id' => 'required',
         ]);
-        $alias = Alias::find($request->id);
+        $alias = Alias::where('id', $request->id)->with('application')->first();
         if(!$alias) {
             return abort(403);
         }
@@ -85,7 +86,7 @@ class ApplicationsController extends Controller {
     }
 
     public function ssl($id) {
-        $alias = Alias::find($id);
+        $alias = Alias::where('id', $id)->with('application')->first();
         if(!$alias) {
             return abort(403);
         }
@@ -95,6 +96,9 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$alias->application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$alias->domain);
+        if(strpos($response, '###CIPI###') === false) {
+            abort(500);
+        }
         $response = explode('###CIPI###', $response);
         if($response[1] == "Ok\n" && $this->sslcheck($alias->domain)) {
             return 'OK';

@@ -69,6 +69,10 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
+        if(strpos($response, '###CIPI###') === false) {
+            $request->session()->flash('alert-error', 'There was a problem with server scripts.');
+            return redirect('/applications');
+        }
         $response = explode('###CIPI###', $response);
         if(strpos($response[1], 'Ok') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
@@ -147,6 +151,9 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$application->domain);
+        if(strpos($response, '###CIPI###') === false) {
+            abort(500);
+        }
         $response = explode('###CIPI###', $response);
         if($response[1] == "Ok\n" && $this->sslcheck($application->domain)) {
             return 'OK';

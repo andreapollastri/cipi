@@ -12,7 +12,7 @@ Servers
 <div class="row">
     <div class="col">
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#createModal">
-            <i class="fas fa-plus fa-sm text-white-50"></i> CREATE NEW
+            <i class="fas fa-plus fa-sm text-white-50"></i> ADD SERVER
         </a>
     </div>
 </div>
@@ -250,14 +250,14 @@ Servers
                         <code><i>ssh root@<span class="server-ip"></span></i></code>
                     </li>
                     <li>Run this command:<br>
-                        <code><i>wget -O - {{ url('/sh/go') }}/<span class="server-id"></span>/ | bash</i></code>
+                        <code><i>wget -O - {{ url('/sh/go') }}/<span class="server-id"></span> | bash</i></code>
                     </li>
-                    <li>Installation may take up to about 5 minutes minimum which may also depend on your server internet speed</li>
-                    <li>Before install Cipi, please make sure your server is an Ubuntu 18.04 x86_64 LTS (Fresh installation)</li>
-                    <li>Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address</li>
-                    <li>Please open port 22, 80 and 443 to install Cipi</li>
-                    <li>Cipi would not work with NAT VPN and OpenVZ</li>
-                    <li>AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s</li>
+                    <li>Installation may take up to about ten minutes which may also depend on your server internet connection speed</li>
+                    <li>Before install Cipi, please make sure your server is a clean Ubuntu 18.04 x86_64 LTS VPS (Fresh installation)</li>
+                    <li>Hardware Requirement: minium 1GB free HDD / at least 1 core processor / 512MB or more RAM / 1 public IPv4 address</li>
+                    <li>Please open port 22, 80 and 443 of your firewall to install Cipi</li>
+                    <li>Cipi would not work with NAT VPN and OpenVZ or in localhost</li>
+                    <li>AWS disables root login by default. To login as root inside AWS, login as default user and then use command 'sudo -s'</li>
                 </ul>
             </div>
             <div class="modal-footer">
@@ -326,7 +326,7 @@ Servers
                             </div>
                             <div style="min-height: 20px;"></div>
                             <h6 class="text-danger">You can not reverse this action.</h6>
-                            <h6 class="text-danger">You will loose control on this server</h6>
+                            <h6 class="text-danger">You will lose control on this server</h6>
                         </div>
                     </div>
                 </div>

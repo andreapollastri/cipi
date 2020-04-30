@@ -20,7 +20,7 @@ done
 
 #VIRTUAL HOST
 NGINX=/etc/nginx/sites-available/$DOMAIN.conf
-wget $REMOTE/sh/ag/$APPCODE/$DOMAIN $NGINX
+wget $REMOTE/sh/ag/$APPCODE/$DOMAIN -O $NGINX
 sudo dos2unix $NGINX
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$DOMAIN.conf
 sudo systemctl restart nginx.service

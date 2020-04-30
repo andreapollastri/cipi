@@ -39,8 +39,8 @@
                     <span>Applications</span>
                 </a>
             </li>
-            <li class="nav-item {{ request()->is('alises') ? 'active' : '' }}">
-                <a class="nav-link" href="/alises">
+            <li class="nav-item {{ request()->is('aliases') ? 'active' : '' }}">
+                <a class="nav-link" href="/aliases">
                     <i class="fas fa-fw fa-globe"></i>
                     <span>Aliases</span>
                 </a>
