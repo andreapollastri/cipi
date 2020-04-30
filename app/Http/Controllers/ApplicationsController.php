@@ -47,7 +47,7 @@ class ApplicationsController extends Controller {
         $dbpass = sha1(microtime().uniqid().$request->ip);
         $appcode= sha1(uniqid().$request->domain.microtime().$request->server_id);
         $base   = $request->basepath;
-        Application::create([
+        $application = Application::create([
             'domain'        => $request->domain,
             'server_id'     => $request->server_id,
             'username'      => $user,
@@ -57,6 +57,10 @@ class ApplicationsController extends Controller {
             'php'           => $request->php,
             'appcode'       => $appcode,
         ]);
+        if(!$application) {
+            $request->session()->flash('alert-error', 'There was a problem! Retry.');
+            return redirect('/applications');
+        }
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
@@ -64,13 +68,9 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -d '.$request->domain.' -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
-        if(strpos($response, '###CIPI###') === false) {
-            $request->session()->flash('alert-error', 'There was a problem with server connection.');
-            return redirect('/applications');
-        }
         $response = explode('###CIPI###', $response);
         if(strpos($response[1], 'Ok') === false) {
-            $request->session()->flash('alert-error', 'There was a problem with server connection.');
+            $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/applications');
         }
         $app = [

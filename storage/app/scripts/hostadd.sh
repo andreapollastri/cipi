@@ -41,18 +41,9 @@ while [ -n "$1" ] ; do
 done
 
 #CREATE USER
-isUserExits() {
-    grep $1 /etc/passwd > /dev/null
-    [ $? -eq 0 ] && return $TRUE || return $FALSE
-}
-if(!isUserExits $USER_NAME) then
-    sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
-    echo "$USER_NAME:$PASSWORD"|chpasswd
-    sudo chmod o-r /home/$USER_NAME
-else
-    echo "Error: Retry!"
-    exit 1
-fi
+sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
+echo "$USER_NAME:$PASSWORD"|chpasswd
+sudo chmod o-r /home/$USER_NAME
 
 #WELCOME PAGE
 if [ $BASE_PATH != "" ]; then
