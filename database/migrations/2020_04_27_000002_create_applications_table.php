@@ -16,12 +16,11 @@ class CreateApplicationsTable extends Migration
 
         Schema::create('applications', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
+            $table->string('domain');
             $table->bigInteger('server_id')->unsigned()->index();
             $table->string('username');
             $table->string('password');
             $table->string('dbpass');
-            $table->string('domain');
             $table->string('basepath')->nullable()->default('public');
             $table->string('php')->default('7.4');
             $table->string('appcode')->index();

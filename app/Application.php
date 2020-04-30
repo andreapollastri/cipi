@@ -8,7 +8,6 @@ class Application extends Model
 {
 
 	protected $fillable = [
-        'name',
         'server_id',
         'username',
         'password',
@@ -20,7 +19,7 @@ class Application extends Model
     ];
 
     public function server() {
-        return $this->belongsTo(Server::class, 'server_id');
+        return $this->belongsTo(Server::class);
     }
 
     public function aliases() {

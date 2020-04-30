@@ -3,15 +3,22 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use App\Application;
 use App\Server;
 use App\Alias;
-use Helper;
+use phpseclib\Net\SSH2 as SSH;
 use PDF;
 
 class ApplicationsController extends Controller {
 
+    public function index() {
+        $applications = Application::with('server')->with('aliases')->get();
+        return view('applications', compact('applications'));
+    }
+
+    public function api() {
+        return Application::orderBy('domain')->get();
+    }
 
     public function create(Request $request) {
         $this->validate($request, [
@@ -52,7 +59,7 @@ class ApplicationsController extends Controller {
             'php'           => $request->php,
             'appcode'       => $appcode,
         ]);
-        $ssh = New \phpseclib\Net\SSH2($server->ip, $server->port);
+        $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
             return redirect('/applications');
@@ -83,56 +90,34 @@ class ApplicationsController extends Controller {
         return view('application', compact('app','appcode'));
     }
 
-
-
-
-
-
-    public function delete(Request $request)
-    {
-
-        $user = User::find(Auth::id());
-        $profile = $user->name;
-
+    public function destroy(Request $request) {
         $this->validate($request, [
             'appcode' => 'required',
         ]);
-
         $application = Application::where('appcode', $request->appcode)->get()->first();
-
         if(!$application) {
             return abort(403);
         }
-
-        $application->delete();
-
-        $ssh = New \phpseclib\Net\SSH2($application->server->ip, $application->server->port);
+        $ssh = New SSH($application->server->ip, $application->server->port);
         if(!$ssh->login($application->server->username, $application->server->password)) {
-            $messagge = 'There was a problem with server connection. Try later!';
-            return view('generic', compact('profile','messagge'));
+            $request->session()->flash('alert-error', 'There was a problem with server connection.');
+            return redirect('/applications');
         }
-
         $ssh->setTimeout(60);
         foreach ($application->aliases as $alias) {
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/cron.d/certbot_renew_'.$alias->domain.'.crontab');
             $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /cipi/certbot_renew_'.$alias->domain.'.sh');
+            $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-enabled/'.$alias->domain.'.conf');
+            $ssh->exec('echo '.$application->server->password.' | sudo -S unlink /etc/nginx/sites-available/'.$alias->domain.'.conf');
         }
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-del.sh -u '.$application->username);
-
+        $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-del.sh -u '.$application->username.' -d '.$application->domain);
         $application->delete();
-
-        return redirect()->route('applications');
-
+        $request->session()->flash('alert-success', 'Application has been removed!');
+        return redirect('/applications');
     }
 
-
-
-
-
-    public function pdf($applicationcode)
-    {
-
-        $application = Application::where('appcode', $applicationcode)->get()->first();
+    public function pdf($appcode) {
+        $application = Application::where('appcode', $appcode)->first();
         $data = [
             'username'      => $application->username,
             'password'      => $application->password,
@@ -141,14 +126,10 @@ class ApplicationsController extends Controller {
             'port'          => $application->server->port,
             'domain'        => $application->domain,
             'dbpass'        => $application->dbpass,
-            'autoinstall'   => $application->autoinstall,
+            'php'           => $application->php,
         ];
-
         $pdf = PDF::loadView('pdf', $data);
         return $pdf->download($application->username.'_'.date('YmdHi').'_'.date('s').'.pdf');
-
     }
-
-
 
 }

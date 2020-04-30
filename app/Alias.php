@@ -13,7 +13,7 @@ class Alias extends Model
     ];
 
     public function application() {
-        return $this->belongsTo(Application::class, 'server_id');
+        return $this->belongsTo(Application::class);
     }
 
 }

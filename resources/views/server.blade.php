@@ -36,6 +36,7 @@ Server {{ $server->name }}
                         <th class="text-center">Domain</th>
                         <th class="text-center">User</th>
                         <th class="text-center">PHP</th>
+                        <th class="text-center">Aliases</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
@@ -46,6 +47,7 @@ Server {{ $server->name }}
                         <td class="text-center">{{ $application->domain }}</td>
                         <td class="text-center">{{ $application->username }}</td>
                         <td class="text-center">{{ $application->php }}</td>
+                        <td class="text-center">{{ count($application->aliases) }}</td>
                         <td class="text-center">
                             <i class="fab fa-expeditedssl ssl-click" style="margin-right: 18px; cursor: pointer; color: gray;" data-application="{{ $application->appcode }}" id="ssl-{{ $application->appcode }}"></i>
                             <i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-app-code="{{ $application->appcode }}" data-app-domain="{{ $application->domain }}" style="color:gray; cursor: pointer;"></i>

@@ -42,6 +42,15 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/destroy', 'ServersController@destroy');
         Route::post('/changeip', 'ServersController@changeip');
     });
+    Route::group(['prefix' => 'applications'], function () {
+        Route::get('/', 'ApplicationsController@index');
+        Route::get('/api', 'ApplicationsController@api');
+    });
+    Route::group(['prefix' => 'application'], function () {
+        Route::post('/create', 'ApplicationsController@create');
+        Route::post('/destroy', 'ApplicationsController@destroy');
+        Route::post('/pdf/{appcode}', 'ApplicationsController@pdf');
+    });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');
         Route::post('/profile', 'SetupController@profile');
