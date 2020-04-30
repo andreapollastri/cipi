@@ -103,7 +103,7 @@ Server {{ $server->name }}
                         </div>
                     </div>
                     <div class="form-group row">
-                        <label for="autoinstall" class="col-md-4 col-form-label text-md-right">PHP</label>
+                        <label for="php" class="col-md-4 col-form-label text-md-right">PHP</label>
                         <div class="col-md-6">
                             <div class="form-group">
                                 <select class="form-control" name="php">

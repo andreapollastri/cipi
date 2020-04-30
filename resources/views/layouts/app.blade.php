@@ -42,7 +42,7 @@
             <li class="nav-item {{ request()->is('alises') ? 'active' : '' }}">
                 <a class="nav-link" href="/alises">
                     <i class="fas fa-fw fa-globe"></i>
-                    <span>Alises</span>
+                    <span>Aliases</span>
                 </a>
             </li>
             <li class="nav-item {{ request()->is('users') ? 'active' : '' }}">
