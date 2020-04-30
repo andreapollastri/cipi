@@ -45,8 +45,11 @@ sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
 echo "$USER_NAME:$PASSWORD"|chpasswd
 sudo chmod o-r /home/$USER_NAME
 
+mkdir /home/$USER_NAME/web/
+
 #WELCOME PAGE
 if [ $BASE_PATH != "" ]; then
+    mkdir /home/$USER_NAME/web/$BASE_PATH
     WELCOME=/home/$USER_NAME/web/$BASE_PATH/index.php
 else
     WELCOME=/home/$USER_NAME/web/index.php
@@ -84,10 +87,10 @@ EOF
 
 #VIRTUAL HOST
 NGINX=/etc/nginx/sites-available/$USER_NAME.conf
-wget $REMOTE/sh/hg/$APPCODE/ $NGINX
+wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
 sudo dos2unix $NGINX
 CUSTOM=/home/$USER_NAME/nginx/custom.conf
-wget $REMOTE/sh/nx/ $CUSTOM
+wget $REMOTE/sh/nx/ -O $CUSTOM
 sudo dos2unix $CUSTOM
 sudo chown -R www-data: /home/$USER_NAME
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
