@@ -37,10 +37,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/api', 'ServersController@api');
     });
     Route::group(['prefix' => 'server'], function () {
-        Route::get('/{servercode}', 'ServerController@index');
-        Route::post('/create', 'ServerController@create');
-        Route::post('/destroy', 'ServerController@destroy');
-        Route::post('/changeip', 'ServerController@changeip');
+        Route::get('/{servercode}', 'ServersController@get');
+        Route::post('/create', 'ServersController@create');
+        Route::post('/destroy', 'ServersController@destroy');
+        Route::post('/changeip', 'ServersController@changeip');
     });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');
