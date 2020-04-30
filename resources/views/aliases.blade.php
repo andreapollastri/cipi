@@ -156,7 +156,7 @@ Aliases
 <script>
     $.get("/applications/api", function(applications) {
         JSON.parse(JSON.stringify(applications)).forEach(application => {
-            $("#application-list").append("<option value='"+application["id"]+"'>"+application["domain"]+"</option>");
+            $("#application-list").append("<option value='"+application["id"]+"'>"+application["domain"]+" (user "+application["username"]+")</option>");
         });
     });
 </script>

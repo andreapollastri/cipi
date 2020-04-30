@@ -21,7 +21,7 @@ Login
                             <form method="POST" action="{{ route('login') }}" class="user ws-validate">
                                 @csrf
                                 <div class="form-group">
-                                    <input type="email" name="email" class="form-control form-control-user" aria-describedby="emailHelp" placeholder="john.doe@domain.ltd" required autocomplete="email" autofocus>
+                                    <input type="email" name="email" class="form-control form-control-user" aria-describedby="emailHelp" placeholder="john.doe@domain.ltd" required autocomplete="off" autofocus>
                                 </div>
                                 <div class="form-group">
                                     <input type="password" name="password" class="form-control form-control-user" placeholder="password" required autocomplete="current-password">

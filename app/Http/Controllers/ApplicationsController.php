@@ -32,9 +32,9 @@ class ApplicationsController extends Controller {
             $request->session()->flash('alert-error', 'This domain is already taken on this server');
             return redirect('/applications');
         }
-        $aliases = Alias::where('domain', $request->domain)->get();
+        $aliases = Alias::where('domain', $request->domain)->with('application')->get();
         foreach($aliases as $alias) {
-            if($alias->application->sever->id == $request->server_id) {
+            if($alias->application->server_id == $request->server_id) {
                 $request->session()->flash('alert-error', 'This domain is already taken on this server');
                 return redirect('/applications');
             }

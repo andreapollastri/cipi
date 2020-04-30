@@ -22,7 +22,7 @@ Reset Password
                                 @csrf
                                 <input type="hidden" name="token" value="{{ $token }}">
                                 <div class="form-group">
-                                    <input type="email" name="email" class="form-control form-control-user" aria-describedby="emailHelp" placeholder="john.doe@domain.ltd" value="{{ $email ?? old('email') }}" required autocomplete="email" autofocus>
+                                    <input type="email" name="email" class="form-control form-control-user" aria-describedby="emailHelp" placeholder="john.doe@domain.ltd" value="{{ $email ?? old('email') }}" required autocomplete="off" autofocus>
                                 </div>
                                 <div class="form-group">
                                     <input class="form-control form-control-user" type="password" name="password" required autocomplete="new-password">
