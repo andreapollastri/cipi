@@ -129,8 +129,30 @@ class ApplicationsController extends Controller {
         return $pdf->download($application->username.'_'.date('YmdHi').'_'.date('s').'.pdf');
     }
 
+    public static function sslcheck($domain) {
+        $ssl_check = @fsockopen('ssl://' . $domain, 443, $errno, $errstr, 30);
+        $res = !! $ssl_check;
+        if($ssl_check) { fclose($ssl_check); }
+        return $res;
+    }
+
     public function ssl($appcode) {
-        //TO DO
+        $application = Application::where('appcode', $appcode)->first();
+        if(!$application) {
+            return abort(403);
+        }
+        $ssh = New SSH($application->server->ip, $application->server->port);
+        if(!$ssh->login($application->server->username, $application->server->password)) {
+            return abort(403);
+        }
+        $ssh->setTimeout(360);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/host-ssl.sh -d '.$application->domain);
+        $response = explode('###CIPI###', $response);
+        if($response[1] == "Ok\n" && $this->sslcheck($application->domain)) {
+            return 'OK';
+        } else {
+            return abort(500);
+        }
     }
 
 }

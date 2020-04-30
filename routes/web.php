@@ -49,7 +49,8 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'application'], function () {
         Route::post('/create', 'ApplicationsController@create');
         Route::post('/destroy', 'ApplicationsController@destroy');
-        Route::post('/pdf/{appcode}', 'ApplicationsController@pdf');
+        Route::get('/pdf/{appcode}', 'ApplicationsController@pdf');
+        Route::get('/ssl/{appcode}', 'ApplicationsController@ssl');
     });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');

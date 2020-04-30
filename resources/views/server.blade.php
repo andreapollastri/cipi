@@ -187,7 +187,7 @@ function generatessl(application) {
     $("#ssl-"+application).removeClass("fab fa-expeditedssl");
     $("#ssl-"+application).addClass("fas fa-spinner fa-spin");
     $.ajax({
-        url: "application/ssl/"+application,
+        url: "/application/ssl/"+application,
         type: "GET",
         success: function(response){
             if(response != "OK") {
