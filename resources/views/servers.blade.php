@@ -49,7 +49,7 @@ Servers
                                 @elseif ($server->complete == 1)
                                     <button type="button" class="btn btn-warning btn-sm">"{{ $server->name }}" is coming...</button>
                                 @else
-                                    {{ $server->name }}
+                                    <a href="/server/{{ $server->servercode }}">{{ $server->name }}</a>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -194,7 +194,7 @@ Servers
                         <label for="name" class="col-md-4 col-form-label text-md-right">Name*</label>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <input id="name" type="text" class="form-control @error('name') is-invalid @enderror" name="name" required autocomplete="off" autofocus placeholder="E.g. 'Production'">
+                                <input id="name" type="text" class="form-control" name="name" required autocomplete="off" autofocus placeholder="E.g. 'Production'">
                             </div>
                         </div>
                     </div>

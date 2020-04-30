@@ -32,11 +32,15 @@ Route::group(['prefix' => 'sh'], function () {
 
 Route::group(['middleware' => 'auth'], function () {
     Route::get('/dashboard', 'DashboardController@index');
-    Route::get('/servers', 'ServersController@index');
+    Route::group(['prefix' => 'servers'], function () {
+        Route::get('/', 'ServersController@index');
+        Route::get('/api', 'ServersController@api');
+    });
     Route::group(['prefix' => 'server'], function () {
-        Route::post('/create', 'ServersController@create');
-        Route::post('/destroy', 'ServersController@destroy');
-        Route::post('/changeip', 'ServersController@changeip');
+        Route::get('/{servercode}', 'ServerController@index');
+        Route::post('/create', 'ServerController@create');
+        Route::post('/destroy', 'ServerController@destroy');
+        Route::post('/changeip', 'ServerController@changeip');
     });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SetupController@index');
