@@ -8,14 +8,17 @@ use App\Server;
 class ServersController extends Controller
 {
 
+
     public function index() {
         $servers = Server::all();
         return view('servers', compact('servers'));
     }
 
+
     public function api() {
         return Server::orderBy('name')->get();
     }
+
 
     public function get($servercode) {
         $server = Server::where('servercode', $servercode)->with('applications')->first();
@@ -24,6 +27,7 @@ class ServersController extends Controller
         }
         return view('server', compact('server'));
     }
+
 
     public function create(Request $request) {
         $this->validate($request, [
@@ -34,22 +38,22 @@ class ServersController extends Controller
             $request->session()->flash('alert-error', 'You can\'t install a client server into the same Cipi Server!');
             return redirect('/servers');
         }
-        $usrchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
-        $pwdchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890-_+!?');
+        $chars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
         Server::create([
             'name'      => $request->name,
             'provider'  => $request->provider,
             'location'  => $request->location,
             'ip'        => $request->ip,
             'port'      => 22,
-            'username'  => hash('crc32', substr($usrchars, 0, 64)).uniqid().substr($usrchars, 0, 11),
-            'password'  => substr($pwdchars, 0, 64),
-            'dbroot'    => substr($pwdchars, 0, 48),
+            'username'  => hash('crc32', substr($chars, 0, 64)).uniqid().substr($chars, 0, 11),
+            'password'  => substr($chars, 0, 64),
+            'dbroot'    => substr($chars, 0, 48),
             'servercode'=> md5(uniqid().microtime().$request->name),
         ]);
         $request->session()->flash('alert-success', 'Server '.$request->name.' has been created!');
         return redirect('/servers');
     }
+
 
     public function changeip(Request $request) {
         $this->validate($request, [
@@ -67,6 +71,7 @@ class ServersController extends Controller
         return redirect('/servers');
     }
 
+
     public function destroy(Request $request) {
         $this->validate($request, [
             'servercode' => 'required',
@@ -76,5 +81,6 @@ class ServersController extends Controller
         $server->delete();
         return redirect('/servers');
     }
+
 
 }

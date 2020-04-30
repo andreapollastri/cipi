@@ -42,11 +42,10 @@ class ApplicationsController extends Controller {
         if(!$server) {
             return abort(403);
         }
-        $usrchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
-        $pwdchars = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890-_+!?');
-        $code   = hash('crc32', substr($usrchars, 0, 64)).uniqid().substr($usrchars, 0, 3);
-        $pass   = substr($pwdchars, 0, 32);
-        $dbpass = substr($pwdchars, 0, 24);
+        $chars  = str_shuffle('abcdefghjklmnopqrstuvwxyzABCDEFGHJKLMNOPQRSTUVWXYZ1234567890');
+        $code   = hash('crc32', substr($chars, 0, 64)).uniqid().substr($chars, 0, 3);
+        $pass   = substr($chars, 0, 32);
+        $dbpass = substr($chars, 0, 24);
         $appcode= sha1(uniqid().microtime().$request->name);
         $base   = $request->basepath;
         Application::create([
