@@ -45,7 +45,9 @@ sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
 echo "$USER_NAME:$PASSWORD"|chpasswd
 sudo chmod o-r /home/$USER_NAME
 
-mkdir /home/$USER_NAME/web/
+mkdir /home/$USER_NAME/web
+mkdir /home/$USER_NAME/nginx
+mkdir /home/$USER_NAME/nginx/log
 
 #WELCOME PAGE
 if [ $BASE_PATH != "" ]; then
@@ -92,10 +94,8 @@ sudo dos2unix $NGINX
 CUSTOM=/home/$USER_NAME/nginx/custom.conf
 wget $REMOTE/sh/nx/ -O $CUSTOM
 sudo dos2unix $CUSTOM
-sudo chown -R www-data: /home/$USER_NAME
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
-mkdir /home/$USER_NAME/nginx
-mkdir /home/$USER_NAME/nginx/log
+sudo chown -R www-data: /home/$USER_NAME
 sudo systemctl restart nginx.service
 
 #MYSQL
