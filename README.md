@@ -3,7 +3,6 @@
 ## About
 Cipi is a Laravel based cloud server control panel that support Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment fail2ban and with a simple graphical interface to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a sys admin to build websites and PHP applications powered by cloud VPS.
 
-
 ## Features
 - Easy install: Configure a server with a click in less than ten minutes without be an expert.
 
@@ -29,7 +28,7 @@ wget -O - https://cipi.sh/go.sh | bash
 ```
 - But you can also install it via Composer:
 ```
-composer create-project andreapollastri/cipi /your-folder
+composer create-project andreapollastri/cipi:2.0.0beta /your-folder
 ```
 - Or you can also Dockerize it (the best way is using https://github.com/andreapollastri/easydock)
 
@@ -64,10 +63,11 @@ Cipi was developed with:
 You can follow Cipi Project RoadMap here: https://github.com/andreapollastri/cipi/projects/
 
 ## Contributing
-Thank you for considering contributing to the Cipi Project!
+Thank you for considering contributing to the Cipi Project (feedback, code, beers) :)
 
 ## Security Vulnerabilities
-If you discover a security vulnerability within Cipi, please send an e-mail to Andrea Pollastri via mail@andreapollastri.net. All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Cipi, please send an e-mail to andrea@pollastri.net.
+All security vulnerabilities will be promptly addressed.
 
 ## Licence
 Cipi is open-source software licensed under the MIT license.
