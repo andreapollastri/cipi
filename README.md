@@ -6,7 +6,7 @@ Cipi is a Laravel based cloud server control panel that support Digital Ocean, A
 ## Features
 - Easy install: Configure a server with a click in less than ten minutes without be an expert.
 
-- Perfect stack for PHP devs: Cipi comes with nginx, PHP 7.2, 7.3, 7.4, MySql 5.7, Composer, npm and Supervisor. 
+- Perfect stack for PHP devs: Cipi comes with nginx, PHP 7.4 (and older versions for legacy) MySql 5.7, Composer, npm and Supervisor.
 
 - Server Management: Manage one or more servers in as easy as a few clicks.
 
