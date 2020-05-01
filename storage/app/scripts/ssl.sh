@@ -16,10 +16,10 @@ while [ -n "$1" ] ; do
     shift
 done
 
-#SSL CERTIFICATE
+
 sudo certbot --nginx -d $DOMAIN --non-interactive --agree-tos --register-unsafely-without-email
 sudo systemctl restart nginx.service
 
-#RESUME
+
 clear
 echo "###CIPI###Ok"

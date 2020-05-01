@@ -17,16 +17,16 @@ while [ -n "$1" ] ; do
     shift
 done
 
-#LINUX USER
+
 sudo userdel -r $USER_NAME
 
-#MYSQL USER AND DB
+
 /usr/bin/mysql -u root -p$DBROOT <<EOF
 DROP DATABASE $USER_NAME;
 DROP USER '$USER_NAME'@'localhost';
 EOF
 
-#NGINX
+
 sudo unlink /etc/nginx/sites-enabled/$USER_NAME.conf
 sudo unlink /etc/nginx/sites-available/$USER_NAME.conf
 sudo systemctl restart nginx.service

@@ -1,11 +1,5 @@
 #!/bin/bash
 
-# Check if user is root
-if [ $(id -u) != "0" ]; then
-echo "Error: You must be root to run this script."
-exit 1
-fi
-
 while [ -n "$1" ] ; do
     case $1 in
     -u | --user )
@@ -32,12 +26,12 @@ while [ -n "$1" ] ; do
     shift
 done
 
-#CHANGE LINUX USER PASSWORD
+
 echo "$USER:$PASS"| sudo chpasswd
 
-#CHANGE MYSQL PASSWORD
+
 sudo mysqladmin -u $USER -p$DBOLDPASS password $DBPASS
 
-#RESUME
+
 clear
 echo "###CIPI###Ok"

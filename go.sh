@@ -277,6 +277,34 @@ sleep 3s
 
 
 
+
+#LET'S ENCRYPT
+clear
+echo "Let's Encrypt installation..."
+sleep 3s
+
+sudo add-apt-repository -y ppa:certbot/certbot
+sudo apt-get -y install python-certbot-nginx
+
+echo "Let's Encrypt: OK!"
+sleep 3s
+
+
+
+#GIT
+clear
+echo "Git installation..."
+sleep 3s
+
+sudo apt-get -y install git
+sudo ssh-keygen -t rsa -C "git@github.com" -f /cipi/github -q -P ""
+
+clear
+echo "Git installation: OK!"
+sleep 3s
+
+
+
 #COMPOSER
 clear
 echo "Composer installation..."
@@ -290,6 +318,33 @@ sudo composer config --global repo.packagist composer https://packagist.org
 
 clear
 echo "Composer installation: OK!"
+sleep 3s
+
+
+
+#SUPERVISOR
+echo "Supervisor installation..."
+sleep 3s
+
+sudo apt-get -y install supervisor
+service supervisor restart
+
+clear
+echo "Supervisor installation: OK!"
+sleep 3s
+
+
+
+#NODE
+clear
+echo "node.js & npm installation..."
+sleep 3s
+
+curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
+sudo apt-get -y install nodejs
+
+clear
+echo "node.js & npm: OK!"
 sleep 3s
 
 
@@ -339,8 +394,9 @@ sudo chown -R www-data:www-data /var/www/html
 cd /var/www/html && composer dump-autoload
 cd /var/www/html && php artisan cache:clear
 cd /var/www/html && php artisan storage:link
+cd /var/www/html && php artisan config:cache
+cd /var/www/html && php artisan view:cache
 cd /var/www/html && php artisan migrate --seed --force
-
 clear
 echo "Application installation: OK!"
 sleep 3s
@@ -358,6 +414,7 @@ sudo apt-get update
 TASK=/etc/cron.d/cipi.crontab
 touch $TASK
 cat > "$TASK" <<EOF
+0 5 * * 7 certbot renew --nginx --non-interactive --post-hook "systemctl restart nginx.service"
 5 4 * * sun DEBIAN_FRONTEND=noninteractive DEBIAN_PRIORITY=critical sudo apt-get -q -y -o "Dpkg::Options::=--force-confdef" -o "Dpkg::Options::=--force-confold" dist-upgrade
 * 3 * * sun apt-get -y update"
 EOF

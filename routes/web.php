@@ -58,9 +58,13 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/destroy', 'AliasesController@destroy');
         Route::get('/ssl/{id}', 'AliasesController@ssl');
     });
+    Route::group(['prefix' => 'users'], function () {
+        Route::get('/', 'UsersController@index');
+        Route::post('/reset', 'UsersController@reset');
+    });
     Route::group(['prefix' => 'settings'], function () {
-        Route::get('/', 'SetupController@index');
-        Route::post('/profile', 'SetupController@profile');
-        Route::post('/password', 'SetupController@password');
+        Route::get('/', 'SettingsController@index');
+        Route::post('/profile', 'SettingsController@profile');
+        Route::post('/password', 'SettingsController@password');
     });
 });

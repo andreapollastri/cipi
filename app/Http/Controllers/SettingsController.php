@@ -7,7 +7,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 
-class SetupController extends Controller
+class SettingsController extends Controller
 {
 
     public function index() {
