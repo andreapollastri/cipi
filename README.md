@@ -26,6 +26,7 @@ Cipi Documentation is available at: [https://cipi.sh/docs/](https://cipi.sh/docs
 ```
 wget -O - https://cipi.sh/go.sh | bash
 ```
+NOTE: it doesn't work with IPv6... use only IPv4 and no localhost, VPS has to be online to work remotely with its clients servers.
 - But you can also install it via Composer:
 ```
 composer create-project andreapollastri/cipi:2.0.0beta /your-folder

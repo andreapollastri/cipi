@@ -178,7 +178,14 @@ clear
 echo "nginx installation..."
 sleep 3s
 
+cat <<EOF >> /etc/apt/sources.list.d/nginx.list
+deb http://nginx.org/packages/ubuntu/ codename nginx
+deb-src http://nginx.org/packages/ubuntu/ codename nginx
+EOF
+curl -L https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+sudo apt-get update
 sudo apt-get -y install nginx
+sudo apt-get -y upgrade
 sudo systemctl start nginx.service
 sudo systemctl enable nginx.service
 
@@ -323,6 +330,7 @@ sleep 3s
 
 
 #SUPERVISOR
+clear
 echo "Supervisor installation..."
 sleep 3s
 
@@ -378,7 +386,7 @@ sudo rm -rf /var/www/html
 sudo mkdir /var/www/html
 echo "Downloading Cipi from packagist.org... It may takes some time! Hold on :)"
 sleep 1s
-composer create-project andreapollastri/cipi:2.0.2beta /var/www/html
+composer create-project andreapollastri/cipi:dev-develop /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
 cd /var/www/html && php artisan key:generate

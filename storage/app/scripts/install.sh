@@ -233,7 +233,14 @@ clear
 echo "nginix installation..."
 sleep 3s
 
+cat <<EOF >> /etc/apt/sources.list.d/nginx.list
+deb http://nginx.org/packages/ubuntu/ codename nginx
+deb-src http://nginx.org/packages/ubuntu/ codename nginx
+EOF
+curl -L https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
+sudo apt-get update
 sudo apt-get -y install nginx
+sudo apt-get -y upgrade
 sudo systemctl start nginx.service
 sudo systemctl enable nginx.service
 
