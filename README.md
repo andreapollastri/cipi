@@ -66,8 +66,7 @@ You can follow Cipi Project RoadMap here: https://github.com/andreapollastri/cip
 Thank you for considering contributing to the Cipi Project (feedback, code, beers) :)
 
 ## Security Vulnerabilities
-If you discover a security vulnerability within Cipi, please send an e-mail to andrea@pollastri.net.
-All security vulnerabilities will be promptly addressed.
+If you discover a security vulnerability within Cipi, please send an e-mail to andrea@pollastri.dev. All security vulnerabilities will be promptly addressed.
 
 ## Licence
 Cipi is open-source software licensed under the MIT license.
