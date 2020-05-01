@@ -7,6 +7,7 @@ if [ "$ID" = "ubuntu" ]; then
         18.04)
             clear
             wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/develop/setup/18.sh | bash
+            break
             ;;
         20.04)
             clear
@@ -17,6 +18,7 @@ if [ "$ID" = "ubuntu" ]; then
             clear
             echo "You have to run this script on Ubuntu 18.04 LTS or Ubuntu 20.04 LTS"
             exit 1;
+            break
             ;;
     esac
 else

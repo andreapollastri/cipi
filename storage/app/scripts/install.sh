@@ -18,18 +18,31 @@ sleep 3s
 #OS Check
 ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
-if [ "$ID:$VERSION" = "ubuntu:18.04" ]; then
-
-    clear
-    echo "Running on Ubuntu 18.04 LTS :)"
-    sleep 2s
-
+if [ "$ID" = "ubuntu" ]; then
+    case $VERSION in
+        18.04)
+            clear
+            echo "Running on Ubuntu 18.04 LTS ;"
+            sleep 2s
+            break
+            ;;
+        20.04)
+            clear
+            echo "Running on Ubuntu 20.04 LTS ;"
+            sleep 2s
+            break
+            ;;
+        *)
+            clear
+            echo "You have to run this script on Ubuntu 18.04 LTS or Ubuntu 20.04 LTS"
+            exit 1;
+            break
+            ;;
+    esac
 else
-
     clear
-    echo -e "You have to run this script on Ubuntu 18.04 LTS"
+    echo "You have to run this script on Ubuntu 18.04 LTS or Ubuntu 20.04 LTS"
     exit 1
-
 fi
 
 
@@ -96,7 +109,7 @@ sleep 3s
 
 sudo apt-get update
 
-sudo apt-get -y install nano rpl zip unzip openssl dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
+sudo apt-get -y install nano rpl zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
@@ -250,25 +263,6 @@ sleep 3s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
-sudo apt-get -y install php5.6-fpm
-sudo apt-get -y install php5.6-common
-sudo apt-get -y install php5.6-mbstring
-sudo apt-get -y install php5.6-mysql
-sudo apt-get -y install php5.6-xml
-sudo apt-get -y install php5.6-zip
-sudo apt-get -y install php5.6-bcmath
-sudo apt-get -y install php5.6-imagick
-PHPINI56=/etc/php/5.6/fpm/conf.d/cipi.ini
-sudo touch $PHPINI56
-sudo cat > "$PHPINI56" <<EOF
-memory_limit = 256M
-upload_max_filesize = 256M
-post_max_size = 256M
-max_execution_time = 180
-max_input_time = 180
-EOF
-sudo service php5.6-fpm restart
-
 sudo apt-get -y install php7.2-fpm
 sudo apt-get -y install php7.2-common
 sudo apt-get -y install php7.2-mbstring
@@ -373,17 +367,49 @@ sudo systemctl restart nginx.service
 echo "PHP: OK!"
 sleep 3s
 
-
-
 #MYSQL
 clear
 echo "Mysql installation..."
 sleep 3s
 
+if [ "$VERSION" = "20.04" ]; then
+
+sudo apt-get install -y mysql-server
+SECURE_MYSQL=$(expect -c "
+set timeout 10
+spawn mysql_secure_installation
+expect \"Press y|Y for Yes, any other key for No:\"
+send \"n\r\"
+expect \"New password:\"
+send \"$DBPASS\r\"
+expect \"Re-enter new password:\"
+send \"$DBPASS\r\"
+expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No)\"
+send \"y\r\"
+expect \"Disallow root login remotely? (Press y|Y for Yes, any other key for No)\"
+send \"n\r\"
+expect \"Remove test database and access to it? (Press y|Y for Yes, any other key for No)\"
+send \"y\r\"
+expect \"Reload privilege tables now? (Press y|Y for Yes, any other key for No) \"
+send \"y\r\"
+expect eof
+")
+echo "$SECURE_MYSQL"
+
+/usr/bin/mysql -u root -p$DBPASS <<EOF
+use mysql;
+CREATE USER 'cipi'@'%' IDENTIFIED BY '$DBPASS';
+GRANT ALL PRIVILEGES ON *.* TO 'cipi'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
+
+else
+
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password $DBPASS"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DBPASS"
 sudo apt-get -y install mysql-server mysql-client
 
+fi
 echo "Mysql: OK!"
 sleep 3s
 
@@ -451,8 +477,27 @@ clear
 echo "node.js & npm installation..."
 sleep 3s
 
+if [ "$VERSION" = "20.04" ]; then
+
+curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+NODE=/etc/apt/sources.list.d/nodesource.list
+sudo unlink NODE
+sudo touch $NODE
+sudo cat > "$NODE" <<EOF
+deb https://deb.nodesource.com/node_14.x focal main
+deb-src https://deb.nodesource.com/node_14.x focal main
+EOF
+sudo apt-get update
+sudo apt -y install nodejs
+sudo apt -y install npm
+
+else
+
 curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
 sudo apt-get -y install nodejs
+
+fi
 
 clear
 echo "node.js & npm: OK!"
