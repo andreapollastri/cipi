@@ -1,16 +1,16 @@
 # Cipi (version 2 - BETA)
 
 ## About
-Cipi is a Laravel based cloud server control panel that support Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment fail2ban and with a simple graphical interface to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a sys admin to build websites and PHP applications powered by cloud VPS.
+Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, fail2ban and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to build websites and PHP applications powered by cloud VPS.
 
 ## Features
-- Easy install: Configure a server with a click in less than ten minutes without be an expert.
+- Easy install: setup one or more servers with a click in less than ten minutes without be a Linux expert.
 
-- Perfect stack for PHP devs: Cipi comes with nginx, PHP 7.4 (and older versions for legacy) MySql 5.7, Composer, npm and Supervisor.
+- Server Management: manage one or more servers in as easy as a few clicks without be a LEMP Guru.
 
-- Server Management: Manage one or more servers in as easy as a few clicks.
+- Perfect stack for PHP devs: Cipi comes with nginx, PHP, MySql, Composer, npm and Supervisor.
 
-- Multi-PHP: Run simultaneous PHP-FPM versions at your ease & convenience.
+- Multi-PHP: Run simultaneous PHP versions at your ease & convenience (included legacy projects).
 
 - Secure: no unsed open ports, unprivileged PHP, isolated system users and filesystem, only SFTP (no insecure FTP), Free SSL certificates everywhere.
 
@@ -59,6 +59,14 @@ Cipi was developed with:
 - Laravel 7 (https://laravel.com/)
 - SB Admin 2 (https://startbootstrap.com/themes/sb-admin-2/)
 - Datatable JS (https://datatables.net/)
+
+## Cipi LEMP environment
+- PHP-FPM: 7.4, 7.3, 7.2 (legacy), 5.6 (legacy)
+- MySql: 5.7
+- nginx: 1.14
+- node: 12
+- npm: 6
+- Composer: 1.10
 
 ## Roadmap
 You can follow Cipi Project RoadMap here: https://github.com/andreapollastri/cipi/projects/
