@@ -18,16 +18,16 @@ sleep 3s
 #OS Check
 ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
-if [ "$ID:$VERSION" = "ubuntu:18.04" ]; then
+if [ "$ID:$VERSION" = "ubuntu:20.04" ]; then
 
     clear
-    echo "Running on Ubuntu 18.04 LTS :)"
+    echo "Running on Ubuntu 20.04 LTS :)"
     sleep 2s
 
 else
 
     clear
-    echo -e "You have to run this script on Ubuntu 18.04 LTS"
+    echo -e "You have to run this script on Ubuntu 20.04 LTS"
     exit 1
 
 fi
@@ -65,7 +65,7 @@ sleep 3s
 
 sudo apt-get update
 
-sudo apt-get -y install rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
+sudo apt-get -y install rpl zip unzip openssl curl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
@@ -268,9 +268,34 @@ clear
 echo "Mysql installation..."
 sleep 3s
 
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password $DBPASS"
-sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DBPASS"
-sudo apt-get -y install mysql-server mysql-client
+sudo apt-get install -y mysql-server
+SECURE_MYSQL=$(expect -c "
+set timeout 10
+spawn mysql_secure_installation
+expect \"Press y|Y for Yes, any other key for No:\"
+send \"n\r\"
+expect \"New password:\"
+send \"$DBPASS\r\"
+expect \"Re-enter new password:\"
+send \"$DBPASS\r\"
+expect \"Remove anonymous users? (Press y|Y for Yes, any other key for No)\"
+send \"y\r\"
+expect \"Disallow root login remotely? (Press y|Y for Yes, any other key for No)\"
+send \"n\r\"
+expect \"Remove test database and access to it? (Press y|Y for Yes, any other key for No)\"
+send \"y\r\"
+expect \"Reload privilege tables now? (Press y|Y for Yes, any other key for No) \"
+send \"y\r\"
+expect eof
+")
+echo "$SECURE_MYSQL"
+
+/usr/bin/mysql -u root -p$DBPASS <<EOF
+use mysql;
+CREATE USER 'cipi'@'%' IDENTIFIED BY '$DBPASS';
+GRANT ALL PRIVILEGES ON *.* TO 'cipi'@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
 
 echo "Mysql: OK!"
 sleep 3s
@@ -341,8 +366,18 @@ clear
 echo "node.js & npm installation..."
 sleep 3s
 
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-sudo apt-get -y install nodejs
+curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
+curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
+NODE=/etc/apt/sources.list.d/nodesource.list
+sudo unlink NODE
+sudo touch $NODE
+sudo cat > "$NODE" <<EOF
+deb https://deb.nodesource.com/node_14.x focal main
+deb-src https://deb.nodesource.com/node_14.x focal main
+EOF
+sudo apt-get update
+sudo apt -y install nodejs
+sudo apt -y install npm
 
 clear
 echo "node.js & npm: OK!"
@@ -379,11 +414,11 @@ sudo rm -rf /var/www/html
 sudo mkdir /var/www/html
 echo "Downloading Cipi from packagist.org... It may takes some time! Hold on :)"
 sleep 1s
-composer create-project andreapollastri/cipi:2.0.3beta /var/www/html
+composer create-project andreapollastri/cipi:dev-develop /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
 cd /var/www/html && php artisan key:generate
-sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=root" /var/www/html/.env
+sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=cipi" /var/www/html/.env
 sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /var/www/html/.env
 sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=cipi" /var/www/html/.env
 sudo rpl -i -w "APP_URL=http://localhost" "APP_URL=http://$IP" /var/www/html/.env
