@@ -3,7 +3,8 @@
 ## About
 Cipi is a Laravel based cloud server control panel that support Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment fail2ban and with a simple graphical interface to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a sys admin to build websites and PHP applications powered by cloud VPS.
 
-## Features
+
+## Features
 - Easy install: Configure a server with a click in less than ten minutes without be an expert.
 
 - Perfect stack for PHP devs: Cipi comes with nginx, PHP 7.2, 7.3, 7.4, MySql 5.7, Composer, npm and Supervisor. 
@@ -26,11 +27,11 @@ Cipi Documentation is available at: [https://cipi.sh/docs/](https://cipi.sh/docs
 ```
 wget -O - https://cipi.sh/go.sh | bash
 ```
-- You can install it also via Composer:
+- But you can also install it via Composer:
 ```
 composer create-project andreapollastri/cipi /your-folder
 ```
-- Or you can also use Docker (the best way is using https://github.com/andreapollastri/easydock)
+- Or you can also Dockerize it (the best way is using https://github.com/andreapollastri/easydock)
 
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
@@ -40,9 +41,9 @@ Before you can use Cipi, please make sure your server fulfils these requirements
 
 Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address (NAT VPS is not supported) / External firewall / For VPS providers such as AWS, those providers already include an external firewall for your VPS. Please open port 22, 80 and 443 to install Cipi.
 
-Installation may take up to about 5 minutes minimum which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
+Installation may take up to about ten minutes which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
 
-To manage correctlye remote servers Cipi has to be on a public IP address... do not use it in localhost!
+To correctly manage remote servers Cipi has to be on a public IP address... do not use it in localhost!
 
 #### Installation notes on AWS
 AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
