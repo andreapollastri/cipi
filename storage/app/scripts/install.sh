@@ -234,8 +234,8 @@ echo "nginix installation..."
 sleep 3s
 
 cat <<EOF >> /etc/apt/sources.list.d/nginx.list
-deb http://nginx.org/packages/ubuntu/ codename nginx
-deb-src http://nginx.org/packages/ubuntu/ codename nginx
+deb [arch=amd64] http://nginx.org/packages/mainline/ubuntu/ bionic nginx
+deb-src http://nginx.org/packages/mainline/ubuntu/ bionic nginx
 EOF
 curl -L https://nginx.org/keys/nginx_signing.key | sudo apt-key add -
 sudo apt-get update
