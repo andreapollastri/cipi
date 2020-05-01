@@ -378,7 +378,7 @@ sudo rm -rf /var/www/html
 sudo mkdir /var/www/html
 echo "Downloading Cipi from packagist.org... It may takes some time! Hold on :)"
 sleep 1s
-composer create-project andreapollastri/cipi:2.0.0beta /var/www/html
+composer create-project andreapollastri/cipi:2.0.1beta /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
 cd /var/www/html && php artisan key:generate
