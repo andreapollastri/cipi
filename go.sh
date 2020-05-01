@@ -195,15 +195,15 @@ sleep 3s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
-sudo apt-get -y install php7.4-fpm
-sudo apt-get -y install php7.4-common
-sudo apt-get -y install php7.4-mbstring
-sudo apt-get -y install php7.4-mysql
-sudo apt-get -y install php7.4-xml
-sudo apt-get -y install php7.4-zip
-sudo apt-get -y install php7.4-bcmath
-sudo apt-get -y install php7.4-imagick
-PHPINI74=/etc/php/7.4/fpm/conf.d/cipi.ini
+sudo apt-get -y install php5.6-fpm
+sudo apt-get -y install php5.6-common
+sudo apt-get -y install php5.6-mbstring
+sudo apt-get -y install php5.6-mysql
+sudo apt-get -y install php5.6-xml
+sudo apt-get -y install php5.6-zip
+sudo apt-get -y install php5.6-bcmath
+sudo apt-get -y install php5.6-imagick
+PHPINI74=/etc/php/5.6/fpm/conf.d/cipi.ini
 sudo touch $PHPINI74
 sudo cat > "$PHPINI74" <<EOF
 memory_limit = 256M
@@ -212,9 +212,9 @@ post_max_size = 256M
 max_execution_time = 180
 max_input_time = 180
 EOF
-sudo service php7.4-fpm restart
+sudo service php5.6-fpm restart
 
-sudo update-alternatives --set php /usr/bin/php7.4
+sudo update-alternatives --set php /usr/bin/php5.6
 
 NGINX=/etc/nginx/sites-available/default
 sudo unlink NGINX
@@ -248,7 +248,7 @@ server {
 
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php7.4-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php5.6-fpm.sock;
     }
 
     location ~ /\.(?!well-known).* {
