@@ -250,6 +250,25 @@ sleep 3s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
+sudo apt-get -y install php5.6-fpm
+sudo apt-get -y install php5.6-common
+sudo apt-get -y install php5.6-mbstring
+sudo apt-get -y install php5.6-mysql
+sudo apt-get -y install php5.6-xml
+sudo apt-get -y install php5.6-zip
+sudo apt-get -y install php5.6-bcmath
+sudo apt-get -y install php5.6-imagick
+PHPINI56=/etc/php/5.6/fpm/conf.d/cipi.ini
+sudo touch $PHPINI56
+sudo cat > "$PHPINI56" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php5.6-fpm restart
+
 sudo apt-get -y install php7.2-fpm
 sudo apt-get -y install php7.2-common
 sudo apt-get -y install php7.2-mbstring

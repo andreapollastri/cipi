@@ -113,7 +113,8 @@ Applications
                                 <select class="form-control" name="php">
                                     <option value="7.4" selected>7.4</option>
                                     <option value="7.3">7.3</option>
-                                    <option value="7.2">7.2</option>
+                                    <option value="7.2">7.2 (legacy)</option>
+                                    <option value="5.6">5.6 (legacy)</option>
                                 </select>
                             </div>
                         </div>
