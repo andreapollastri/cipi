@@ -378,7 +378,7 @@ sudo rm -rf /var/www/html
 sudo mkdir /var/www/html
 echo "Downloading Cipi from packagist.org... It may takes some time! Hold on :)"
 sleep 1s
-composer create-project andreapollastri/cipi:dev-develop /var/www/html
+composer create-project andreapollastri/cipi /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
 cd /var/www/html && php artisan key:generate
@@ -448,11 +448,9 @@ echo "USERNAME: admin@admin.com"
 echo "PASSWORD: 12345678"
 echo "After login, you can update your data into 'settings' section"
 echo ""
-echo "The root user SSH login was disabled for security reasons."
-echo "Use 'cipi' (sudo) user to login into your server:"
-echo "SSH username: cipi"
-echo "SSH password: $PASS"
-echo "Database 'root' password: $DBPASS"
+echo "Cipi server username: cipi"
+echo "Cipi server password: $PASS"
+echo "Cipi server db root pass: $DBPASS"
 echo ""
 echo "Enjoy Cipi :)"
 echo ""

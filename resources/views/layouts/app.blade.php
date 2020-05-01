@@ -51,16 +51,16 @@
                     <span>Users</span>
                 </a>
             </li>
-            <li class="nav-item {{ request()->is('databases') ? 'active' : '' }}">
-                <a class="nav-link" href="/databases">
-                    <i class="fas fa-database fa-fw"></i>
-                    <span>Databases</span></a>
-            </li>
             <li class="nav-item {{ request()->is('settings') ? 'active' : '' }}">
                 <a class="nav-link" href="/settings">
                     <i class="fas fa-fw fa-cog"></i>
                     <span>Settings</span>
                 </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" target="_blank" href="https://cipi.sh/docs/">
+                    <i class="fas fa-fw fa-book"></i>
+                    <span>Documentation</span></a>
             </li>
             <li class="nav-item">
                 <a class="nav-link" href="/logout" onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
