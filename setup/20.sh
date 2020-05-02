@@ -416,6 +416,7 @@ sleep 1s
 composer create-project andreapollastri/cipi /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
+sleep 2s
 cd /var/www/html && php artisan key:generate
 sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=cipi" /var/www/html/.env
 sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /var/www/html/.env
