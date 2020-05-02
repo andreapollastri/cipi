@@ -36,7 +36,7 @@ class ApplicationsController extends Controller {
                 return redirect('/applications');
             }
         }
-        $server = Server::where('id', $request->server_id)->where('complete', 2)->firstOrFail();
+        $server = Server::where('id', $request->server_id)->where('status', 2)->firstOrFail();
         $user   = 'u'.hash('crc32', (Str::uuid()->toString())).rand(1,9);
         $pass   = sha1(uniqid().microtime().$request->domain);
         $dbpass = sha1(microtime().uniqid().$request->ip);

@@ -23,7 +23,7 @@ class CreateServersTable extends Migration
             $table->string('username');
             $table->string('password');
             $table->string('dbroot');
-            $table->integer('complete')->default('0');
+            $table->integer('status')->default('0');
             $table->string('servercode')->index();
             $table->timestamps();
         });

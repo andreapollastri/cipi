@@ -44,9 +44,9 @@ Servers
                     @foreach ($servers as $server)
                         <tr>
                             <td class="text-center">
-                                @if ($server->complete == 0)
+                                @if ($server->status == 0)
                                     <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#setupModal" data-servercode="{{ $server->servercode }}" data-serverip="{{ $server->ip }}">"{{ $server->name }}" has to be installed</button>
-                                @elseif ($server->complete == 1)
+                                @elseif ($server->status == 1)
                                     <button type="button" class="btn btn-warning btn-sm">"{{ $server->name }}" is coming...</button>
                                 @else
                                     <a href="/server/{{ $server->servercode }}">{{ $server->name }}</a>

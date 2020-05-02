@@ -18,7 +18,7 @@ class ShellController extends Controller
     }
 
     public function install($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 0)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 0)->firstOrFail();
         $script = Storage::get('scripts/install.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/'),
@@ -32,7 +32,7 @@ class ShellController extends Controller
     }
 
     public function hostadd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/hostadd.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/'),
@@ -57,7 +57,7 @@ class ShellController extends Controller
     }
 
     public function hostdel($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/hostdel.sh');
         $script = Str::replaceArray('???', [
             $server->dbroot,
@@ -66,13 +66,13 @@ class ShellController extends Controller
     }
 
     public function passwd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/passwd.sh');
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
     public function aliasadd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasadd.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/')
@@ -81,7 +81,7 @@ class ShellController extends Controller
     }
 
     public function aliasdel($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasdel.sh');
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }

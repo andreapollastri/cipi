@@ -6,7 +6,7 @@ use App\Server;
 class DashboardController extends Controller {
 
     public function index() {
-        $servers = Server::where('complete', 2)->orderBy('name')->get();
+        $servers = Server::where('status', 2)->orderBy('name')->get();
         return view('dashboard', compact('servers'));
     }
 

@@ -16,7 +16,7 @@ class ServersController extends Controller
 
 
     public function api() {
-        return Server::orderBy('name')->orderBy('ip')->where('complete', 2)->get();
+        return Server::orderBy('name')->orderBy('ip')->where('status', 2)->get();
     }
 
 
