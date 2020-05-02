@@ -245,7 +245,7 @@ Servers
             <div class="modal-body">
                 To install your server:<br>
                 <ul>
-                    <li>Use a clean VPS with Ubuntu Server 18.04</li>
+                    <li>Use a clean VPS with Ubuntu Server 18.04 LTS or 20.04 LTS</li>
                     <li>Login into your VPS via SSH (as root):<br>
                         <code><i>ssh root@<span class="server-ip"></span></i></code>
                     </li>
@@ -253,7 +253,7 @@ Servers
                         <code><i>wget -O - {{ url('/sh/go') }}/<span class="server-id"></span> | bash</i></code>
                     </li>
                     <li>Installation may take up to about ten minutes which may also depend on your server internet connection speed</li>
-                    <li>Before install Cipi, please make sure your server is a clean Ubuntu 18.04 x86_64 LTS VPS (Fresh installation)</li>
+                    <li>Before install Cipi, please make sure your server is a clean Ubuntu 18.04 or 20.04 x86_64 LTS VPS (Fresh installation)</li>
                     <li>Hardware Requirement: minium 1GB free HDD / at least 1 core processor / 512MB or more RAM / 1 public IPv4 address</li>
                     <li>Please open port 22, 80 and 443 of your firewall to install Cipi</li>
                     <li>Cipi would not work with NAT VPN and OpenVZ or in localhost</li>
