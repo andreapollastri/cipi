@@ -64,7 +64,7 @@ Route::group(['middleware' => 'auth'], function () {
     });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SettingsController@index');
-        Route::post('/profile', 'SettingsController@profile');
-        Route::post('/password', 'SettingsController@password');
+        Route::post('/profile', 'SettingsController@updateProfile');
+        Route::post('/password', 'SettingsController@updatePassword');
     });
 });
