@@ -81,10 +81,12 @@ Thank you for considering contributing to the Cipi Project (feedbacks, ideas, co
 Please open an issue or write and e-mail to andrea@pollastri.dev.
 
 ## Security Vulnerabilities
-All security vulnerabilities will be promptly addressed.
 If you discover a security vulnerability within Cipi, please open an issue or send an e-mail to andrea@pollastri.dev.
+
+All security vulnerabilities will be promptly addressed.
 
 ## Licence
 Cipi is an open-source software licensed under the MIT license.
 
 ### Enjoy Cipi :)
+https://cipi.sh
