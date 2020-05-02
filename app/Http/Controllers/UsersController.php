@@ -20,11 +20,7 @@ class UsersController extends Controller {
         $this->validate($request, [
             'username' => 'required'
         ]);
-        $application = Application::where('username', $request->username)->with('server')->first();
-        if(!$application) {
-            $request->session()->flash('alert-error', 'User not found!');
-            return redirect('/users');
-        }
+        $application = Application::where('username', $request->username)->with('server')->firstOrFail();
         $ssh = New SSH($application->server->ip, $application->server->port);
         if(!$ssh->login($application->server->username, $application->server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
