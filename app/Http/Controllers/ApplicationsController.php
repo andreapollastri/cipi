@@ -4,7 +4,9 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\{Application, Server, Alias};
+use App\Application;
+use App\Server;
+use App\Alias;
 use phpseclib\Net\SSH2 as SSH;
 use PDF;
 

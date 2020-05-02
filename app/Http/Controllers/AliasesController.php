@@ -3,7 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\{Application, Alias};
+use App\Application;
+use App\Alias;
 use phpseclib\Net\SSH2 as SSH;
 
 class AliasesController extends Controller {

@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Application;
-use \phpseclib\Net\SSH2 as SSH;
+use phpseclib\Net\SSH2 as SSH;
 
 
 class UsersController extends Controller {
