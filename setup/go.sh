@@ -6,12 +6,12 @@ if [ "$ID" = "ubuntu" ]; then
     case $VERSION in
         18.04)
             clear
-            wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/develop/setup/18.sh | bash
+            wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/master/setup/18.sh | bash
             break
             ;;
         20.04)
             clear
-            wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/develop/setup/20.sh | bash
+            wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/master/setup/20.sh | bash
             break
             ;;
         *)
