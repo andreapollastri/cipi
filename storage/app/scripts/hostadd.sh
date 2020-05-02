@@ -41,12 +41,11 @@ done
 
 sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
 echo "$USER_NAME:$PASSWORD"|chpasswd
-sudo chmod o-r /home/$USER_NAME
+sudo chown -R root:root mkdir /home/$USER_NAME
 
 mkdir /home/$USER_NAME/web
 mkdir /home/$USER_NAME/nginx
 mkdir /home/$USER_NAME/nginx/log
-
 
 if [ $BASE_PATH != "" ]; then
     mkdir /home/$USER_NAME/web/$BASE_PATH

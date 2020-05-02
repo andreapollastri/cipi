@@ -85,7 +85,6 @@ sudo apt-get -y install curl wget
 curl --request GET --url $REMOTE/remote/start/$SERVERCODE
 
 sudo mkdir /cipi/
-sudo mkdir /cipi/html/
 wget $REMOTE/sh/ha/$SERVERCODE/ -O /cipi/host-add.sh
 wget $REMOTE/sh/hd/$SERVERCODE/ -O /cipi/host-del.sh
 wget $REMOTE/sh/aa/$SERVERCODE/ -O /cipi/alias-add.sh
