@@ -66,5 +66,6 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/', 'SettingsController@index');
         Route::post('/profile', 'SettingsController@updateProfile');
         Route::post('/password', 'SettingsController@updatePassword');
+        Route::post('/smtp', 'SettingsController@updateSmtp');
     });
 });

@@ -5,13 +5,15 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\Hash;
+use App\Smtp;
 
 class SettingsController extends Controller
 {
 
     public function index() {
         $user = auth()->user();
-        return view('settings', compact('user'));
+        $smtp = Smtp::first();
+        return view('settings', compact('user', 'smtp'));
     }
 
     public function updateProfile(Request $request) {
@@ -41,6 +43,19 @@ class SettingsController extends Controller
           'password' => Hash::make($request->password)
         ]);
         $request->session()->flash('alert-success', 'Password has been updated!');
+        return redirect('/settings');
+    }
+
+    public function updateSmtp(Request $request) {
+        $mail = Smtp::first();
+        $mail->host         = $request->host;
+        $mail->port         = $request->port;
+        $mail->from         = $request->from;
+        $mail->encryption   = $request->encryption;
+        $mail->username     = $request->username;
+        $mail->password     = $request->password;
+        $mail->save();
+        $request->session()->flash('alert-success', 'SMTP configuration has been updated!');
         return redirect('/settings');
     }
 

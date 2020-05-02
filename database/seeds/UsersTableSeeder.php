@@ -21,6 +21,6 @@ class UsersTableSeeder extends Seeder
 			'email' => config('app.cipi_email'),
 			'password' => Hash::make(config('app.cipi_password')),
             'email_verified_at' => Carbon::now(),
-		 ]);
+		]);
     }
 }

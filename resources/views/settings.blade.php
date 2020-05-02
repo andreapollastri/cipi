@@ -56,8 +56,7 @@ Settings
                 </form>
             </div>
         </div>
-    </div>
-    <div class="col-lg-6 mb-4">
+        <div class="space"></div>
         <div class="card sm-12">
             <div class="card-header text-center">
                 Change your password
@@ -103,6 +102,75 @@ Settings
                     <div class="col-xs-12 text-center w-75 pwd-info">
                         <p>* at least 8 chars with uppercase, lowercase and numbers</p>
                     </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6 mb-4">
+        <div class="card sm-12">
+            <div class="card-header text-center">
+                SMTP CONFIGURATION
+            </div>
+            <div class="card-body">
+                <div class="form-group row">
+                    <form method="POST" action="/settings/smtp" class="ws-validate">
+                        @csrf
+                        <div class="form-group row">
+                            <label for="host" class="col-md-6 col-form-label text-md-right">Host</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="host" type="text" class="form-control" name="host" value="{{ $smtp->host }}" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="port" class="col-md-6 col-form-label text-md-right">Port</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="port" type="text" class="form-control" name="port" value="{{ $smtp->port }}" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="encryption" class="col-md-6 col-form-label text-md-right">Encryption</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="encryption" type="text" class="form-control" name="encryption" value="{{ $smtp->encryption }}" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="username" class="col-md-6 col-form-label text-md-right">Username</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="username" type="text" class="form-control" name="username" value="{{ $smtp->username }}" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="password" class="col-md-6 col-form-label text-md-right">Password</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="password" type="password" class="form-control" name="password" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row">
+                            <label for="from" class="col-md-6 col-form-label text-md-right">From</label>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <input id="from" type="text" class="form-control" name="from" value="{{ $smtp->from }}" autocomplete="off">
+                                </div>
+                            </div>
+                        </div>
+                        <div class="form-group row mb-0">
+                            <div class="col-md-6 offset-md-6">
+                                <button type="submit" class="btn btn-primary">
+                                    Update
+                                </button>
+                            </div>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>

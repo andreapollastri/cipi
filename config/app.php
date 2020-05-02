@@ -177,6 +177,7 @@ return [
 
         //Custom
         Barryvdh\DomPDF\ServiceProvider::class,
+        App\Providers\SMTPConfigServiceProvider::class,
 
     ],
 
