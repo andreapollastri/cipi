@@ -26,7 +26,7 @@ class SMTPConfigServiceProvider extends ServiceProvider
     {
         if(\Schema::hasTable('smtps')) {
             $mail = DB::table('smtps')->first();
-            if ($mail) {
+            if($mail && $mail->host != 'smtp.yourdomain.ltd') {
                 $config = array(
                     'driver'     => 'smtp',
                     'host'       => $mail->host,
