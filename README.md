@@ -1,7 +1,7 @@
 # Cipi - An Open Source Control Panel for your Cloud!
 
 ## About
-Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, fail2ban and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to build websites and PHP applications powered by cloud VPS.
+Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, fail2ban and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
 
 ## Features
 - Easy install: setup one or more servers with a click in less than ten minutes without be a Linux expert.
@@ -74,7 +74,7 @@ Cipi was developed with:
 You can follow Cipi Project RoadMap here: https://github.com/andreapollastri/cipi/projects/
 
 ## Contributing
-Thank you for considering contributing to the Cipi Project (feedback, code, beers) :)
+Thank you for considering contributing to the Cipi Project (feedbacks, ideas, code, promo, money, beers) :)
 
 ## Problem with Cipi?
 Please open an issue or write and e-mail to andrea@pollastri.dev.
@@ -84,6 +84,6 @@ All security vulnerabilities will be promptly addressed.
 If you discover a security vulnerability within Cipi, please open an issue or send an e-mail to andrea@pollastri.dev.
 
 ## Licence
-Cipi is open-source software licensed under the MIT license.
+Cipi is an open-source software licensed under the MIT license.
 
 ### Enjoy Cipi :)
