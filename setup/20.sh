@@ -308,8 +308,6 @@ clear
 echo "Let's Encrypt installation..."
 sleep 3s
 
-sudo add-apt-repository -y ppa:certbot/certbot
-sudo apt-get -y install python-certbot-nginx
 sudo snap install --beta --classic certbot
 
 echo "Let's Encrypt: OK!"
