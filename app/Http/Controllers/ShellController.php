@@ -18,10 +18,7 @@ class ShellController extends Controller
     }
 
     public function install($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 0)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 0)->firstOrFail();
         $script = Storage::get('scripts/install.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/'),
@@ -35,10 +32,7 @@ class ShellController extends Controller
     }
 
     public function hostadd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
         $script = Storage::get('scripts/hostadd.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/'),
@@ -48,10 +42,7 @@ class ShellController extends Controller
     }
 
     public function hostget($appcode) {
-        $application = Application::where('appcode', $appcode)->first();
-        if(!$application) {
-            return abort(403);
-        }
+        $application = Application::where('appcode', $appcode)->firstOrFail();
         if($application->basepath) {
             $basepath = '/home/'.$application->username.'/web/'.$application->basepath;
         } else {
@@ -66,32 +57,22 @@ class ShellController extends Controller
     }
 
     public function hostdel($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
         $script = Storage::get('scripts/hostdel.sh');
         $script = Str::replaceArray('???', [
             $server->dbroot,
         ], $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
-
     }
 
     public function passwd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
         $script = Storage::get('scripts/passwd.sh');
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
     public function aliasadd($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasadd.sh');
         $script = Str::replaceArray('???', [
             $this->url->to('/')
@@ -100,19 +81,13 @@ class ShellController extends Controller
     }
 
     public function aliasdel($servercode) {
-        $server = Server::where('servercode', $servercode)->where('complete', 1)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('servercode', $servercode)->where('complete', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasdel.sh');
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
     public function aliasget($appcode,$domain) {
-        $application = Application::where('appcode', $appcode)->first();
-        if(!$application) {
-            return abort(403);
-        }
+        $application = Application::where('appcode', $appcode)->firstOrFail();
         if($application->basepath) {
             $basepath = '/home/'.$application->username.'/web/'.$application->basepath;
         } else {
