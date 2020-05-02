@@ -361,6 +361,9 @@ server {
     }
 }
 EOF
+
+sudo mkdir /etc/nginx/cipi/
+
 sudo systemctl restart nginx.service
 
 echo "PHP: OK!"
