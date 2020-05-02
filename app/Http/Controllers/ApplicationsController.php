@@ -4,9 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
-use App\Application;
-use App\Server;
-use App\Alias;
+use App\{Application, Server, Alias};
 use phpseclib\Net\SSH2 as SSH;
 use PDF;
 
@@ -38,10 +36,7 @@ class ApplicationsController extends Controller {
                 return redirect('/applications');
             }
         }
-        $server = Server::where('id', $request->server_id)->where('complete', 2)->first();
-        if(!$server) {
-            return abort(403);
-        }
+        $server = Server::where('id', $request->server_id)->where('complete', 2)->firstOrFail();
         $user   = 'u'.hash('crc32', (Str::uuid()->toString())).rand(1,9);
         $pass   = sha1(uniqid().microtime().$request->domain);
         $dbpass = sha1(microtime().uniqid().$request->ip);
@@ -96,10 +91,7 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'appcode' => 'required',
         ]);
-        $application = Application::where('appcode', $request->appcode)->first();
-        if(!$application) {
-            return abort(403);
-        }
+        $application = Application::where('appcode', $request->appcode)->firstOrFail();
         $ssh = New SSH($application->server->ip, $application->server->port);
         if(!$ssh->login($application->server->username, $application->server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
@@ -117,7 +109,7 @@ class ApplicationsController extends Controller {
     }
 
     public function pdf($appcode) {
-        $application = Application::where('appcode', $appcode)->first();
+        $application = Application::where('appcode', $appcode)->firstOrFail();
         $data = [
             'username'      => $application->username,
             'password'      => $application->password,

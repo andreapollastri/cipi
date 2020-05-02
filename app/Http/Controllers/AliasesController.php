@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use App\Application;
-use App\Alias;
+use App\{Application, Alias};
 use phpseclib\Net\SSH2 as SSH;
 
 class AliasesController extends Controller {
@@ -19,10 +18,7 @@ class AliasesController extends Controller {
             'domain' => 'required',
             'application_id' => 'required'
         ]);
-        $application = Application::where('id', $request->application_id)->with('server')->with('aliases')->first();
-        if(!$application) {
-            abort(403);
-        }
+        $application = Application::find($request->application_id)->with('server')->with('aliases')->firstOrFail();
         if(Application::where('server_id', $application->server_id)->where('domain', $request->domain)->first()) {
             $request->session()->flash('alert-error', 'This domain is already taken on this server');
             return redirect('/aliases');
@@ -60,12 +56,9 @@ class AliasesController extends Controller {
 
     public function destroy(Request $request) {
         $this->validate($request, [
-            'id' => 'required',
+            'id' => 'required|exists:aliases,id',
         ]);
-        $alias = Alias::where('id', $request->id)->with('application')->first();
-        if(!$alias) {
-            return abort(403);
-        }
+        $alias = Alias::find($request->id)->with('application')->firstOrFail();
         $ssh = New SSH($alias->application->server->ip, $alias->application->server->port);
         if(!$ssh->login($alias->application->server->username, $alias->application->server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
@@ -86,10 +79,7 @@ class AliasesController extends Controller {
     }
 
     public function ssl($id) {
-        $alias = Alias::where('id', $id)->with('application')->first();
-        if(!$alias) {
-            return abort(403);
-        }
+        $alias = Alias::find($id)->with('application')->firstOrFail();
         $ssh = New SSH($alias->application->server->ip, $alias->application->server->port);
         if(!$ssh->login($alias->application->server->username, $alias->application->server->password)) {
             return abort(403);

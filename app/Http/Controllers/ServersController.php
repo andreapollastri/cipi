@@ -21,10 +21,7 @@ class ServersController extends Controller
 
 
     public function get($servercode) {
-        $server = Server::where('servercode', $servercode)->with('applications')->first();
-        if(!$server) {
-            abort(404);
-        }
+        $server = Server::where('servercode', $servercode)->with('applications')->firstOrFail();
         return view('server', compact('server'));
     }
 
@@ -75,9 +72,9 @@ class ServersController extends Controller
         $this->validate($request, [
             'servercode' => 'required',
         ]);
-        $server = Server::where('servercode', $request->servercode)->first();
-        $request->session()->flash('alert-success', 'Server '.$server->name.' has been deleted!');
+        $server = Server::where('servercode', $request->servercode)->firstOrFail();
         $server->delete();
+        $request->session()->flash('alert-success', 'Server '.$server->name.' has been deleted!');
         return redirect('/servers');
     }
 
