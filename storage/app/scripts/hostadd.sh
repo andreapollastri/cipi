@@ -41,11 +41,12 @@ done
 
 sudo useradd -m -s $USER_SHELL -d /home/$USER_NAME -G www-data $USER_NAME
 echo "$USER_NAME:$PASSWORD"|chpasswd
-sudo chown -R root:root mkdir /home/$USER_NAME
+sudo chmod o-r /home/$USER_NAME
 
 mkdir /home/$USER_NAME/web
 mkdir /home/$USER_NAME/nginx
 mkdir /home/$USER_NAME/nginx/log
+
 
 if [ $BASE_PATH != "" ]; then
     mkdir /home/$USER_NAME/web/$BASE_PATH
@@ -125,9 +126,7 @@ CUSTOM=/home/$USER_NAME/nginx/custom.conf
 wget $REMOTE/sh/nx/ -O $CUSTOM
 sudo dos2unix $CUSTOM
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
-sudo chown -R www-data: /home/$USER_NAME/git
-sudo chown -R www-data: /home/$USER_NAME/web
-sudo chown -R www-data:www-data /home/$USER_NAME/nginx
+sudo chown -R www-data: /home/$USER_NAME
 sudo systemctl restart nginx.service
 
 
@@ -166,8 +165,8 @@ sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
 sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
 
 
-sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git
-sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git/
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web/
 
 
 clear
