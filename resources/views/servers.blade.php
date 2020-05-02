@@ -45,7 +45,7 @@ Servers
                         <tr>
                             <td class="text-center">
                                 @if ($server->complete == 0)
-                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#setupModal" data-servercode="{{ $server->servercode }}" data-serverip="{{ $server->ip }}">"{{ $server->name }}" has to be install</button>
+                                    <button type="button" class="btn btn-danger btn-sm" data-toggle="modal" data-target="#setupModal" data-servercode="{{ $server->servercode }}" data-serverip="{{ $server->ip }}">"{{ $server->name }}" has to be installed</button>
                                 @elseif ($server->complete == 1)
                                     <button type="button" class="btn btn-warning btn-sm">"{{ $server->name }}" is coming...</button>
                                 @else
@@ -252,12 +252,12 @@ Servers
                     <li>Run this command:<br>
                         <code><i>wget -O - {{ url('/sh/go') }}/<span class="server-id"></span> | bash</i></code>
                     </li>
-                    <li>Installation may take up to about ten minutes which may also depend on your server internet connection speed</li>
-                    <li>Before install Cipi, please make sure your server is a clean Ubuntu 18.04 or 20.04 x86_64 LTS VPS (Fresh installation)</li>
-                    <li>Hardware Requirement: minium 1GB free HDD / at least 1 core processor / 512MB or more RAM / 1 public IPv4 address</li>
+                    <li>Installation may take up to ten minutes depending on your server internet connection speed</li>
+                    <li>Before you install Cipi, please make sure your server is a clean Ubuntu 18.04 or 20.04 x86_64 LTS VPS (Fresh installation)</li>
+                    <li>Hardware Requirements: minimum 1GB free HDD / at least 1 core processor / 512MB or more RAM / 1 public IPv4 address</li>
                     <li>Please open port 22, 80 and 443 of your firewall to install Cipi</li>
-                    <li>Cipi would not work with NAT VPN and OpenVZ or in localhost</li>
-                    <li>AWS disables root login by default. To login as root inside AWS, login as default user and then use command 'sudo -s'</li>
+                    <li>Cipi doesn't work with NAT VPN and OpenVZ or in localhost</li>
+                    <li>AWS disables root login by default. To gain root privileges, login as default user and then use command 'sudo -s'</li>
                 </ul>
             </div>
             <div class="modal-footer">
@@ -287,7 +287,7 @@ Servers
                             <div class="form-group">
                                 <input type="text" id="server-ip" required class="form-control" name="ip">
                             </div>
-                            <i class="fas fa-exclamation-circle" style="margin-left: 5px;"></i> Before submit changes, be sure about your new IP!
+                            <i class="fas fa-exclamation-circle" style="margin-left: 5px;"></i> Before submitting changes, double check the IP!
                         </div>
                     </div>
                 </div>
@@ -321,12 +321,12 @@ Servers
                             <div class="form-group">
                                 <select class="form-control" name="server_id" required id="server-list">
                                     <option value="">Select...</option>
-                                    <option value="">YES! I'm sure!!!</option>
+                                    <option value="">YES! Delete this server.</option>
                                 </select>
                             </div>
                             <div class="space"></div>
-                            <h6 class="text-danger">This action is irreversible.</h6>
-                            <h6 class="text-danger">You will lose control on this server.</h6>
+                            <h6 class="text-danger">This can be undone.</h6>
+                            <h6 class="text-danger">You will lose access to your server.</h6>
                         </div>
                     </div>
                 </div>
