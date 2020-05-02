@@ -423,6 +423,12 @@ sleep 3s
 sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt-get -y install python-certbot-nginx
 
+if [ "$VERSION" = "20.04" ]; then
+sudo snap install --beta --classic certbot
+else
+
+fi
+
 echo "Let's Encrypt: OK!"
 sleep 3s
 

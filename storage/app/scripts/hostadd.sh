@@ -6,6 +6,8 @@ DBROOT=???
 BASE_PATH=
 USER_SHELL=/bin/bash
 
+VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
+
 while [ -n "$1" ] ; do
     case $1 in
     -u | --user )
@@ -128,6 +130,20 @@ sudo chown -R www-data: /home/$USER_NAME
 sudo systemctl restart nginx.service
 
 
+if [ "$VERSION" = "20.04" ]; then
+
+DBNAME=$USER_NAME
+DBUSER=$USER_NAME
+/usr/bin/mysql -u cipi -p$DBROOT <<EOF
+CREATE DATABASE IF NOT EXISTS $DBNAME;
+use mysql;
+CREATE USER $DBUSER@'%' IDENTIFIED BY '$DBPASS';
+GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
+
+else
+
 DBNAME=$USER_NAME
 DBUSER=$USER_NAME
 /usr/bin/mysql -u root -p$DBROOT <<EOF
@@ -136,6 +152,10 @@ CREATE USER $DBUSER@'localhost' IDENTIFIED BY '$DBPASS';
 GRANT USAGE ON *.* TO '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0;
 GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'localhost';
 EOF
+
+fi
+
+
 
 
 sudo mkdir /home/$USER_NAME/git/
