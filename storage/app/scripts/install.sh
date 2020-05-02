@@ -22,13 +22,13 @@ if [ "$ID" = "ubuntu" ]; then
     case $VERSION in
         18.04)
             clear
-            echo "Running on Ubuntu 18.04 LTS ;"
+            echo "Running on Ubuntu 18.04 LTS ;)"
             sleep 2s
             break
             ;;
         20.04)
             clear
-            echo "Running on Ubuntu 20.04 LTS ;"
+            echo "Running on Ubuntu 20.04 LTS ;)"
             sleep 2s
             break
             ;;
