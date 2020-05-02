@@ -35,6 +35,7 @@
                     <tr>
                         <th class="text-center">Domain</th>
                         <th class="text-center">User</th>
+                        <th class="text-center">Path</th>
                         <th class="text-center">PHP</th>
                         <th class="text-center">Aliases</th>
                         <th class="text-center">Actions</th>
@@ -46,6 +47,7 @@
                     <tr>
                         <td class="text-center">{{ $application->domain }}</td>
                         <td class="text-center">{{ $application->username }}</td>
+                        <td class="text-center">{{ $application->basepath }}</td>
                         <td class="text-center">{{ $application->php }}</td>
                         <td class="text-center">{{ count($application->aliases) }}</td>
                         <td class="text-center">
