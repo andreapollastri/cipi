@@ -44,8 +44,7 @@ echo "$USER_NAME:$PASSWORD"|chpasswd
 sudo chmod o-r /home/$USER_NAME
 
 mkdir /home/$USER_NAME/web
-mkdir /home/$USER_NAME/nginx
-mkdir /home/$USER_NAME/nginx/log
+mkdir /home/$USER_NAME/log
 
 
 if [ $BASE_PATH != "" ]; then
@@ -120,10 +119,10 @@ EOF
 
 
 NGINX=/etc/nginx/sites-available/$USER_NAME.conf
-wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
+sudo wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
 sudo dos2unix $NGINX
-CUSTOM=/home/$USER_NAME/nginx/custom.conf
-wget $REMOTE/sh/nx/ -O $CUSTOM
+CUSTOM=/etc/nginx/cipi/$USER_NAME.conf
+sudo wget $REMOTE/sh/nx/ -O $CUSTOM
 sudo dos2unix $CUSTOM
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
 sudo chown -R www-data: /home/$USER_NAME
