@@ -87,7 +87,7 @@ sudo cat > "$WELCOME" <<EOF
                 text-align: center;
             }
             .title {
-                font-size: 84px;
+                font-size: 64px;
             }
             .links > a {
                 color: #636b6f;
