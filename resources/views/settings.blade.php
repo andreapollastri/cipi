@@ -10,14 +10,14 @@ Settings
 
 @section('content')
 @if(Session::has('alert-success'))
-    <div class="alert alert-success" role="alert">
-        <b><i class="fa fa-check" aria-hidden="true"></i></b> {{ Session::get('alert-success') }}
-    </div>
+<div class="alert alert-success" role="alert">
+    <b><i class="fa fa-check" aria-hidden="true"></i></b> {{ Session::get('alert-success') }}
+</div>
 @endif
-    @if(Session::has('alert-error'))
-    <div class="alert alert-danger" role="alert">
-        <b><i class="fa fa-times" aria-hidden="true"></i></b> {{ Session::get('alert-error') }}
-    </div>
+@if(Session::has('alert-error'))
+<div class="alert alert-danger" role="alert">
+    <b><i class="fa fa-times" aria-hidden="true"></i></b> {{ Session::get('alert-error') }}
+</div>
 @endif
 <div class="row">
     <div class="col-lg-6 mb-4">
@@ -32,7 +32,7 @@ Settings
                         <label for="name" class="col-md-4 col-form-label text-md-right">Name</label>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <input id="name" type="text" class="form-control" name="name" value="{{ $user->name }}" required autocomplete="name" autofocus>
+                                <input id="name" type="text" class="form-control" name="name" value="{{ auth()->user()->name }}" required autocomplete="name" autofocus>
                             </div>
                         </div>
                     </div>
@@ -41,7 +41,7 @@ Settings
                         <label for="email" class="col-md-4 col-form-label text-md-right">E-mail</label>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <input id="email" type="email" class="form-control" name="email" value="{{ $user->email }}" required autocomplete="email">
+                                <input id="email" type="email" class="form-control" name="email" value="{{ auth()->user()->email }}" required autocomplete="email">
                             </div>
                         </div>
                     </div>
@@ -67,7 +67,7 @@ Settings
                     <form method="POST" action="/settings/password" class="ws-validate">
                         @csrf
                         <div class="form-group row">
-                        <label for="password" class="col-md-6 col-form-label text-md-right">Password</label>
+                            <label for="password" class="col-md-6 col-form-label text-md-right">Password</label>
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <input id="current" type="password" class="form-control" name="current" required autocomplete="new-password">
@@ -131,14 +131,14 @@ Settings
 @section('js')
 <script>
     $('#password').keyup(function() {
-        if($('#password').val() != $('#password-confirm').val()) {
+        if ($('#password').val() != $('#password-confirm').val()) {
             $('#password-confirm').setCustomValidity("Passwords don't match");
         } else {
             $('#password-confirm').setCustomValidity('');
         }
     });
     $('#password-confirm').keyup(function() {
-        if($('#password').val() != $('#password-confirm').val()) {
+        if ($('#password').val() != $('#password-confirm').val()) {
             $('#password-confirm').setCustomValidity("Passwords don't match");
         } else {
             $('#password-confirm').setCustomValidity('');
