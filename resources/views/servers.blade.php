@@ -163,6 +163,9 @@ Servers
                             </td>
                             <td class="text-center d-none d-lg-table-cell">{{ $server->location }}</td>
                             <td class="text-center">
+                            <a href="#" data-toggle="modal" data-target="#resetModal" data-servername="{{ $server->name }}" data-servercode="{{ $server->servercode }}" style="margin-right: 18px;">
+                                <i class="fas fa-key" style="color:gray;"></i>
+                            </a>
                             <i data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
                             </td>
                         </tr>
@@ -338,6 +341,26 @@ Servers
         </div>
     </div>
 </div>
+<!-- RESET -->
+<div class="modal fade" id="resetModal" tabindex="-1" role="dialog" aria-labelledby="resetModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="resetModalLabel">Reset root user</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body text-center">
+                Are you sure to reset password for <b><span class="ajax-root"></span></b>'s root user?<br><br>
+                <div id="root-area"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 
@@ -382,5 +405,36 @@ $('#changeipModal').on('show.bs.modal', function (event) {
     modal.find('#server-code-ip').val(servercode)
     modal.find('#server-ip').val(serverip)
 })
+</script>
+<script>
+    $('#resetModal').on('show.bs.modal', function (event) {
+        $("#root-area").empty();
+        $("#root-area").html('<input type="hidden" name="server" value="" class="ajax-server"><button class="btn btn-primary" id="reset-root">Yes, continue!</button>');
+        var button = $(event.relatedTarget)
+        var server = button.data('servername')
+        var servercode = button.data('servercode')
+        var modal = $(this)
+        modal.find('.ajax-root').text(server)
+        modal.find('.ajax-server').val(servercode)
+        function resetroot(servercode) {
+            $("#root-area").empty();
+            $("#root-area").html('<center><i class="fas fa-spinner fa-spin"></center>');
+            $.ajax({
+                url: "/server/reset/"+servercode,
+                type: "GET",
+                success: function(response){
+                    $("#root-area").empty();
+                    $("#root-area").html('Server SSH credential have been changed:<br>USER: cipi<br>PASS: '+response+'</center>');
+                },
+                error: function(response) {
+                    $("#root-area").empty();
+                    $("#root-area").html('<center>Error with server connection. Retry!</center>');
+                }
+            });
+        }
+        $("#reset-root").click(function() {
+            resetroot($('.ajax-server').val());
+        });
+    })
 </script>
 @endsection

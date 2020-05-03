@@ -79,6 +79,12 @@ class ShellController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
+    public function root($servercode) {
+        $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
+        $script = Storage::get('scripts/root.sh');
+        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
+
     public function aliasadd($servercode) {
         $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasadd.sh');

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Server;
+use phpseclib\Net\SSH2 as SSH;
 
 class ServersController extends Controller
 {
@@ -76,6 +77,27 @@ class ServersController extends Controller
         $server->delete();
         $request->session()->flash('alert-success', 'Server '.$server->name.' has been deleted!');
         return redirect('/servers');
+    }
+
+    public function reset($servercode) {
+        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $pass   = sha1(uniqid().microtime().$server->ip);
+        $ssh->setTimeout(360);
+        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/root.sh -p '.$pass);
+        if(strpos($response, '###CIPI###') === false) {
+            abort(500);
+        }
+        $response = explode('###CIPI###', $response);
+        if(strpos($response[1], 'Ok') === false) {
+            abort(500);
+        }
+        $server->password = $pass;
+        $server->save();
+        return $pass;
     }
 
 

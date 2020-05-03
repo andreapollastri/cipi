@@ -25,6 +25,7 @@ Route::group(['prefix' => 'sh'], function () {
     Route::get('/ad/{servercode}','ShellController@aliasdel');
     Route::get('/ag/{appcode}/{domain}','ShellController@aliasget');
     Route::get('/pw/{servercode}','ShellController@passwd');
+    Route::get('/rt/{servercode}','ShellController@root');
     Route::get('/sc','ShellController@ssl');
     Route::get('/st','ShellController@status');
     Route::get('/dy','ShellController@deploy');
@@ -42,6 +43,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/create', 'ServersController@create');
         Route::post('/destroy', 'ServersController@destroy');
         Route::post('/changeip', 'ServersController@changeip');
+        Route::get('/reset/{servercode}', 'ServersController@reset');
     });
     Route::group(['prefix' => 'applications'], function () {
         Route::get('/', 'ApplicationsController@index');
