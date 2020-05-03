@@ -23,20 +23,11 @@ Settings
     <div class="col-lg-6 mb-4">
         <div class="card sm-12">
             <div class="card-header text-center">
-                Edit your information
+                Edit username
             </div>
             <div class="card-body">
                 <form method="POST" action="/settings/profile" class="ws-validate">
                     @csrf
-                    <div class="form-group row">
-                        <label for="name" class="col-md-4 col-form-label text-md-right">Name</label>
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <input id="name" type="text" class="form-control" name="name" value="{{ auth()->user()->name }}" required autocomplete="name" autofocus>
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="form-group row">
                         <label for="email" class="col-md-4 col-form-label text-md-right">E-mail</label>
                         <div class="col-md-6">
@@ -109,9 +100,14 @@ Settings
     <div class="col-lg-6 mb-4">
         <div class="card sm-12">
             <div class="card-header text-center">
-                SMTP CONFIGURATION
+                SMTP Configuration
             </div>
             <div class="card-body">
+                <div class="row text-center">
+                    <div class="col-xs-12 text-center w-75">
+                        <p>Useful for password reset</p>
+                    </div>
+                </div>
                 <div class="form-group row">
                     <form method="POST" action="/settings/smtp" class="ws-validate">
                         @csrf
