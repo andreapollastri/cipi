@@ -382,9 +382,7 @@ sleep 1s
 composer create-project andreapollastri/cipi /var/www/html
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
-sleep 2s
-cd /var/www/html && php artisan key:generate
-sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=root" /var/www/html/.env
+sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=cipi" /var/www/html/.env
 sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /var/www/html/.env
 sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=cipi" /var/www/html/.env
 sudo rpl -i -w "APP_URL=http://localhost" "APP_URL=http://$IP" /var/www/html/.env
@@ -394,11 +392,13 @@ sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 775 /var/www/html/bootstrap/cache
 sudo chown -R www-data:www-data /var/www/html
 cd /var/www/html && composer dump-autoload
+cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan cache:clear
 cd /var/www/html && php artisan storage:link
-cd /var/www/html && php artisan config:cache
 cd /var/www/html && php artisan view:cache
+cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan migrate --seed --force
+cd /var/www/html && php artisan config:cache
 clear
 echo "Application installation: OK!"
 sleep 3s
