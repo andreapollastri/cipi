@@ -64,7 +64,7 @@ class ApplicationsController extends Controller {
             return redirect('/applications');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -a '.$appcode);
+        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -php '.$request->php.' -a '.$appcode);
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/applications');

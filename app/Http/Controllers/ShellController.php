@@ -56,6 +56,14 @@ class ShellController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
+    public function phpfpm($appcode) {
+        $application = Application::where('appcode', $appcode)->firstOrFail();
+        $script = Storage::get('scripts/phpfpm.conf');
+        $script = str_replace('???USER???', $application->username, $script);
+        $script = str_replace('???PHP???', $application->php, $script);
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+    }
+
     public function hostdel($servercode) {
         $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/hostdel.sh');

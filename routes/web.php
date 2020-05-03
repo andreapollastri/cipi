@@ -20,6 +20,7 @@ Route::group(['prefix' => 'sh'], function () {
     Route::get('/ha/{servercode}','ShellController@hostadd');
     Route::get('/hd/{servercode}','ShellController@hostdel');
     Route::get('/hg/{appcode}','ShellController@hostget');
+    Route::get('/pf/{appcode}','ShellController@phpfpm');
     Route::get('/aa/{servercode}','ShellController@aliasadd');
     Route::get('/ad/{servercode}','ShellController@aliasdel');
     Route::get('/ag/{appcode}/{domain}','ShellController@aliasget');

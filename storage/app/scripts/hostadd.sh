@@ -30,6 +30,10 @@ while [ -n "$1" ] ; do
         shift
         APPCODE=$1
         ;;
+    -php |  --php )
+        shift
+        PHP=$1
+        ;;
     * )
         echo "ERROR: Unknown option: $1"
         exit -1
@@ -121,11 +125,15 @@ EOF
 NGINX=/etc/nginx/sites-available/$USER_NAME.conf
 sudo wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
 sudo dos2unix $NGINX
+POOL=/etc/php/$PHP/fpm/pool.d/$USER_NAME.conf
+sudo wget $REMOTE/sh/hg/$APPCODE/ -O $POOL
+sudo dos2unix $POOL
 CUSTOM=/etc/nginx/cipi/$USER_NAME.conf
 sudo wget $REMOTE/sh/nx/ -O $CUSTOM
 sudo dos2unix $CUSTOM
 sudo ln -s $NGINX /etc/nginx/sites-enabled/$USER_NAME.conf
 sudo chown -R www-data: /home/$USER_NAME
+sudo service php$PHP-fpm restart
 sudo systemctl restart nginx.service
 
 
