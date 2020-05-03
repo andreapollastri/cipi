@@ -352,7 +352,7 @@ Servers
                 </button>
             </div>
             <div class="modal-body text-center">
-                Are you sure to reset password for <b><span class="ajax-root"></span></b>'s root user?<br><br>
+                Are you sure to reset cipi's user (<span class="ajax-root"></span> root user)?<br><br>
                 <div id="root-area"></div>
             </div>
             <div class="modal-footer">
@@ -424,11 +424,11 @@ $('#changeipModal').on('show.bs.modal', function (event) {
                 type: "GET",
                 success: function(response){
                     $("#root-area").empty();
-                    $("#root-area").html('Server SSH credential have been changed:<br>USER: cipi<br>PASS: '+response+'</center>');
+                    $("#root-area").html('<center>Password for "cipi" user has been changed:<br><b>'+response+'</b></center>');
                 },
                 error: function(response) {
                     $("#root-area").empty();
-                    $("#root-area").html('<center>Error with server connection. Retry!</center>');
+                    $("#root-area").html('<center><i>Error with server connection. Retry!</i></center>');
                 }
             });
         }
