@@ -126,7 +126,7 @@ NGINX=/etc/nginx/sites-available/$USER_NAME.conf
 sudo wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
 sudo dos2unix $NGINX
 POOL=/etc/php/$PHP/fpm/pool.d/$USER_NAME.conf
-sudo wget $REMOTE/sh/hg/$APPCODE/ -O $POOL
+sudo wget $REMOTE/sh/pf/$APPCODE/ -O $POOL
 sudo dos2unix $POOL
 CUSTOM=/etc/nginx/cipi/$USER_NAME.conf
 sudo wget $REMOTE/sh/nx/ -O $CUSTOM
