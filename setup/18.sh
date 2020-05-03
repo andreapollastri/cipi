@@ -384,7 +384,7 @@ cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env
 sudo rpl -i -w "DB_USERNAME=dbuser" "DB_USERNAME=cipi" /var/www/html/.env
 sudo rpl -i -w "DB_PASSWORD=dbpass" "DB_PASSWORD=$DBPASS" /var/www/html/.env
-sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=cipi" /var/www/html/.env
+sudo rpl -i -w "DB_DATABASE=dbname" "DB_DATABASE=root" /var/www/html/.env
 sudo rpl -i -w "APP_URL=http://localhost" "APP_URL=http://$IP" /var/www/html/.env
 sudo chmod -R o+w /var/www/html/storage
 sudo chmod -R 775 /var/www/html/storage
