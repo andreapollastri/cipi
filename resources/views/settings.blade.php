@@ -26,7 +26,7 @@ Settings
                 Edit username
             </div>
             <div class="card-body">
-                <form method="POST" action="/settings/profile" class="ws-validate">
+                <form method="POST" action="/settings/username" class="ws-validate">
                     @csrf
                     <div class="form-group row">
                         <label for="email" class="col-md-4 col-form-label text-md-right">E-mail</label>

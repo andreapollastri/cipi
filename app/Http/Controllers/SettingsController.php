@@ -16,16 +16,14 @@ class SettingsController extends Controller
         return view('settings', compact('user', 'smtp'));
     }
 
-    public function updateProfile(Request $request) {
+    public function updateUsername(Request $request) {
         $this->validate($request, [
-            'email' => 'required|email',
-            'name' => 'required'
+            'email' => 'required|email'
         ]);
         auth()->user()->update([
-          'name' => $request->name,
           'email' => $request->email
         ]);
-        $request->session()->flash('alert-success', 'Profile has been updated!');
+        $request->session()->flash('alert-success', 'Username has been updated!');
         return redirect('/settings');
     }
 

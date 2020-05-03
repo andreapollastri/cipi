@@ -70,7 +70,7 @@ Route::group(['middleware' => 'auth'], function () {
     });
     Route::group(['prefix' => 'settings'], function () {
         Route::get('/', 'SettingsController@index');
-        Route::post('/profile', 'SettingsController@updateProfile');
+        Route::post('/username', 'SettingsController@updateUsername');
         Route::post('/password', 'SettingsController@updatePassword');
         Route::post('/smtp', 'SettingsController@updateSmtp');
     });
