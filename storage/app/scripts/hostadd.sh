@@ -49,6 +49,37 @@ sudo chmod o-r /home/$USER_NAME
 
 mkdir /home/$USER_NAME/web
 mkdir /home/$USER_NAME/log
+mkdir /home/$USER_NAME/bks
+mkdir /home/$USER_NAME/bks/db
+mkdir /home/$USER_NAME/bks/fs
+
+DBBKS=/home/$USER_NAME/bks/backup-db.sh
+sudo touch $DBBKS
+sudo cat > "$DBBKS" <<EOF
+#!/bin/bash
+
+######### BACKUP CONFIGURATION #########
+DBUSER=ubb04699a5
+DBPASS=630db817327b70c677254fcdccb616186e9d19c5
+DAYS=7
+
+######### DO NOT CHANGE ANYTHING IN THIS AREA #########
+mysqldump -u$DBUSER -p$DBPASS $DBUSER > db/dump_$(date +"%Y_%m_%d_%I_%M_%p").sql
+find db/ -type f -mtime +$DAYS -exec rm -f {} \;
+EOF
+
+FSBKS=/home/$USER_NAME/bks/backup-fs.sh
+sudo touch $FSBKS
+sudo cat > "$FSBKS" <<EOF
+#!/bin/bash
+
+######### BACKUP CONFIGURATION #########
+DAYS=30
+
+######### DO NOT CHANGE ANYTHING IN THIS AREA #########
+tar -zcvf fs/web_$(date +"%Y_%m_%d_%I_%M_%p").tar.gz ../web
+find fs/ -type f -mtime +$DAYS -exec rm -f {} \;
+EOF
 
 
 if [ $BASE_PATH != "" ]; then
@@ -121,7 +152,6 @@ sudo cat > "$WELCOME" <<EOF
 </html>
 EOF
 
-
 NGINX=/etc/nginx/sites-available/$USER_NAME.conf
 sudo wget $REMOTE/sh/hg/$APPCODE/ -O $NGINX
 sudo dos2unix $NGINX
@@ -170,9 +200,12 @@ sudo cp /cipi/github /home/$USER_NAME/git/deploy
 sudo cp /cipi/github.pub /home/$USER_NAME/git/deploy.pub
 sudo cp /cipi/deploy.sh /home/$USER_NAME/git/deploy.sh
 sudo rpl -q "###CIPI-USER###" "$USER_NAME" /home/$USER_NAME/git/deploy.sh
+
+
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/.cache
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/git
 sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/web
+sudo chown -R $USER_NAME:$USER_NAME /home/$USER_NAME/bks
 
 
 clear
