@@ -44,6 +44,9 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/destroy', 'ServersController@destroy');
         Route::post('/changeip', 'ServersController@changeip');
         Route::get('/reset/{servercode}', 'ServersController@reset');
+        Route::get('/nginx/{servercode}', 'ServersController@nginx');
+        Route::get('/php/{servercode}', 'ServersController@php');
+        Route::get('/mysql/{servercode}', 'ServersController@mysql');
     });
     Route::group(['prefix' => 'applications'], function () {
         Route::get('/', 'ApplicationsController@index');

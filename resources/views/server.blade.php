@@ -11,6 +11,7 @@
 @section('content')
 <div class="row">
     <div class="col">
+        <span style="margin-right: 18px"></span>
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#createModal">
             <i class="fas fa-plus fa-sm text-white-50"></i> CREATE APP
         </a>
@@ -60,6 +61,21 @@
                 </tbody>
             </table>
         </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col">
+        <span id="server-id" servercode="{{ $server->servercode }}"></span>
+        <span id="reset-mysql" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-mysql-icon" class="fas fa-redo fa-sm text-white-50"></i> MySql
+        </span>
+        <span id="reset-php" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-php-icon" class="fas fa-redo fa-sm text-white-50"></i> php
+        </span>
+        <span id="reset-nginx" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-nginx-icon" class="fas fa-redo fa-sm text-white-50"></i> nginx
+        </span>
+        <span style="margin-right: 10px; font-size: 14px;" class="float-right">RESTART SERVICES</span>
     </div>
 </div>
 @endsection
@@ -234,6 +250,57 @@ $('#deleteModal').on('show.bs.modal', function (event) {
         $("#app-create").hide();
         $("#app-close").hide();
         $("#app-coming").show();
+    });
+</script>
+<script>
+    server = $('#server-id').attr('servercode');
+    $("#reset-nginx").click(function() {
+        $("#reset-nginx-icon").removeClass("fas fa-redo");
+        $("#reset-nginx-icon").addClass("fas fa-spinner fa-spin");
+        $.ajax({
+            url: "/server/nginx/"+server,
+            type: "GET",
+            success: function(response){
+                $("#reset-nginx-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-nginx-icon").addClass("fa-redo");
+            },
+            error: function(response) {
+                $("#reset-nginx-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-nginx-icon").addClass("fa-times");
+            }
+        });
+    });
+    $("#reset-php").click(function() {
+        $("#reset-php-icon").removeClass("fas fa-redo");
+        $("#reset-php-icon").addClass("fas fa-spinner fa-spin");
+        $.ajax({
+            url: "/server/php/"+server,
+            type: "GET",
+            success: function(response){
+                $("#reset-php-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-php-icon").addClass("fa-redo");
+            },
+            error: function(response) {
+                $("#reset-php-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-php-icon").addClass("fa-times");
+            }
+        });
+    });
+    $("#reset-mysql").click(function() {
+        $("#reset-mysql-icon").removeClass("fas fa-redo");
+        $("#reset-mysql-icon").addClass("fas fa-spinner fa-spin");
+        $.ajax({
+            url: "/server/mysql/"+server,
+            type: "GET",
+            success: function(response){
+                $("#reset-mysql-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-mysql-icon").addClass("fa-redo");
+            },
+            error: function(response) {
+                $("#reset-mysql-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-mysql-icon").addClass("fa-times");
+            }
+        });
     });
 </script>
 @endsection

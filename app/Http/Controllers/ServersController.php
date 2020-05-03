@@ -79,13 +79,14 @@ class ServersController extends Controller
         return redirect('/servers');
     }
 
+
     public function reset($servercode) {
         $server = Server::where('servercode', $servercode)->firstOrFail();
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             abort(500);
         }
-        $pass   = sha1(uniqid().microtime().$server->ip);
+        $pass = sha1(uniqid().microtime().$server->ip);
         $ssh->setTimeout(360);
         $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/root.sh -p '.$pass);
         if(strpos($response, '###CIPI###') === false) {
@@ -98,6 +99,41 @@ class ServersController extends Controller
         $server->password = $pass;
         $server->save();
         return $pass;
+    }
+
+    public function nginx($servercode) {
+        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $ssh->setTimeout(360);
+        $ssh->exec('sudo systemctl restart nginx.service');
+        return 'OK';
+    }
+
+    public function php($servercode) {
+        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $ssh->setTimeout(360);
+        $ssh->exec('sudo service php7.4-fpm restart');
+        $ssh->exec('sudo service php7.3-fpm restart');
+        $ssh->exec('sudo service php7.2-fpm restart');
+        return 'OK';
+    }
+
+    public function mysql($servercode) {
+        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $ssh->setTimeout(360);
+        $ssh->exec('sudo service mysql restart');
+        return 'OK';
     }
 
 
