@@ -109,11 +109,7 @@ sleep 3s
 
 sudo apt-get update
 
-sudo apt-get -y install nano rpl zip unzip expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
-
-if ! type "openssl" > /dev/null; then
-    sudo apt-get -y install openssl
-fi
+sudo apt-get -y install nano rpl zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config

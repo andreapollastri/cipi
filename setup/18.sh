@@ -65,11 +65,8 @@ sleep 3s
 
 sudo apt-get update
 
-sudo apt-get -y install rpl zip unzip curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
+sudo apt-get -y install rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
-if ! type "openssl" > /dev/null; then
-    sudo apt-get -y install openssl
-fi
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
