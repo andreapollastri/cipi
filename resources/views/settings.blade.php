@@ -9,13 +9,13 @@ Settings
 
 
 @section('content')
-<div class="row">
+<!--<div class="row">
     <div class="col">
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#apikeyModal">
             <i class="fas fa-key fa-sm text-white-50"></i> API KEY
         </a>
     </div>
-</div>
+</div>-->
 <div class="space"></div>
 @if(Session::has('alert-success'))
 <div class="alert alert-success" role="alert">
