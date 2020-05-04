@@ -10,6 +10,7 @@ class Alias extends Model
 	protected $fillable = [
         'domain',
         'application_id',
+        'aliascode'
     ];
 
     public function application() {

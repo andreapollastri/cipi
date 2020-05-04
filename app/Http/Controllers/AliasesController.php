@@ -31,7 +31,9 @@ class AliasesController extends Controller {
                 return redirect('/aliases');
             }
         }
+        $aliascode = sha1(uniqid().$request->domain.microtime().$request->application_id);
         Alias::create([
+            'aliascode'     => $aliascode,
             'domain'        => $request->domain,
             'application_id'=> $request->application_id
         ]);
@@ -57,9 +59,9 @@ class AliasesController extends Controller {
 
     public function destroy(Request $request) {
         $this->validate($request, [
-            'id' => 'required|exists:aliases,id',
+            'aliascode' => 'required',
         ]);
-        $alias = Alias::find($request->id)->with('application')->firstOrFail();
+        $alias = Alias::where('aliascode', $request->aliascode)->with('application')->firstOrFail();
         $ssh = New SSH($alias->application->server->ip, $alias->application->server->port);
         if(!$ssh->login($alias->application->server->username, $alias->application->server->password)) {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
@@ -67,8 +69,8 @@ class AliasesController extends Controller {
         }
         $ssh->setTimeout(360);
         $ssh->exec('echo '.$alias->application->server->password.' | sudo -S sudo sh /cipi/alias-del.sh -d '.$alias->domain);
+        $request->session()->flash('alert-success', 'Alias '.$alias->domain.' has been removed!');
         $alias->delete();
-        $request->session()->flash('alert-success', 'Alias has been removed!');
         return redirect('/aliases');
     }
 
@@ -79,8 +81,8 @@ class AliasesController extends Controller {
         return $res;
     }
 
-    public function ssl($id) {
-        $alias = Alias::find($id)->with('application')->firstOrFail();
+    public function ssl($aliascode) {
+        $alias = Alias::where('aliascode', $aliascode)->with('application')->firstOrFail();
         $ssh = New SSH($alias->application->server->ip, $alias->application->server->port);
         if(!$ssh->login($alias->application->server->username, $alias->application->server->password)) {
             return abort(403);

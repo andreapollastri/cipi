@@ -18,7 +18,7 @@ class CreateApplicationsTable extends Migration
             $table->id();
             $table->string('domain');
             $table->bigInteger('server_id')->unsigned()->index();
-            $table->string('username');
+            $table->string('username')->index();
             $table->string('password');
             $table->string('dbpass');
             $table->string('basepath')->nullable()->default('public');

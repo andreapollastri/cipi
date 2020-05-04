@@ -49,7 +49,8 @@ Servers
                                 @elseif ($server->status == 1)
                                     <button type="button" class="btn btn-warning btn-sm">"{{ $server->name }}" is coming...</button>
                                 @else
-                                    <a href="/server/{{ $server->servercode }}">{{ $server->name }}</a>
+                                    {{ $server->name }}
+                                    <i data-toggle="modal" data-target="#changenameModal" class="far fa-edit" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
                                 @endif
                             </td>
                             <td class="text-center">
@@ -163,9 +164,11 @@ Servers
                             </td>
                             <td class="text-center d-none d-lg-table-cell">{{ $server->location }}</td>
                             <td class="text-center">
+                            @if($server->status == 2)
                             <a href="#" data-toggle="modal" data-target="#resetModal" data-servername="{{ $server->name }}" data-servercode="{{ $server->servercode }}" style="margin-right: 18px;">
                                 <i class="fas fa-key" style="color:gray;"></i>
                             </a>
+                            @endif
                             <i data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
                             </td>
                         </tr>
@@ -288,9 +291,41 @@ Servers
                     <div class=" row">
                         <div class="col-sm-12">
                             <div class="form-group">
-                                <input type="text" id="server-ip" required class="form-control" name="ip">
+                                <input type="text" id="server-ip" required class="form-control" name="ip" autocomplete="off">
                             </div>
                             <i class="fas fa-exclamation-circle" style="margin-left: 5px;"></i> Before submitting changes, double check the IP!
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                    <button type="submit" class="btn btn-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+
+<!-- CHANGE NAME -->
+<div class="modal fade" id="changenameModal" tabindex="-1" role="dialog" aria-labelledby="changenameModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="/server/changename" method="POST" class="ws-validate">
+                @csrf
+                <input type="hidden" name="servercode" id="server-code-name" value="">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="changenameModalLabel">Update Server Name</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class=" row">
+                        <div class="col-sm-12">
+                            <div class="form-group">
+                                <input type="text" id="server-name" required class="form-control" name="name" autocomplete="off">
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -327,9 +362,7 @@ Servers
                                     <option value="">YES! Delete this server.</option>
                                 </select>
                             </div>
-                            <div class="space"></div>
-                            <h6 class="text-danger">This can be undone.</h6>
-                            <h6 class="text-danger">You will lose access to your server.</h6>
+                            <h6 class="text-danger text-center"><b>This can't be undone and you'll lose access to your server</b></h6>
                         </div>
                     </div>
                 </div>
@@ -404,6 +437,14 @@ $('#changeipModal').on('show.bs.modal', function (event) {
     var modal = $(this)
     modal.find('#server-code-ip').val(servercode)
     modal.find('#server-ip').val(serverip)
+})
+$('#changenameModal').on('show.bs.modal', function (event) {
+    var button = $(event.relatedTarget)
+    var servercode = button.data('servercode')
+    var servername = button.data('servername')
+    var modal = $(this)
+    modal.find('#server-code-name').val(servercode)
+    modal.find('#server-name').val(servername)
 })
 </script>
 <script>

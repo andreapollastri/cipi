@@ -18,6 +18,7 @@ class CreateAliasesTable extends Migration
             $table->id();
             $table->string('domain');
             $table->bigInteger('application_id')->unsigned()->index();
+            $table->string('aliascode')->index();
             $table->timestamps();
         });
 

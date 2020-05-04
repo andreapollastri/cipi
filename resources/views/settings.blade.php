@@ -9,6 +9,14 @@ Settings
 
 
 @section('content')
+<div class="row">
+    <div class="col">
+        <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#apikeyModal">
+            <i class="fas fa-key fa-sm text-white-50"></i> API KEY
+        </a>
+    </div>
+</div>
+<div class="space"></div>
 @if(Session::has('alert-success'))
 <div class="alert alert-success" role="alert">
     <b><i class="fa fa-check" aria-hidden="true"></i></b> {{ Session::get('alert-success') }}
@@ -177,7 +185,45 @@ Settings
 
 
 @section('extra')
-
+<!-- API KEY -->
+<div class="modal fade" id="apikeyModal" tabindex="-1" role="dialog" aria-labelledby="apikeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="apikeyModalLabel">Api Key</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="space"></div>
+                <div class="row">
+                    <div class="col-sm-12 text-center">
+                        <b>APP KEY</b><br>
+                        <i>{{ $user->appkey }}</i><br><br>
+                        <b>APP SECRET</b><br>
+                        <span id="app-secret"><i>{{ $user->appsecret }}</i></span>
+                    </div>
+                </div>
+                <div class="space"></div>
+                <div class="row">
+                    <div class="col-sm-12 text-center">
+                        <a href="#" class="btn btn-sm btn-primary shadow-sm" id="apikey-renew">
+                            <i class="fas fa-sync fa-sm text-white-50"></i> Renew App Secret (confirm required)
+                        </a>
+                        <a href="#" class="btn btn-danger shadow-sm" id="apikey-confirm">
+                            <i class="fas fa-exclamation fa-sm text-white-50"></i> Are you really sure to renew App Secret?
+                        </a>
+                    </div>
+                </div>
+                <div class="space"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 @endsection
 
 
@@ -208,5 +254,36 @@ Settings
             $('#password-confirm').setCustomValidity('');
         }
     });
+</script>
+<script>
+$('#apikeyModal').on('show.bs.modal', function (event) {
+    $('#apikey-renew').show();
+    $('#apikey-confirm').hide();
+})
+</script>
+<script>
+$('#apikey-renew').click(function() {
+    $('#apikey-renew').hide();
+    $('#apikey-confirm').show();
+});
+$('#apikey-confirm').click(function() {
+    $('#apikey-confirm').hide();
+    $('#app-secret').empty();
+    $("#app-secret").html('<i class="fas fa-spinner fa-spin">');
+    $.ajax({
+        url: "/settings/secret",
+        type: "GET",
+        success: function(response){
+            $("#app-secret").empty();
+            $("#app-secret").html('<i>'+response+'</i>');
+            $('#apikey-renew').show();
+        },
+        error: function(response) {
+            $("#app-secret").empty();
+            $("#app-secret").html('<b style="color:red">Internal error. Retry!</b>');
+            $('#apikey-renew').show();
+        }
+    });
+});
 </script>
 @endsection

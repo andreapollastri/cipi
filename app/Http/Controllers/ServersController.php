@@ -69,6 +69,19 @@ class ServersController extends Controller
     }
 
 
+    public function changename(Request $request) {
+        $this->validate($request, [
+            'servercode' => 'required',
+            'name'       => 'required'
+        ]);
+        $server = Server::where('servercode', $request->servercode)->first();
+        $server->name = $request->input('name');
+        $server->save();
+        $request->session()->flash('alert-success', 'The name of server '.$server->ip.' has been updated!');
+        return redirect('/servers');
+    }
+
+
     public function destroy(Request $request) {
         $this->validate($request, [
             'servercode' => 'required',
@@ -81,7 +94,7 @@ class ServersController extends Controller
 
 
     public function reset($servercode) {
-        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             abort(500);
@@ -102,7 +115,7 @@ class ServersController extends Controller
     }
 
     public function nginx($servercode) {
-        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             abort(500);
@@ -113,7 +126,7 @@ class ServersController extends Controller
     }
 
     public function php($servercode) {
-        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             abort(500);
@@ -126,7 +139,7 @@ class ServersController extends Controller
     }
 
     public function mysql($servercode) {
-        $server = Server::where('servercode', $servercode)->firstOrFail();
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
         $ssh = New SSH($server->ip, $server->port);
         if(!$ssh->login($server->username, $server->password)) {
             abort(500);

@@ -49,8 +49,8 @@ Aliases
                         <td class="text-center">{{ $alias->application->server->ip }}</td>
                         <td class="text-center">{{ $alias->application->username }}</td>
                         <td class="text-center">
-                            <i class="fab fa-expeditedssl ssl-click" style="margin-right: 18px; cursor: pointer; color: gray;" data-alias="{{ $alias->id }}" id="ssl-{{ $alias->id }}"></i>
-                            <i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-alias-id="{{ $alias->id }}" data-alias-domain="{{ $alias->domain }}" style="color:gray; cursor: pointer;"></i>
+                            <i class="fab fa-expeditedssl ssl-click" style="margin-right: 18px; cursor: pointer; color: gray;" data-alias="{{ $alias->aliascode }}" id="ssl-{{ $alias->aliascode }}"></i>
+                            <i class="fas fa-trash-alt" data-toggle="modal" data-target="#deleteModal" class="fas fa-trash-alt" data-alias-id="{{ $alias->aliascode }}" data-alias-domain="{{ $alias->domain }}" style="color:gray; cursor: pointer;"></i>
                         </td>
                     </tr>
                     @endforeach
@@ -114,7 +114,7 @@ Aliases
         <div class="modal-content">
             <form action="/alias/destroy" method="POST">
                 @csrf
-                <input type="hidden" name="id" id="alias-id" value="">
+                <input type="hidden" name="aliascode" id="alias-id" value="">
                 <div class="modal-header">
                     <h5 class="modal-title" id="deleteModalLabel">Delete alias</h5>
                     <button type="button" class="close" data-dismiss="modal" aria-label="Close">

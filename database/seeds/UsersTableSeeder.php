@@ -17,10 +17,12 @@ class UsersTableSeeder extends Seeder
     	User::query()->truncate();
 
 		return User::create([
-			'name' => config('app.cipi_user'),
-			'email' => config('app.cipi_email'),
-			'password' => Hash::make(config('app.cipi_password')),
+			'name'              => config('app.cipi_user'),
+			'email'             => config('app.cipi_email'),
+			'password'          => Hash::make(config('app.cipi_password')),
             'email_verified_at' => Carbon::now(),
+            'appkey'            => md5(uniqid()),
+            'appsecret'         => sha1(microtime())
 		]);
     }
 }

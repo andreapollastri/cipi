@@ -43,6 +43,7 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/create', 'ServersController@create');
         Route::post('/destroy', 'ServersController@destroy');
         Route::post('/changeip', 'ServersController@changeip');
+        Route::post('/changename', 'ServersController@changename');
         Route::get('/reset/{servercode}', 'ServersController@reset');
         Route::get('/nginx/{servercode}', 'ServersController@nginx');
         Route::get('/php/{servercode}', 'ServersController@php');
@@ -62,7 +63,7 @@ Route::group(['middleware' => 'auth'], function () {
     Route::group(['prefix' => 'alias'], function () {
         Route::post('/create', 'AliasesController@create');
         Route::post('/destroy', 'AliasesController@destroy');
-        Route::get('/ssl/{id}', 'AliasesController@ssl');
+        Route::get('/ssl/{aliascode}', 'AliasesController@ssl');
     });
     Route::group(['prefix' => 'users'], function () {
         Route::get('/', 'UsersController@index');
@@ -73,5 +74,6 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/username', 'SettingsController@updateUsername');
         Route::post('/password', 'SettingsController@updatePassword');
         Route::post('/smtp', 'SettingsController@updateSmtp');
+        Route::get('/secret', 'SettingsController@updateSecret');
     });
 });

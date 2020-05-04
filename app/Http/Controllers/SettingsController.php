@@ -57,4 +57,12 @@ class SettingsController extends Controller
         return redirect('/settings');
     }
 
+    public function updateSecret() {
+        $appsecret = sha1(microtime());
+        auth()->user()->update([
+          'appsecret' => $appsecret
+        ]);
+        return $appsecret;
+    }
+
 }
