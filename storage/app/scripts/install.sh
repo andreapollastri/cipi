@@ -163,6 +163,8 @@ sudo cat > "$DATABASE" <<EOF
 $DBPASS
 EOF
 
+DEBIAN_FRONTEND=noninteractive apt-get install postfix
+
 clear
 echo "Server basic configuration: OK!"
 sleep 3s
