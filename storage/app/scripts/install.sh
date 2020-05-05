@@ -731,7 +731,7 @@ sudo systemctl restart nginx.service
 
 curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq  postfix
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq postfix
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"
