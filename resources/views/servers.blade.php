@@ -49,7 +49,7 @@ Servers
                                 @elseif ($server->status == 1)
                                     <button type="button" class="btn btn-warning btn-sm">"{{ $server->name }}" is coming...</button>
                                 @else
-                                    {{ $server->name }}
+                                    <a href="/server/{{ $server->servercode }}"><b>{{ $server->name }}</b></a>
                                     <i data-toggle="modal" data-target="#changenameModal" class="far fa-edit" data-servercode="{{ $server->servercode }}" data-servername="{{ $server->name }}" style="color:gray; cursor: pointer;"></i>
                                 @endif
                             </td>
