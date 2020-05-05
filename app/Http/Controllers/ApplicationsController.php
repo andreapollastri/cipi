@@ -25,6 +25,7 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'domain' => 'required',
             'server_id' => 'required',
+            'basepath' => 'required',
             'php' => 'required'
         ]);
         if(Application::where('domain', $request->domain)->where('server_id', $request->server_id)->first()) {

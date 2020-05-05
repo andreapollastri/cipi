@@ -416,6 +416,7 @@ sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again p
 sudo apt-get -y install mysql-server mysql-client
 
 fi
+
 echo "Mysql: OK!"
 sleep 3s
 
@@ -699,6 +700,11 @@ sudo cat > "$WELCOME" <<EOF
 </body>
 </html>
 EOF
+
+sudo apt-get install -y php-curl
+sudo apt-get install -y yarn
+composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
+
 clear
 echo "Cipi pages creation: OK!"
 sleep 3s
