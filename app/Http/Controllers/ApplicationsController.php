@@ -25,7 +25,6 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'domain' => 'required',
             'server_id' => 'required',
-            'basepath' => 'required',
             'php' => 'required'
         ]);
         if(Application::where('domain', $request->domain)->where('server_id', $request->server_id)->first()) {
@@ -65,7 +64,11 @@ class ApplicationsController extends Controller {
             return redirect('/applications');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -php '.$request->php.' -a '.$appcode);
+        if($base) {
+            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -php '.$request->php.' -a '.$appcode);
+        } else {
+            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -php '.$request->php.' -a '.$appcode);
+        }
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/applications');

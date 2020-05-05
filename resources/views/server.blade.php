@@ -116,7 +116,7 @@
                         <label for="basepath" class="col-md-4 col-form-label text-md-right">Basepath</label>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <input id="basepath" type="text" class="form-control" name="basepath" required autocomplete="off" placeholder="E.g. 'public' or 'wp'" value="public">
+                                <input id="basepath" type="text" class="form-control" name="basepath" autocomplete="off" placeholder="E.g. 'public'" value="public">
                             </div>
                         </div>
                     </div>
