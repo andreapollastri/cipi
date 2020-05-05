@@ -700,8 +700,7 @@ sudo cat > "$WELCOME" <<EOF
 EOF
 
 sudo apt-get install -y yarn
-sudo apt-get install -y php74-php-curl
-sudo service php7.4-fpm restart
+sudo apt-get install -y php-curl
 composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
 
 clear
@@ -732,7 +731,7 @@ sudo systemctl restart nginx.service
 
 curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
 
-DEBIAN_FRONTEND=noninteractive apt-get install postfix
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq  postfix
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"
