@@ -163,8 +163,6 @@ sudo cat > "$DATABASE" <<EOF
 $DBPASS
 EOF
 
-DEBIAN_FRONTEND=noninteractive apt-get install postfix
-
 clear
 echo "Server basic configuration: OK!"
 sleep 3s
@@ -701,8 +699,9 @@ sudo cat > "$WELCOME" <<EOF
 </html>
 EOF
 
-sudo apt-get install -y php-curl
 sudo apt-get install -y yarn
+sudo apt-get install -y php74-php-curl
+sudo service php7.4-fpm restart
 composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
 
 clear
@@ -732,6 +731,8 @@ crontab $TASK
 sudo systemctl restart nginx.service
 
 curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
+
+DEBIAN_FRONTEND=noninteractive apt-get install postfix
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"
