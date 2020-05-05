@@ -42,7 +42,7 @@ class DatabasesController extends Controller {
         $application->save();
         $app = [
             'user'          => $request->username,
-            'pass'          => $request->password,
+            'pass'          => $application->password,
             'dbname'        => $request->username,
             'dbuser'        => $request->username,
             'dbpass'        => $pass,
