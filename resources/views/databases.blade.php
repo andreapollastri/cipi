@@ -3,7 +3,7 @@
 
 
 @section('title')
-Users
+Databases
 @endsection
 
 
@@ -16,21 +16,24 @@ Users
                 <thead>
                     <tr>
                         <th class="text-center">User</th>
+                        <th class="text-center">Database</th>
                         <th class="text-center d-none d-lg-table-cell">Application</th>
-                        <th class="text-center">Server</th>
                         <th class="text-center d-none d-lg-table-cell">IP</th>
                         <th class="text-center">Actions</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach($users as $user)
+                    @foreach($databases as $database)
                     <tr>
-                        <td class="text-center">{{ $user->username }}</td>
-                        <td class="text-center">{{ $user->domain }}</td>
-                        <td class="text-center">{{ $user->server->name }}</td>
-                        <td class="text-center d-none d-lg-table-cell">{{ $user->server->ip }}</td>
+                        <td class="text-center">{{ $database->username }}</td>
+                        <td class="text-center">{{ $database->username }}</td>
+                        <td class="text-center">{{ $database->domain }}</td>
+                        <td class="text-center d-none d-lg-table-cell">{{ $database->server->ip }}</td>
                         <td class="text-center">
-                            <a href="#" data-toggle="modal" data-target="#resetModal" data-username="{{ $user->username }}">
+                            <a target="_blank" style="margin-right: 18px;" href="http://{{ $database->server->ip }}/pma">
+                                <i class="fas fa-table" style="color:gray;"></i>
+                            </a>
+                            <a href="#" data-toggle="modal" data-target="#resetModal" data-username="{{ $database->username }}">
                                 <i class="fas fa-key" style="color:gray;"></i>
                             </a>
                         </td>
@@ -51,7 +54,7 @@ Users
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="resetModalLabel">Reset SSH/SFTP user</h5>
+                <h5 class="modal-title" id="resetModalLabel">Reset database user</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
@@ -59,8 +62,8 @@ Users
             <div class="modal-body text-center">
                 Are you sure to reset password for user:<br>
                 <b><span class="ajax-user"></span></b>?<br><br>
-                SSH/SFTP password will be reset!<br><br>
-                <form action="users/reset" method="POST">
+                MySQL password will be reset!<br><br>
+                <form action="databases/reset" method="POST">
                     @csrf
                     <input type="hidden" name="username" value="" class="ajax-username-form">
                     <input type="submit" class="btn btn-primary" value="Yes, continue!">

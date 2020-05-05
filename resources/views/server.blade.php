@@ -48,7 +48,7 @@
                     <tr>
                         <td class="text-center">{{ $application->domain }}</td>
                         <td class="text-center">{{ $application->username }}</td>
-                        <td class="text-center">{{ $application->basepath }}</td>
+                        <td class="text-center">/{{ $application->basepath }}</td>
                         <td class="text-center">{{ $application->php }}</td>
                         <td class="text-center">{{ count($application->aliases) }}</td>
                         <td class="text-center">

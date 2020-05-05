@@ -7,12 +7,12 @@ use App\Application;
 use phpseclib\Net\SSH2 as SSH;
 
 
-class UsersController extends Controller {
+class DatabasesController extends Controller {
 
 
     public function index() {
-        $users = Application::all();
-        return view('users', compact('users'));
+        $databases = Application::all();
+        return view('databases', compact('databases'));
     }
 
 
@@ -26,9 +26,9 @@ class UsersController extends Controller {
             $request->session()->flash('alert-error', 'There was a problem with server connection.');
             return redirect('/users');
         }
-        $pass = sha1(uniqid().microtime().$application->domain);
+        $pass = sha1(uniqid().microtime().$application->ip);
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/passwd.sh -u '.$request->username.' -p '.$pass.' -dbp '.$application->dbpass. ' -dbop '.$application->dbpass);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/passwd.sh -u '.$request->username.' -p '.$application->password.' -dbp '.$pass. ' -dbop '.$application->dbpass);
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/users');
@@ -38,14 +38,14 @@ class UsersController extends Controller {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/users');
         }
-        $application->password = $pass;
+        $application->dbpass = $pass;
         $application->save();
         $app = [
             'user'          => $request->username,
-            'pass'          => $pass,
+            'pass'          => $request->password,
             'dbname'        => $request->username,
             'dbuser'        => $request->username,
-            'dbpass'        => $application->dbpass,
+            'dbpass'        => $pass,
             'path'          => $application->basepath,
             'domain'        => $application->domain,
             'php'           => $application->php,

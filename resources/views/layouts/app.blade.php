@@ -45,6 +45,12 @@
                     <span>Aliases</span>
                 </a>
             </li>
+            <li class="nav-item {{ request()->is('databases') ? 'active' : '' }}">
+                <a class="nav-link" href="/databases">
+                    <i class="fas fa-fw fa-database"></i>
+                    <span>Databases</span>
+                </a>
+            </li>
             <li class="nav-item {{ request()->is('users') ? 'active' : '' }}">
                 <a class="nav-link" href="/users">
                     <i class="fas fa-fw fa-users"></i>

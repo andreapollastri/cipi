@@ -65,6 +65,10 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/destroy', 'AliasesController@destroy');
         Route::get('/ssl/{aliascode}', 'AliasesController@ssl');
     });
+    Route::group(['prefix' => 'databases'], function () {
+        Route::get('/', 'DatabasesController@index');
+        Route::post('/reset', 'DatabasesController@reset');
+    });
     Route::group(['prefix' => 'users'], function () {
         Route::get('/', 'UsersController@index');
         Route::post('/reset', 'UsersController@reset');
