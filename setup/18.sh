@@ -292,20 +292,6 @@ sleep 3s
 
 
 
-#GIT
-clear
-echo "Git installation..."
-sleep 3s
-
-sudo apt-get -y install git
-sudo ssh-keygen -t rsa -C "git@github.com" -f /cipi/github -q -P ""
-
-clear
-echo "Git installation: OK!"
-sleep 3s
-
-
-
 #COMPOSER
 clear
 echo "Composer installation..."
@@ -319,34 +305,6 @@ sudo composer config --global repo.packagist composer https://packagist.org
 
 clear
 echo "Composer installation: OK!"
-sleep 3s
-
-
-
-#SUPERVISOR
-clear
-echo "Supervisor installation..."
-sleep 3s
-
-sudo apt-get -y install supervisor
-service supervisor restart
-
-clear
-echo "Supervisor installation: OK!"
-sleep 3s
-
-
-
-#NODE
-clear
-echo "node.js & npm installation..."
-sleep 3s
-
-curl -sL https://deb.nodesource.com/setup_12.x | sudo -E bash -
-sudo apt-get -y install nodejs
-
-clear
-echo "node.js & npm: OK!"
 sleep 3s
 
 

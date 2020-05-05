@@ -315,19 +315,6 @@ sleep 3s
 
 
 
-#GIT
-clear
-echo "Git installation..."
-sleep 3s
-
-sudo apt-get -y install git
-sudo ssh-keygen -t rsa -C "git@github.com" -f /cipi/github -q -P ""
-
-clear
-echo "Git installation: OK!"
-sleep 3s
-
-
 
 #COMPOSER
 clear
@@ -342,44 +329,6 @@ sudo composer config --global repo.packagist composer https://packagist.org
 
 clear
 echo "Composer installation: OK!"
-sleep 3s
-
-
-
-#SUPERVISOR
-clear
-echo "Supervisor installation..."
-sleep 3s
-
-sudo apt-get -y install supervisor
-service supervisor restart
-
-clear
-echo "Supervisor installation: OK!"
-sleep 3s
-
-
-
-#NODE
-clear
-echo "node.js & npm installation..."
-sleep 3s
-
-curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
-curl -sL https://deb.nodesource.com/setup_14.x | sudo -E bash -
-NODE=/etc/apt/sources.list.d/nodesource.list
-sudo unlink NODE
-sudo touch $NODE
-sudo cat > "$NODE" <<EOF
-deb https://deb.nodesource.com/node_14.x focal main
-deb-src https://deb.nodesource.com/node_14.x focal main
-EOF
-sudo apt-get update
-sudo apt -y install nodejs
-sudo apt -y install npm
-
-clear
-echo "node.js & npm: OK!"
 sleep 3s
 
 
