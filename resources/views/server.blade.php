@@ -63,19 +63,26 @@
         </div>
     </div>
 </div>
+<hr>
 <div class="row">
     <div class="col">
         <span id="server-id" servercode="{{ $server->servercode }}"></span>
-        <span id="reset-mysql" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
-            <i id="reset-mysql-icon" class="fas fa-redo fa-sm text-white-50"></i> MySql
+        <span id="reset-supervisor" style="margin-right: 10px; font-size: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-supervisor-icon" class="d-none d-md-inline fas fa-redo fa-sm text-white-50"></i> SUPERVISOR
         </span>
-        <span id="reset-php" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
-            <i id="reset-php-icon" class="fas fa-redo fa-sm text-white-50"></i> php
+        <span id="reset-redis" style="margin-right: 10px; font-size: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-redis-icon" class="d-none d-md-inline fas fa-redo fa-sm text-white-50"></i> REDIS
         </span>
-        <span id="reset-nginx" style="margin-right: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
-            <i id="reset-nginx-icon" class="fas fa-redo fa-sm text-white-50"></i> nginx
+        <span id="reset-mysql" style="margin-right: 10px; font-size: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-mysql-icon" class="d-none d-md-inline fas fa-redo fa-sm text-white-50"></i> MYSQL
         </span>
-        <span style="margin-right: 10px; font-size: 14px;" class="float-right">RESTART SERVICES</span>
+        <span id="reset-php" style="margin-right: 10px; font-size: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-php-icon" class="d-none d-md-inline fas fa-redo fa-sm text-white-50"></i> PHP
+        </span>
+        <span id="reset-nginx" style="margin-right: 10px; font-size: 10px;" class="btn btn-sm btn-primary shadow-sm float-right">
+            <i id="reset-nginx-icon" class="d-none d-md-inline fas fa-redo fa-sm text-white-50"></i> NGINX
+        </span>
+        <span style="margin-right: 10px; font-size: 10px;" class="float-right d-none d-sm-inline">RESTART SERVICES</span>
     </div>
 </div>
 @endsection
@@ -299,6 +306,38 @@ $('#deleteModal').on('show.bs.modal', function (event) {
             error: function(response) {
                 $("#reset-mysql-icon").removeClass("fa-spinner fa-spin");
                 $("#reset-mysql-icon").addClass("fa-times");
+            }
+        });
+    });
+    $("#reset-redis").click(function() {
+        $("#reset-redis-icon").removeClass("fas fa-redo");
+        $("#reset-redis-icon").addClass("fas fa-spinner fa-spin");
+        $.ajax({
+            url: "/server/redis/"+server,
+            type: "GET",
+            success: function(response){
+                $("#reset-redis-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-redis-icon").addClass("fa-redo");
+            },
+            error: function(response) {
+                $("#reset-redis-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-redis-icon").addClass("fa-times");
+            }
+        });
+    });
+    $("#reset-supervisor").click(function() {
+        $("#reset-supervisor-icon").removeClass("fas fa-redo");
+        $("#reset-supervisor-icon").addClass("fas fa-spinner fa-spin");
+        $.ajax({
+            url: "/server/supervisor/"+server,
+            type: "GET",
+            success: function(response){
+                $("#reset-supervisor-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-supervisor-icon").addClass("fa-redo");
+            },
+            error: function(response) {
+                $("#reset-supervisor-icon").removeClass("fa-spinner fa-spin");
+                $("#reset-supervisor-icon").addClass("fa-times");
             }
         });
     });

@@ -131,6 +131,7 @@ sudo apt-get upgrade -y
 sudo apt-get update
 clear
 
+clear
 echo "Repositories: OK!"
 sleep 3s
 
@@ -182,6 +183,7 @@ sudo apt-get -y install nginx
 sudo systemctl start nginx.service
 sudo systemctl enable nginx.service
 
+clear
 echo "nginx: OK!"
 sleep 3s
 
@@ -258,6 +260,7 @@ server {
 EOF
 sudo systemctl restart nginx.service
 
+clear
 echo "PHP: OK!"
 sleep 3s
 
@@ -297,9 +300,9 @@ GRANT ALL PRIVILEGES ON *.* TO 'cipi'@'%' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
 EOF
 
+clear
 echo "Mysql: OK!"
 sleep 3s
-
 
 
 
@@ -310,6 +313,7 @@ sleep 3s
 
 sudo snap install --beta --classic certbot
 
+clear
 echo "Let's Encrypt: OK!"
 sleep 3s
 
@@ -382,6 +386,7 @@ cd /var/www/html && php artisan view:cache
 cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan migrate --seed --force
 cd /var/www/html && php artisan config:cache
+
 clear
 echo "Application installation: OK!"
 sleep 3s

@@ -48,6 +48,8 @@ Route::group(['middleware' => 'auth'], function () {
         Route::get('/nginx/{servercode}', 'ServersController@nginx');
         Route::get('/php/{servercode}', 'ServersController@php');
         Route::get('/mysql/{servercode}', 'ServersController@mysql');
+        Route::get('/redis/{servercode}', 'ServersController@redis');
+        Route::get('/supervisor/{servercode}', 'ServersController@supervisor');
     });
     Route::group(['prefix' => 'applications'], function () {
         Route::get('/', 'ApplicationsController@index');

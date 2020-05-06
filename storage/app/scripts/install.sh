@@ -415,7 +415,23 @@ sudo apt-get -y install mysql-server mysql-client
 
 fi
 
+clear
 echo "Mysql: OK!"
+sleep 3s
+
+
+
+#REDIS
+clear
+echo "Redis installation..."
+sleep 3s
+
+sudo apt install -y redis-server
+sudo rpl -i -w "supervised no" "supervised systemd" /etc/redis/redis.conf
+sudo systemctl restart redis.service
+
+clear
+echo "Redis: OK!"
 sleep 3s
 
 
@@ -432,6 +448,7 @@ sudo add-apt-repository -y ppa:certbot/certbot
 sudo apt-get -y install python-certbot-nginx
 fi
 
+clear
 echo "Let's Encrypt: OK!"
 sleep 3s
 
@@ -511,6 +528,35 @@ fi
 clear
 echo "node.js & npm: OK!"
 sleep 3s
+
+
+
+#POSTFIX
+clear
+echo "Postfix installation..."
+sleep 3s
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq postfix
+
+clear
+echo "Postfix installation: OK!"
+sleep 3s
+echo -e "\n"
+
+
+#PHPMYADMIN
+clear
+echo "phpmyadmin installation..."
+sleep 3s
+
+sudo apt-get install -y yarn
+sudo apt-get install -y php-curl
+composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
+
+clear
+echo "phpmyadmin installation: OK!"
+sleep 3s
+echo -e "\n"
 
 
 #CIPI PAGES
@@ -699,9 +745,6 @@ sudo cat > "$WELCOME" <<EOF
 </html>
 EOF
 
-sudo apt-get install -y yarn
-sudo apt-get install -y php-curl
-composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
 
 clear
 echo "Cipi pages creation: OK!"
@@ -730,8 +773,6 @@ crontab $TASK
 sudo systemctl restart nginx.service
 
 curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
-
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -yq postfix
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"

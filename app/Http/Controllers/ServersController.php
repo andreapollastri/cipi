@@ -150,4 +150,28 @@ class ServersController extends Controller
     }
 
 
+    public function redis($servercode) {
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $ssh->setTimeout(360);
+        $ssh->exec('sudo systemctl restart redis.service');
+        return 'OK';
+    }
+
+
+    public function supervisor($servercode) {
+        $server = Server::where('servercode', $servercode)->where('status', 2)->firstOrFail();
+        $ssh = New SSH($server->ip, $server->port);
+        if(!$ssh->login($server->username, $server->password)) {
+            abort(500);
+        }
+        $ssh->setTimeout(360);
+        $ssh->exec('service supervisor restart');
+        return 'OK';
+    }
+
+
 }
