@@ -82,6 +82,6 @@ Route::group(['middleware' => 'auth'], function () {
         Route::post('/smtp', 'SettingsController@updateSmtp');
         Route::get('/secret', 'SettingsController@updateSecret');
         Route::get('/export', 'SettingsController@exportCipi');
-        Route::get('/import', 'SettingsController@importCipi');
+        Route::post('/import', 'SettingsController@importCipi');
     });
 });

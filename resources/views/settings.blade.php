@@ -14,11 +14,11 @@ Settings
         <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" data-toggle="modal" data-target="#apikeyModal">
             <i class="fas fa-key fa-sm text-white-50"></i> API KEY
         </a>
-        <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" style="margin-right:8px" data-toggle="modal" data-target="#apikeyModal">
-            <i class="fas fa-key fa-sm text-white-50"></i> EXPORT
+        <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" style="margin-right:8px" data-toggle="modal" data-target="#exportModal">
+            <i class="fas fa-arrow-down text-white-50"></i> EXPORT
         </a>
-        <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" style="margin-right:8px" data-toggle="modal" data-target="#apikeyModal">
-            <i class="fas fa-key fa-sm text-white-50"></i> IMPORT
+        <a href="#" class="btn btn-sm btn-primary shadow-sm float-right" style="margin-right:8px" data-toggle="modal" data-target="#importModal">
+            <i class="fas fa-arrow-up fa-sm text-white-50"></i> IMPORT
         </a>
     </div>
 </div>
@@ -218,7 +218,80 @@ Settings
                             <i class="fas fa-sync fa-sm text-white-50"></i> Renew App Secret (confirm required)
                         </a>
                         <a href="#" class="btn btn-danger shadow-sm" id="apikey-confirm">
-                            <i class="fas fa-exclamation fa-sm text-white-50"></i> Are you really sure to renew App Secret?
+                            Are you really sure to renew App Secret?
+                        </a>
+                    </div>
+                </div>
+                <div class="space"></div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- IMPORT -->
+<div class="modal fade" id="importModal" tabindex="-1" role="dialog" aria-labelledby="importModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <form action="/settings/import" method="POST">
+                @csrf
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">Import Cipi migration</h5>
+                    <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="space"></div>
+                    <div class="row">
+                        <div class="col-sm-12 text-center">
+                            Copy your migration key into this area:<br>
+                            <textarea name="cipikey" class="form-group" style="width:100%;height:80px;"></textarea><br>
+                            <b><i>All data in current Cipi db will be delete!</b></i>
+                            <div class="space"></div>
+                        </div>
+                    </div>
+                    <div class="row">
+                        <div class="col-sm-12 text-center">
+                            <a href="#" class="btn btn-sm btn-primary shadow-sm" id="import-confirm">
+                                <i class="fas fa-arrow-up fa-sm text-white-50"></i> Import migration
+                            </a>
+                            <input type="submit" value="Click to confirm migration import" class="btn btn-danger shadow-sm" id="import-submit">
+                        </div>
+                    </div>
+                    <div class="space"></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<!-- EXPORT -->
+<div class="modal fade" id="exportModal" tabindex="-1" role="dialog" aria-labelledby="exportModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exportModalLabel">Export Cipi migration</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <div class="space"></div>
+                <div class="row">
+                    <div class="col-sm-12 text-center">
+                        This is your Cipi migration key:<br>
+                        <textarea name="cipikey" class="form-group" style="width:100%;height:80px;" id="export-key" readonly>Hold on... Cipi is generating a new migration key...</textarea><br>
+                        <div class="space"></div>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-sm-12 text-center">
+                        <a href="#" class="btn btn-sm btn-primary shadow-sm" id="export-copy">
+                            <i class="fas fa-arrow-down fa-sm text-white-50"></i> Copy migration key to clipboard
                         </a>
                     </div>
                 </div>
@@ -291,5 +364,37 @@ $('#apikey-confirm').click(function() {
         }
     });
 });
+</script>
+<script>
+    $('#importModal').on('show.bs.modal', function (event) {
+        $('#import-confirm').show();
+        $('#import-submit').hide();
+    });
+    $('#import-confirm').click(function() {
+        $('#import-confirm').hide();
+        $('#import-submit').show();
+    });
+</script>
+<script>
+    $('#exportModal').on('show.bs.modal', function (event) {
+        $.ajax({
+        url: "/settings/export",
+        type: "GET",
+        success: function(response){
+            $("#export-key").empty();
+            $("#export-key").val(response);
+        },
+        error: function(response) {
+            $("#export-key").empty();
+            $("#export-key").val('Error. Retry!');
+        }
+    });
+    })
+</script>
+<script>
+    $("#export-copy").click(function(){
+        $("#export-key").select();
+        document.execCommand('copy');
+    });
 </script>
 @endsection

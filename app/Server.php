@@ -8,6 +8,7 @@ class Server extends Model
 {
 
     protected $fillable = [
+        'id',
         'name',
         'provider',
         'location',

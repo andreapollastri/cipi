@@ -8,6 +8,7 @@ class Alias extends Model
 {
 
 	protected $fillable = [
+        'id',
         'domain',
         'application_id',
         'aliascode'

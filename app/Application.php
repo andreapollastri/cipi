@@ -8,6 +8,7 @@ class Application extends Model
 {
 
 	protected $fillable = [
+        'id',
         'server_id',
         'username',
         'password',

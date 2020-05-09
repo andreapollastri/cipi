@@ -91,19 +91,31 @@ class SettingsController extends Controller
 
     public function importCipi(Request $request) {
         $data = $request->input('cipikey');
-        $data = 'RFAzTFd2bE5YNHozcG1ZeHU3c0pCNVB0c2IvMDZUYkR4UFhvQy9Pd2dmVzFxU1gzU3ZmcHRlSVVlWTZzcDF0bW1iRGRmYkhjdWpBWlNqVW9CVi9wd2pqUUpEMHhRNGMwSElWZmVwYWdtUHY4V2NaVTNJdjBSd3AvZmVHNlVOcm13Mm1pYmdLQUl5TjBlVHhMYjdvV2xLZ0JUenBlVDQvMThPNURmbjFsMy9qTkJ5cHFiSTRydmRjMmhNTkt6S3Q2NTdvNEpYZlZRTHYxckNRM2RxVklmZGNWQVhsdVhCOS9DRW4rTG1RS0Jzek5pTmc3b0ZRR2dhdkMzMDAzdHpKR2xkQWdVT25INFJJWnJFVGNxYXhkMmxxSllQNGlkYWJheHltM0JwR0I2VlljQkdPYUZrTitLNG1abjRQc2ozNWJDR2lFcWpSY0lWMlJ1YUJXRnV0dVJDZVZVSjNnOXlOWmc1WDRwT1FXRldGc2swblhHNG9wcHkrdzBTd3hSWFhoaVZUdWtiZlhKSnc3UURVd2VyWGd6L0VYYStNZ2tZVFpKd25hUzhZUzlDendkUlNrRVJ2RlF1T0VEOFZ4TTUySS9YNDEwNHJpTGZpQWoweEVuUmhMdnRsekI4OVAzaWllNHF1T01sbHJwWEV6ajkyWTVlMVhmcnRnWXNnVERmcDI6Ohl9gSSY9a7hKz54a1+aLmA=';
         $encryption_key = base64_decode('#CiPi-MiGrAtIoN@v2');
-        list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);
-        $data = openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
-        $data = explode('###CIPIBR###', $data);
-        $servers = explode('###CIPISERVER###', $data[0]);
-        $applications = explode('###CIPIAPPLICATION###', $data[1]);
-        $aliases = explode('###CIPIALIAS###', $data[2]);
-        if($servers && $applications && $aliases) {
+        try {
+            list($encrypted_data, $iv) = explode('::', base64_decode($data), 2);
+        } catch (\Throwable $th) {
+            $request->session()->flash('alert-error', 'Invalid Cipi migration key. Retry!');
+            return redirect('/settings');
+        }
+        try {
+            $data = openssl_decrypt($encrypted_data, 'aes-256-cbc', $encryption_key, 0, $iv);
+        } catch (\Throwable $th) {
+            $request->session()->flash('alert-error', 'Invalid Cipi migration key. Retry!');
+            return redirect('/settings');
+        }
+        if(strpos($data, '###CIPIBR###') === false) {
+            $request->session()->flash('alert-error', 'Invalid Cipi migration key. Retry!');
+            return redirect('/settings');
+        } else {
             Alias::query()->delete();
             Application::query()->delete();
             Server::query()->delete();
         }
+        $data = explode('###CIPIBR###', $data);
+        $servers = explode('###CIPISERVER###', $data[0]);
+        $applications = explode('###CIPIAPPLICATION###', $data[1]);
+        $aliases = explode('###CIPIALIAS###', $data[2]);
         foreach ($servers as $server) {
             if($server) {
                 $server = explode(',', $server);
@@ -148,6 +160,8 @@ class SettingsController extends Controller
                 ]);
             }
         }
+        $request->session()->flash('alert-success', 'Your migration has been imported.');
+        return redirect('/settings');
     }
 
 
