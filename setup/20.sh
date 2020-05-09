@@ -169,6 +169,7 @@ sudo ufw allow http
 sudo ufw allow https
 sudo ufw allow "Nginx Full"
 
+clear
 echo "Firewall: OK!"
 sleep 3s
 
@@ -349,7 +350,6 @@ sudo usermod -aG sudo cipi
 clear
 echo "User creation: OK!"
 sleep 3s
-echo -e "\n"
 
 
 
