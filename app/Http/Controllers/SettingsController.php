@@ -72,8 +72,9 @@ class SettingsController extends Controller
         $servers = Server::all();
         $applications = Application::all();
         $aliases = Alias::all();
+        $data = '';
         foreach($servers as $server) {
-            $data = $server->id.','.$server->name.','.$server->provider.','.$server->location.','.$server->ip.','.$server->port.','.$server->username.','.$server->password.','.$server->dbroot.','.$server->status.','.$server->servercode.'###CIPISERVER###';
+            $data .= $server->id.','.$server->name.','.$server->provider.','.$server->location.','.$server->ip.','.$server->port.','.$server->username.','.$server->password.','.$server->dbroot.','.$server->status.','.$server->servercode.'###CIPISERVER###';
         }
         $data .= '###CIPIBR###';
         foreach($applications as $application) {
@@ -129,7 +130,8 @@ class SettingsController extends Controller
                     'username'  => $server[6],
                     'password'  => $server[7],
                     'dbroot'    => $server[8],
-                    'servercode'=> $server[9]
+                    'status'    => $server[9],
+                    'servercode'=> $server[10]
                 ]);
             }
         }
