@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.3.1] - 2020-05-09
+### Fixed
+- Bugfix on `Server.php` to fix Cipi data migration import (now server status is included in the migration)
+
 ## [2.3.0] - 2020-05-09
 ### Added
 - Added `LICENSE` and `CHANGELOG.md` files
