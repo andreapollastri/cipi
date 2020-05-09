@@ -217,17 +217,21 @@ sudo unlink JAIL
 sudo touch $JAIL
 sudo cat > "$JAIL" <<EOF
 [DEFAULT]
-# Ban hosts for one hour:
 bantime = 3600
-
-# Override /etc/fail2ban/jail.d/00-firewalld.conf:
 banaction = iptables-multiport
 
 [sshd]
 enabled = true
-
-# Auth log file
 logpath  = /var/log/auth.log
+
+[nginx-req-limit]
+enabled = true
+filter = nginx-req-limit
+action = iptables-multiport[name=ReqLimit, port=”http,https”, protocol=tcp]
+logpath = /var/log/nginx/*error.log
+findtime = 200
+bantime = 2600
+maxretry = 20
 EOF
 
 sudo systemctl restart fail2ban
@@ -337,6 +341,14 @@ server {
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options "nosniff";
+
+    limit_req_zone $binary_remote_addr zone=perip:10m rate=1r/s;
+    limit_req_zone $server_name zone=perserver:10m rate=10r/s;
+    limit_req zone=perip burst=5 nodelay;
+    limit_req zone=perserver burst=10;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    client_max_body_size 256M;
 
     index index.html index.php;
 
