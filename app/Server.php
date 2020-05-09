@@ -17,6 +17,7 @@ class Server extends Model
         'username',
         'password',
         'dbroot',
+        'status',
         'servercode',
     ];
 
