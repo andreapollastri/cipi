@@ -1,6 +1,5 @@
 #!/usr/bin/env bash
 
-REMOTE=???
 DBROOT=???
 
 BASE_PATH=
@@ -34,6 +33,10 @@ while [ -n "$1" ] ; do
         shift
         PHP=$1
         ;;
+    -r |  --remote )
+        shift
+        REMOTE=$1
+        ;;
     * )
         echo "ERROR: Unknown option: $1"
         exit -1
@@ -59,8 +62,8 @@ sudo cat > "$DBBKS" <<EOF
 #!/bin/bash
 
 ######### BACKUP CONFIGURATION #########
-DBUSER=ubb04699a5
-DBPASS=630db817327b70c677254fcdccb616186e9d19c5
+DBUSER=
+DBPASS=
 DAYS=7
 
 ######### DO NOT CHANGE ANYTHING IN THIS AREA #########

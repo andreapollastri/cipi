@@ -1,7 +1,5 @@
 #!/usr/bin/env bash
 
-REMOTE=???
-
 while [ -n "$1" ] ; do
     case $1 in
     -d | --domain )
@@ -11,6 +9,10 @@ while [ -n "$1" ] ; do
     -a |  --appcode )
             shift
             APPCODE=$1
+            ;;
+    -r |  --remote )
+            shift
+            REMOTE=$1
             ;;
     * )
             echo "ERROR: Unknown option: $1"

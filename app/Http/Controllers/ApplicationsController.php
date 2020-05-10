@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Routing\UrlGenerator;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Application;
@@ -11,6 +12,12 @@ use phpseclib\Net\SSH2 as SSH;
 use PDF;
 
 class ApplicationsController extends Controller {
+
+    protected $url;
+
+    public function __construct(UrlGenerator $url) {
+        $this->url = $url;
+    }
 
     public function index() {
         $applications = Application::with('server')->with('aliases')->get();
@@ -65,9 +72,9 @@ class ApplicationsController extends Controller {
         }
         $ssh->setTimeout(360);
         if($base) {
-            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -php '.$request->php.' -a '.$appcode);
+            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -b '.$base.' -php '.$request->php.' -a '.$appcode.' -r '.$this->url);
         } else {
-            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -php '.$request->php.' -a '.$appcode);
+            $response = $ssh->exec('echo '.$server->password.' | sudo -S sudo sh /cipi/host-add.sh -u '.$user.' -p '.$pass.' -dbp '.$dbpass.' -php '.$request->php.' -a '.$appcode.' -r '.$this->url);
         }
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
