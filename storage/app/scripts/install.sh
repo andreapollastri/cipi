@@ -253,7 +253,7 @@ sleep 3s
 
 sudo apt-get -y install nginx
 sudo systemctl start nginx.service
-sudo rpl -i -w "http {" "http { limit_req_zone $binary_remote_addr zone=one:10m rate=30r/m;" /etc/nginx/nginx.conf
+sudo rpl -i -w "http {" "http { limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s;" /etc/nginx/nginx.conf
 sudo systemctl enable nginx.service
 
 echo "nginx: OK!"

@@ -35,7 +35,6 @@ class ShellController extends Controller
         $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/hostadd.sh');
         $script = Str::replaceArray('???', [
-            $this->url->to('/'),
             $server->dbroot
         ], $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
@@ -88,9 +87,6 @@ class ShellController extends Controller
     public function aliasadd($servercode) {
         $server = Server::where('servercode', $servercode)->where('status', 1)->firstOrFail();
         $script = Storage::get('scripts/aliasadd.sh');
-        $script = Str::replaceArray('???', [
-            $this->url->to('/')
-        ], $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
