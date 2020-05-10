@@ -2,12 +2,19 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Routing\UrlGenerator;
 use Illuminate\Http\Request;
 use App\Application;
 use App\Alias;
 use phpseclib\Net\SSH2 as SSH;
 
 class AliasesController extends Controller {
+
+    protected $url;
+
+    public function __construct(UrlGenerator $url) {
+        $this->url = $url;
+    }
 
     public function index() {
         $aliases = Alias::orderBy('domain')->orderBy('application_id')->with('application')->get();
@@ -43,7 +50,7 @@ class AliasesController extends Controller {
             return redirect('/aliases');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode.' -r '.$this->url);
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/aliases');

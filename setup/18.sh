@@ -231,6 +231,14 @@ server {
 
     root /var/www/html/public;
 
+    limit_req_zone $binary_remote_addr zone=perip:10m rate=1r/s;
+    limit_req_zone $server_name zone=perserver:10m rate=10r/s;
+    limit_req zone=perip burst=5 nodelay;
+    limit_req zone=perserver burst=10;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    client_max_body_size 256M;
+
     add_header X-Frame-Options "SAMEORIGIN";
     add_header X-XSS-Protection "1; mode=block";
     add_header X-Content-Type-Options "nosniff";
