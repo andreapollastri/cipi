@@ -561,6 +561,35 @@ sleep 3s
 sudo apt-get install -y yarn
 sudo apt-get install -y php-curl
 composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
+sudo mkdir /var/www/html/pma/tmp/
+sudo chmod 777 /var/www/html/pma/tmp/
+sudo mv /var/www/html/pma/config.sample.inc.php /var/www/html/pma/config.inc.php
+sudo rpl -i -w "$cfg['blowfish_secret'] = '';" "$cfg['blowfish_secret'] = 'M12SQBq5JKVGA0qZ4ZhPBwfmb0hBYkMA';" /var/www/html/pma/config.inc.php
+
+if [ "$VERSION" = "20.04" ]; then
+
+DBNAME=phpmyadmin
+DBUSER=cipi
+/usr/bin/mysql -u cipi -p$DBPASS <<EOF
+CREATE DATABASE IF NOT EXISTS $DBNAME;
+use mysql;
+CREATE USER $DBUSER@'%' IDENTIFIED BY '$DBPASS';
+GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'%' WITH GRANT OPTION;
+FLUSH PRIVILEGES;
+EOF
+
+else
+
+DBNAME=phpmyadmin
+DBUSER=root
+/usr/bin/mysql -u root -p$DBPASS <<EOF
+CREATE DATABASE IF NOT EXISTS $DBNAME;
+CREATE USER $DBUSER@'localhost' IDENTIFIED BY '$DBPASS';
+GRANT USAGE ON *.* TO '$DBUSER'@'localhost' IDENTIFIED BY '$DBPASS' WITH MAX_QUERIES_PER_HOUR 0 MAX_CONNECTIONS_PER_HOUR 0 MAX_UPDATES_PER_HOUR 0 MAX_USER_CONNECTIONS 0;
+GRANT ALL PRIVILEGES ON $DBNAME.* TO $DBUSER@'localhost';
+EOF
+
+fi
 
 clear
 echo "phpmyadmin installation: OK!"
