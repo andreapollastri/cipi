@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.3.2] - 2020-05-11
+### Fixed
+- added dynamic remote URL in `hostadd.sh`, `aliasadd.sh`, `ApplicationsControllers.php` and `AliasesControllers.php` to fix migration Cipi compatibility
+### Changed
+- improvements in `haget.conf`, `install.sh` and `phpfpm.conf` to optimize PHP-FPM and nginx performance
+
 ## [2.3.1] - 2020-05-09
 ### Fixed
 - Bugfix on `Server.php` to fix Cipi data migration import (now server status is included in the migration)
