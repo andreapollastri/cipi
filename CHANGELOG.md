@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.4.1] - 2020-05-11
+### Fixed
+- Bug fix on `ApplicationsController.php` and `host-del.sh` to fix host destroy
+### Changed
+- Improvements of file2ban's security policies in `install.sh`
+
 ## [2.4.0] - 2020-05-11
 ### Fixed
 - Bug fix on `install.sh` to fix nginx lock and phpmyadmin configuration

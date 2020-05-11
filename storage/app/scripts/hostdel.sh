@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
 
+PHP=
 USER_NAME=
 DBROOT=???
 
@@ -9,6 +10,10 @@ while [ -n "$1" ] ; do
         shift
         USER_NAME=$1
         ;;
+    -p | --php* )
+        shift
+        PHP=$1
+        ;;
     * )
         echo "ERROR: Unknown option: $1"
         exit -1
@@ -17,6 +22,8 @@ while [ -n "$1" ] ; do
     shift
 done
 
+sudo rm /etc/php/$PHP/fpm/pool.d/$USER_NAME.conf
+sudo service php$PHP-fpm restart
 
 sudo userdel -r $USER_NAME
 

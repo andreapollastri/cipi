@@ -217,12 +217,14 @@ sudo unlink JAIL
 sudo touch $JAIL
 sudo cat > "$JAIL" <<EOF
 [DEFAULT]
-bantime = 3600
+bantime = 14400
+ignoreip = 127.0.0.1/8
 banaction = iptables-multiport
 
 [sshd]
 enabled = true
-logpath  = /var/log/auth.log
+logpath = /var/log/auth.log
+maxretry = 6
 
 [nginx-req-limit]
 enabled = true
