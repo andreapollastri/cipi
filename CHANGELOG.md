@@ -10,9 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
-## [2.3.4] - 2020-05-11
+## [2.4.0] - 2020-05-11
 ### Fixed
-- Bug fix on `install.sh` to fix n nginx lock and phpmyadmin configuration
+- Bug fix on `install.sh` to fix nginx lock and phpmyadmin configuration
 
 ## [2.3.3] - 2020-05-11
 ### Fixed
