@@ -253,7 +253,7 @@ sleep 3s
 
 sudo apt-get -y install nginx
 sudo systemctl start nginx.service
-sudo rpl -i -w "http {" "http { limit_req_zone $binary_remote_addr zone=one:10m rate=1r/s; fastcgi_read_timeout 300;" /etc/nginx/nginx.conf
+sudo rpl -i -w "http {" "http { limit_req_zone \$binary_remote_addr zone=one:10m rate=1r/s; fastcgi_read_timeout 300;" /etc/nginx/nginx.conf
 sudo systemctl enable nginx.service
 
 echo "nginx: OK!"
@@ -564,7 +564,7 @@ composer create-project phpmyadmin/phpmyadmin /var/www/html/pma
 sudo mkdir /var/www/html/pma/tmp/
 sudo chmod 777 /var/www/html/pma/tmp/
 sudo mv /var/www/html/pma/config.sample.inc.php /var/www/html/pma/config.inc.php
-sudo rpl -i -w "$cfg['blowfish_secret'] = '';" "$cfg['blowfish_secret'] = 'M12SQBq5JKVGA0qZ4ZhPBwfmb0hBYkMA';" /var/www/html/pma/config.inc.php
+sudo rpl -i -w "['blowfish_secret'] = '';" "['blowfish_secret'] = 'M12SQBq5JKVGA0qZ4ZhPBwfmb0hBYkMA';" /var/www/html/pma/config.inc.php
 
 if [ "$VERSION" = "20.04" ]; then
 
