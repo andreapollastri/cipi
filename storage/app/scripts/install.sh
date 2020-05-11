@@ -328,6 +328,8 @@ server {
 
     listen 80 default_server;
     listen [::]:80 default_server;
+    listen 443 ssl;
+    listen [::]:443 ssl;
 
     root /var/www/html;
 
