@@ -217,23 +217,13 @@ sudo unlink JAIL
 sudo touch $JAIL
 sudo cat > "$JAIL" <<EOF
 [DEFAULT]
-bantime = 14400
-ignoreip = 127.0.0.1/8
+bantime = 3600
 banaction = iptables-multiport
 
 [sshd]
 enabled = true
-logpath = /var/log/auth.log
-maxretry = 6
 
-[nginx-req-limit]
-enabled = true
-filter = nginx-req-limit
-action = iptables-multiport[name=ReqLimit, port=”http,https”, protocol=tcp]
-logpath = /var/log/nginx/*error.log
-findtime = 200
-bantime = 2600
-maxretry = 20
+logpath  = /var/log/auth.log
 EOF
 
 sudo systemctl restart fail2ban
