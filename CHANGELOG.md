@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.4.3] - 2020-05-11
+### Changed
+- Improvements in `haget.conf` for http\2 support
+
 ## [2.4.2] - 2020-05-11
 ### Changed
 - Improvements of file2ban's security policies in `install.sh`
