@@ -17,7 +17,6 @@ done
 
 sudo unlink /etc/cron.d/certbot_renew_$DOMAIN.crontab
 
-
 sudo unlink /etc/nginx/sites-enabled/$USER_NAME.conf
 sudo unlink /etc/nginx/sites-available/$USER_NAME.conf
 sudo systemctl restart nginx.servic
