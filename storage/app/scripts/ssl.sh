@@ -25,6 +25,5 @@ sudo systemctl restart nginx.service
 sed -i 's/443 ssl/443 ssl http2/g' /etc/nginx/sites-enabled/$CONFIG.conf
 sudo systemctl restart nginx.service
 
-
 clear
 echo "###CIPI###Ok"
