@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.4.5] - 2020-05-12
+### Fixed
+- Bug fix on `install.sh`, `ApplicationsController.php`, `AliasesController.php`, `hostadd.sh` and `ssl.sh` for http\2 support
+
 ## [2.4.4] - 2020-05-11
 ### Fixed
 - Bug fix on `install.sh` for http\2 support

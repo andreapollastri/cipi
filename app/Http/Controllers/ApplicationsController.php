@@ -154,7 +154,7 @@ class ApplicationsController extends Controller {
             return abort(403);
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$application->domain);
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$application->domain.' -c '.$application->username);
         if(strpos($response, '###CIPI###') === false) {
             abort(500);
         }

@@ -95,7 +95,7 @@ class AliasesController extends Controller {
             return abort(403);
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$alias->application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$alias->domain);
+        $response = $ssh->exec('echo '.$alias->application->server->password.' | sudo -S sudo sh /cipi/ssl.sh -d '.$alias->domain.' -c '.$alias->domain);
         if(strpos($response, '###CIPI###') === false) {
             abort(500);
         }
