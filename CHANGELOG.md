@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.4.7] - 2020-05-13
+### Fixed
+- Bug fix on user permissions in `hostadd.sh` and `hostdel.sh`.
+
 ## [2.4.6] - 2020-05-12
 ### Fixed
 - Bug fix on `install.sh`, `hostadd.sh` and `ssl.sh` for http\2 support

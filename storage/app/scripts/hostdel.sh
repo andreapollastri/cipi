@@ -26,7 +26,7 @@ sudo rm /etc/php/$PHP/fpm/pool.d/$USER_NAME.conf
 sudo service php$PHP-fpm restart
 
 sudo userdel -r $USER_NAME
-
+sudo rm -rf /home/$USER_NAME
 
 /usr/bin/mysql -u root -p$DBROOT <<EOF
 DROP DATABASE $USER_NAME;
