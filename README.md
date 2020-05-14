@@ -33,16 +33,30 @@ Cipi is a Laravel based cloud server control panel that supports Digital Ocean, 
 Cipi Documentation is available at: [https://cipi.sh/docs/](https://cipi.sh/docs/).
 
 ## Installation
-- The best way to install Cipi is running this autoinstall script on a VPS with Ubuntu 18.04 LTS or 20.04 LTS (fresh installation):
+There are two suggested ways to install Cipi:
+- Via Autoinstall Script as a standalone Control Panel on a VPS
+- Via Composer as a simple Laravel project into any shared/not shared hosting
+
+### Via Autoinstall Script (Standalone)
+The best way to install Cipi is running this autoinstall script on a VPS with Ubuntu 18.04 LTS or 20.04 LTS (fresh installation):
 ```
 wget -O - https://cipi.sh/go.sh | bash
 ```
-NOTE: it doesn't work with IPv6... use only IPv4 and no localhost, VPS has to be online to work remotely with its clients servers.
-- But you can also install it via Composer:
+At the end of installation process, Cipi will show some password that you have to conserve.
+
+It doesn't work with IPv6... use only IPv4 and no localhost, VPS has to be online to work remotely with its clients servers.
+
+### Via Composer (Laravel Project)
+Cipi is a Laravel based project so you can install it in any virtualhost (shared or not shared) using Composer:
 ```
-composer create-project andreapollastri/cipi /your-folder
+composer create-project andreapollastri/cipi <your-folder>
+Copy .env.example file in .env and compile your DB and URL data
+php artisan key:generate
+php artisan config:cache
+php artisan view:cache
+php artisan migrate --seed
 ```
-- Or you can also Dockerize it (the best way is using https://github.com/andreapollastri/easydock)
+Cipi has to be online to work remotely with its clients servers.
 
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
