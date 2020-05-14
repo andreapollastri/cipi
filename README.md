@@ -44,19 +44,6 @@ wget -O - https://cipi.sh/go.sh | bash
 ```
 At the end of installation process, Cipi will show some password that you have to conserve.
 
-It doesn't work with IPv6... use only IPv4 and no localhost, VPS has to be online to work remotely with its clients servers.
-
-### Via Composer (Laravel Project)
-Cipi is a Laravel based project so you can install it in any virtualhost (shared or not shared) using Composer:
-```
-composer create-project andreapollastri/cipi <your-folder>
-Copy .env.example file in .env and compile your DB and URL data
-php artisan key:generate
-php artisan config:cache
-php artisan view:cache
-php artisan migrate --seed
-```
-Cipi has to be online to work remotely with its clients servers.
 
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
@@ -76,8 +63,21 @@ AWS by default disables root login. To login as root inside AWS, login as defaul
 ```
 $ ssh ubuntu@<your server IP address>
 $ ubuntu@aws:~$ sudo -s
-$ root@aws:~# <paste installation script>
+$ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 ```
+
+### Via Composer (Laravel Project)
+Cipi is a Laravel based project so you can install it in any virtualhost (shared or not shared) using Composer:
+```
+composer create-project andreapollastri/cipi <your-folder>
+Copy .env.example file in .env and compile your DB and URL data
+php artisan key:generate
+php artisan config:cache
+php artisan view:cache
+php artisan migrate --seed
+```
+Cipi has to be online to work remotely with its clients servers.
+
 
 ## Cipi tech
 Cipi was developed with:
