@@ -10,6 +10,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [2.4.8] - 2020-05-15
+### Fixed
+- Bug fix to solve right alias creation in `AliasesController.php`.
+
 ## [2.4.7] - 2020-05-13
 ### Fixed
 - Bug fix on user permissions in `hostadd.sh` and `hostdel.sh`.

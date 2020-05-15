@@ -26,7 +26,7 @@ class AliasesController extends Controller {
             'domain' => 'required',
             'application_id' => 'required'
         ]);
-        $application = Application::find($request->application_id)->with('server')->with('aliases')->firstOrFail();
+        $application = Application::where('id', $request->application_id)->with('server')->with('aliases')->firstOrFail();
         if(Application::where('server_id', $application->server_id)->where('domain', $request->domain)->first()) {
             $request->session()->flash('alert-error', 'This domain is already taken on this server');
             return redirect('/aliases');
@@ -50,7 +50,7 @@ class AliasesController extends Controller {
             return redirect('/aliases');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode.' -r '.$this->url->to('/'));
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->username.' -r '.$this->url->to('/'));
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/aliases');
