@@ -50,7 +50,7 @@ class AliasesController extends Controller {
             return redirect('/aliases');
         }
         $ssh->setTimeout(360);
-        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->username.' -r '.$this->url->to('/'));
+        $response = $ssh->exec('echo '.$application->server->password.' | sudo -S sudo sh /cipi/alias-add.sh -d '.$request->domain.' -a '.$application->appcode.' -r '.$this->url->to('/'));
         if(strpos($response, '###CIPI###') === false) {
             $request->session()->flash('alert-error', 'There was a problem with server scripts.');
             return redirect('/aliases');
