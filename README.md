@@ -110,5 +110,8 @@ All security vulnerabilities will be promptly addressed.
 ## Licence
 Cipi is an open-source software licensed under the MIT license.
 
+## Why use Cipi?
+Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
+
 ### Enjoy Cipi :)
 https://cipi.sh
