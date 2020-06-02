@@ -64,8 +64,7 @@ echo "Server basic configuration..."
 sleep 3s
 
 sudo apt-get update
-export DEBIAN_FRONTEND=noninteractive
-sudo apt-get install -y rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
+sudo apt-get -y install rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
@@ -125,7 +124,7 @@ clear
 echo "Repositories update..."
 sleep 3s
 
-sudo apt-get install -y software-properties-common
+sudo apt-get -y install software-properties-common
 sudo apt-get -y autoremove
 sudo apt-get update
 sudo apt-get upgrade -y
@@ -143,7 +142,7 @@ clear
 echo "Firewall installation..."
 sleep 3s
 
-sudo apt-get install -y fail2ban
+sudo apt-get -y install fail2ban
 
 JAIL=/etc/fail2ban/jail.local
 sudo unlink JAIL
@@ -181,7 +180,7 @@ clear
 echo "nginx installation..."
 sleep 3s
 
-sudo apt-get install -y nginx
+sudo apt-get -y install nginx
 sudo systemctl start nginx.service
 sudo systemctl enable nginx.service
 
@@ -199,14 +198,14 @@ sleep 3s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
-sudo apt-get install -y php7.4-fpm
-sudo apt-get install -y php7.4-common
-sudo apt-get install -y php7.4-mbstring
-sudo apt-get install -y php7.4-mysql
-sudo apt-get install -y php7.4-xml
-sudo apt-get install -y php7.4-zip
-sudo apt-get install -y php7.4-bcmath
-sudo apt-get install -y php7.4-imagick
+sudo apt-get -y install php7.4-fpm
+sudo apt-get -y install php7.4-common
+sudo apt-get -y install php7.4-mbstring
+sudo apt-get -y install php7.4-mysql
+sudo apt-get -y install php7.4-xml
+sudo apt-get -y install php7.4-zip
+sudo apt-get -y install php7.4-bcmath
+sudo apt-get -y install php7.4-imagick
 PHPINI74=/etc/php/7.4/fpm/conf.d/cipi.ini
 sudo touch $PHPINI74
 sudo cat > "$PHPINI74" <<EOF
@@ -279,7 +278,7 @@ sleep 3s
 
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password password $DBPASS"
 sudo debconf-set-selections <<< "mysql-server mysql-server/root_password_again password $DBPASS"
-sudo apt-get install -y mysql-server mysql-client
+sudo apt-get -y install mysql-server mysql-client
 
 clear
 echo "Mysql: OK!"
@@ -294,7 +293,7 @@ echo "Let's Encrypt installation..."
 sleep 3s
 
 sudo add-apt-repository -y ppa:certbot/certbot
-sudo apt-get install -y python-certbot-nginx
+sudo apt-get -y install python-certbot-nginx
 
 clear
 echo "Let's Encrypt: OK!"
