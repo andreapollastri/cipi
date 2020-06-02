@@ -64,8 +64,7 @@ echo "Server basic configuration..."
 sleep 3s
 
 sudo apt-get update
-
-sudo apt-get -y install rpl zip unzip openssl curl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
+sudo apt-get -y install rpl zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config

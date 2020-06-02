@@ -80,7 +80,6 @@ DBPASS=???
 SERVERCODE=???
 
 sudo apt-get update
-sudo apt-get -y install curl wget
 
 curl --request GET --url $REMOTE/remote/start/$SERVERCODE
 
