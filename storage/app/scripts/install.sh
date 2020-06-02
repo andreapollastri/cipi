@@ -80,6 +80,7 @@ DBPASS=???
 SERVERCODE=???
 
 sudo apt-get update
+sudo apt-get -y install curl wget
 
 curl --request GET --url $REMOTE/remote/start/$SERVERCODE
 
@@ -107,8 +108,7 @@ echo "Server basic configuration..."
 sleep 3s
 
 sudo apt-get update
-
-sudo apt-get -y install nano rpl sed zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
+sudo apt-get install -y nano rpl sed zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
 sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config

@@ -64,8 +64,7 @@ echo "Server basic configuration..."
 sleep 3s
 
 sudo apt-get update
-
-sudo apt-get -y install rpl zip unzip openssl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
+sudo apt-get install -y rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
 
 sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
@@ -125,8 +124,8 @@ clear
 echo "Repositories update..."
 sleep 3s
 
-sudo apt-get -y install software-properties-common
-sudo apt-get -y autoremove
+sudo apt-get install -y software-properties-common
+sudo apt-get autoremove -y
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get update
@@ -143,7 +142,7 @@ clear
 echo "Firewall installation..."
 sleep 3s
 
-sudo apt-get -y install fail2ban
+sudo apt-get install -y fail2ban
 
 JAIL=/etc/fail2ban/jail.local
 sudo unlink JAIL
