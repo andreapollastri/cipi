@@ -94,7 +94,7 @@ Applications
                         <label for="username" class="col-md-4 col-form-label text-md-right">Username *</label>
                         <div class="col-md-6">
                             <div class="form-group">
-                                <input id="username" type="text" class="form-control" name="username" required autocomplete="off" placeholder="myusername">
+                                <input id="username" type="text" class="form-control" name="username" autocomplete="off" placeholder="myusername">
                             </div>
                         </div>
                     </div>
