@@ -46,7 +46,15 @@ class ApplicationsController extends Controller {
             }
         }
         $server = Server::where('id', $request->server_id)->where('status', 2)->firstOrFail();
-        $user   = 'cp'.hash('crc32', (Str::uuid()->toString())).rand(1,9);
+        if (!empty($request->input('username'))) {
+            if(Application::where('username', $request->username)->where('server_id', $request->server_id)->first()) {
+                $request->session()->flash('alert-error', 'This username is already taken on this server');
+                return redirect('/applications');
+            }
+            $user   = $request->username;
+        } else {
+            $user   = 'cp'.hash('crc32', (Str::uuid()->toString())).rand(1,9);
+        }
         $pass   = sha1(uniqid().microtime().$request->domain);
         $dbpass = sha1(microtime().uniqid().$request->ip);
         $appcode= sha1(uniqid().$request->domain.microtime().$request->server_id);
