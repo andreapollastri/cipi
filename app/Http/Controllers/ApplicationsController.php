@@ -32,7 +32,8 @@ class ApplicationsController extends Controller {
         $this->validate($request, [
             'domain' => 'required',
             'server_id' => 'required',
-            'php' => 'required'
+            'php' => 'required',
+            'username' => 'string|regex:/^[A-Za-z0-9_]+$/'
         ]);
         if(Application::where('domain', $request->domain)->where('server_id', $request->server_id)->first()) {
             $request->session()->flash('alert-error', 'This domain is already taken on this server');
