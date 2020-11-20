@@ -8,7 +8,7 @@
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
 
-## 2020.11.20 > The project is Alive... currently I'm working on Cipi Version 3 that will be release on 1 March of 2021 and it will be a real revolution! Stay tuned!
+## 2020.11.20 > The project is Alive... currently I'm working on Cipi Version 3 that will be release on March the 1st, 2021 and it will be a real revolution! Stay tuned!
 
 ## 2020.07.05 > Cipi Version 3 Development as been started!
 Visit https://github.com/andreapollastri/cipi/projects for Roadmap!
