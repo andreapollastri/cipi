@@ -25,7 +25,7 @@ Cipi is a Laravel based cloud server control panel that supports Digital Ocean, 
 
 - Multi-PHP: Run simultaneous PHP versions at your ease & convenience.
 
-- Secure: no unsed open ports, unprivileged PHP, isolated system users and filesystem, only SFTP (no insecure FTP), Free SSL certificates everywhere.
+- Secure: no unused open ports, unprivileged PHP, isolated system users and filesystem, only SFTP (no insecure FTP), Free SSL certificates everywhere.
 
 - Always update: Cipi takes care about your business and automatically keeps your server's software up to date so you always have the latest security patches.
 
