@@ -9,8 +9,6 @@
 
 ## 2021.02.27 > "Good things come to those who wait"... Cipi Version 3 is almost ready but I move the release date to March 17, 2021. I'm really sorry for this little late but I would like to release a perfect and complete product for you!
 
-## 2020.11.20 > The project is Alive... currently I'm working on Cipi Version 3 that will be release on March the 1st, 2021 and it will be a real revolution! Stay tuned!
-
 ## 2020.07.05 > Cipi Version 3 Development as been started!
 Visit https://github.com/andreapollastri/cipi/projects for Roadmap!
 
