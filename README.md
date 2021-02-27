@@ -1,12 +1,13 @@
 # Cipi - An Open Source Control Panel for your Cloud!
 ![](http://cipi.sh/home/assets/images/home.gif)
 
-
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
+
+## 2021.02.27 > "Good things come to those who wait"... Cipi Version 3 is almost ready but I move the release date to March 17, 2021. I'm really sorry for this little late but I would like to release a perfect and complete product for you!
 
 ## 2020.11.20 > The project is Alive... currently I'm working on Cipi Version 3 that will be release on March the 1st, 2021 and it will be a real revolution! Stay tuned!
 
