@@ -9,9 +9,6 @@
 
 ## 2021.02.27 > "Good things come to those who wait"... Cipi Version 3 is almost ready but I move the release date to March 17, 2021. I'm really sorry for this little late but I would like to release a perfect and complete product for you!
 
-## 2020.07.05 > Cipi Version 3 Development as been started!
-Visit https://github.com/andreapollastri/cipi/projects for Roadmap!
-
 ## About
 Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, postfix, phpmyadmin, fail2ban, Redis, API, data migration and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
 
