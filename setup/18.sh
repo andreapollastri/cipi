@@ -64,14 +64,7 @@ echo "Server basic configuration..."
 sleep 3s
 
 sudo apt-get update
-sudo apt-get -y install rpl zip unzip openssl curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
-
-
-sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "PasswordAuthentication no" "PasswordAuthentication yes" /etc/ssh/sshd_config
-sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
-sudo service sshd restart
+sudo apt-get -y install rpl zip unzip curl dirmngr apt-transport-https lsb-release ca-certificates dnsutils htop
 
 WELCOME=/etc/motd
 sudo touch $WELCOME
@@ -391,6 +384,12 @@ EOF
 crontab $TASK
 
 sudo systemctl restart nginx.service
+
+sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "PasswordAuthentication no" "PasswordAuthentication yes" /etc/ssh/sshd_config
+sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+sudo service sshd restart
 
 clear
 echo "Cipi installation has been completed... Wait for your data!"

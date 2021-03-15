@@ -1,13 +1,13 @@
 # Cipi - An Open Source Control Panel for your Cloud!
 ![](http://cipi.sh/home/assets/images/home.gif)
 
-
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
 
+## 2021.02.27 > "Good things come to those who wait"... Cipi Version 3 is almost ready but I move the release date to March 17, 2021. I'm really sorry for this little late but I would like to release a perfect and complete product for you!
 
 ## About
 Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, postfix, phpmyadmin, fail2ban, Redis, API, data migration and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.

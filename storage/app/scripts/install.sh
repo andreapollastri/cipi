@@ -110,12 +110,6 @@ sleep 3s
 sudo apt-get update
 sudo apt-get -y install nano rpl sed zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop
 
-sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
-sudo rpl -i -w "PasswordAuthentication no" "PasswordAuthentication yes" /etc/ssh/sshd_config
-sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
-sudo service sshd restart
-
 WELCOME=/etc/motd
 sudo touch $WELCOME
 sudo cat > "$WELCOME" <<EOF
@@ -800,6 +794,12 @@ EOF
 crontab $TASK
 
 sudo systemctl restart nginx.service
+
+sudo rpl -i -w "#PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "# PasswordAuthentication" "PasswordAuthentication" /etc/ssh/sshd_config
+sudo rpl -i -w "PasswordAuthentication no" "PasswordAuthentication yes" /etc/ssh/sshd_config
+sudo rpl -i -w "PermitRootLogin yes" "PermitRootLogin no" /etc/ssh/sshd_config
+sudo service sshd restart
 
 curl --request GET --url $REMOTE/remote/finalize/$SERVERCODE
 
