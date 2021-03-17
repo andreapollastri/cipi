@@ -10,14 +10,14 @@
 </head>
 <body>
 	<center>
-		<h4>APPLICATION</h4>
+		<h4>SITE</h4>
 		<h1>{{ $domain }}</h1>
     </center>
 	<br>
     <h3>SSH/SFTP</h3>
 	<ul>
 		<li><b>Host</b> {{$ip}}</li>
-		<li><b>Port</b> {{$port}}</li>
+		<li><b>Port</b> 22</li>
 		<li><b>User</b> {{$username}}</li>
         <li><b>Pass</b> {{$password}}</li>
         <li><b>Path</b> /home/{{ $username }}/web/{{ $path }}</li>
@@ -37,7 +37,7 @@
 	<hr>
     <br>
     <center>
-        <p>Your application <i>{{ $domain }}</i> is PHP {{ $php }} based!</p>
+        <p>Your site <i>{{ $domain }}</i> is PHP {{ $php }} based!</p>
     </center>
     <br>
 	<center>
@@ -47,7 +47,7 @@
     <br>
 	<br>
 	<center>
-		<h5>Cipi Control Panel<br>(https://cipi.sh)</h5>
+		<h5>{{ config('cipi.name') }}<br>({{ config('cipi.website') }})</h5>
 	</center>
 </body>
 </html>
