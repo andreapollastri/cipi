@@ -14,6 +14,8 @@
 # THE LTS AND COMPLETE VERSION WILL BE REALESE SOON, IN THE MEANWHILE I NEED YOUR FEEDBACK
 # DOCUMENTATION AND NEW WEBSITE WILL BE PUBBLISH IN THE NEXT DAYS
 
+## First access is administrator / 12345678 (then you can change your credentials into Settings Area)
+
 ## What's New?
 - Moved to Laravel 8
 - PHP 8 Support
