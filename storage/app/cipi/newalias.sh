@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+
+NGINX=/etc/nginx/sites-available/???DOMAIN???.conf
+sudo wget ???REMOTE???/conf/alias/???ALIASID??? -O $NGINX
+sudo dos2unix $NGINX
+sudo ln -s $NGINX /etc/nginx/sites-enabled/???DOMAIN???.conf
+sudo service php???PHP???-fpm restart
+sudo systemctl restart nginx.service

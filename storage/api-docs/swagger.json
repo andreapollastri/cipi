@@ -1,0 +1,1936 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Cipi API Documentation",
+        "description": "API Documentation for Cipi Control Panel",
+        "version": "1.0"
+    },
+    "paths": {
+        "/api/servers": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "List all servers",
+                "description": "List all servers managed by panel.",
+                "operationId": "App\\Http\\Controllers\\ServerController::index",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "server_id": {
+                                                "description": "Server unique ID",
+                                                "type": "string",
+                                                "example": "abc-123-def-456"
+                                            },
+                                            "name": {
+                                                "description": "Server name",
+                                                "type": "string",
+                                                "example": "Staging Server"
+                                            },
+                                            "ip": {
+                                                "description": "Server IP",
+                                                "type": "string",
+                                                "example": "123.123.123.123"
+                                            },
+                                            "provider": {
+                                                "description": "Server provider",
+                                                "type": "string",
+                                                "example": "AWS"
+                                            },
+                                            "location": {
+                                                "description": "Server location",
+                                                "type": "string",
+                                                "example": "Frankfurt"
+                                            },
+                                            "php": {
+                                                "description": "Server PHP CLI version",
+                                                "type": "string",
+                                                "example": "7.4"
+                                            },
+                                            "default": {
+                                                "description": "Server default status (panel server)",
+                                                "type": "boolean",
+                                                "example": "false"
+                                            },
+                                            "status": {
+                                                "description": "Server installation status (0 not installed, 1 installed)",
+                                                "type": "integer",
+                                                "example": "1"
+                                            },
+                                            "sites": {
+                                                "description": "The number of sites on this server",
+                                                "type": "integer",
+                                                "example": "12"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Add a new Server",
+                "description": "Add a new server to manage with panel.",
+                "operationId": "App\\Http\\Controllers\\ServerController::create",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Server creation payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "ip",
+                                    "name"
+                                ],
+                                "properties": {
+                                    "ip": {
+                                        "description": "Server IP",
+                                        "type": "string",
+                                        "example": "123.123.123.123"
+                                    },
+                                    "name": {
+                                        "description": "Server name",
+                                        "type": "string",
+                                        "minLength": 3,
+                                        "example": "Production Server"
+                                    },
+                                    "provider": {
+                                        "description": "Server provider",
+                                        "type": "string",
+                                        "example": "Digital Ocean"
+                                    },
+                                    "location": {
+                                        "description": "Server location",
+                                        "type": "string",
+                                        "example": "Amsterdam"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful server creation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server_id": {
+                                            "description": "Server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "name": {
+                                            "description": "Server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "ip": {
+                                            "description": "Server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "provider": {
+                                            "description": "Server provider",
+                                            "type": "string",
+                                            "example": "AWS"
+                                        },
+                                        "location": {
+                                            "description": "Server location",
+                                            "type": "string",
+                                            "example": "Frankfurt"
+                                        },
+                                        "setup": {
+                                            "description": "Server setup script",
+                                            "type": "string",
+                                            "example": "https://panel.domain.ltd/sh/setup/123456"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "409": {
+                        "description": "Server conflict"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server information",
+                "description": "Get server information.",
+                "operationId": "App\\Http\\Controllers\\ServerController::show",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful server information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server_id": {
+                                            "description": "Server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "name": {
+                                            "description": "Server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "ip": {
+                                            "description": "Server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "provider": {
+                                            "description": "Server provider",
+                                            "type": "string",
+                                            "example": "AWS"
+                                        },
+                                        "default": {
+                                            "description": "Server default status (panel server)",
+                                            "type": "boolean",
+                                            "example": "false"
+                                        },
+                                        "php": {
+                                            "description": "Server PHP CLI version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "github_key": {
+                                            "description": "Server Github deploy key",
+                                            "type": "string"
+                                        },
+                                        "build": {
+                                            "description": "Server build version",
+                                            "type": "integer",
+                                            "example": "20210317001"
+                                        },
+                                        "cron": {
+                                            "description": "Server cron",
+                                            "type": "text"
+                                        },
+                                        "sites": {
+                                            "description": "The number of sites on this server",
+                                            "type": "integer",
+                                            "example": "12"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Delete a Server",
+                "description": "Delete a server from panel.",
+                "operationId": "App\\Http\\Controllers\\ServerController::destroy",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful server deleted"
+                    },
+                    "404": {
+                        "description": "Server not found"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server edit",
+                "description": "Edit server information.",
+                "operationId": "App\\Http\\Controllers\\ServerController::edit",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server to edit.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Server creation payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "ip": {
+                                        "description": "Server IP",
+                                        "type": "string",
+                                        "example": "123.123.123.123"
+                                    },
+                                    "name": {
+                                        "description": "Server name",
+                                        "type": "string",
+                                        "minLength": 3,
+                                        "example": "Production Server"
+                                    },
+                                    "provider": {
+                                        "description": "Server provider",
+                                        "type": "string",
+                                        "example": "Digital Ocean"
+                                    },
+                                    "location": {
+                                        "description": "Server location",
+                                        "type": "string",
+                                        "example": "Amsterdam"
+                                    },
+                                    "php": {
+                                        "description": "Server PHP CLI version",
+                                        "type": "string",
+                                        "example": "7.4"
+                                    },
+                                    "cron": {
+                                        "description": "Server crontab",
+                                        "type": "text"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful server editing",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server_id": {
+                                            "description": "Server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "name": {
+                                            "description": "Server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "ip": {
+                                            "description": "Server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "provider": {
+                                            "description": "Server provider",
+                                            "type": "string",
+                                            "example": "AWS"
+                                        },
+                                        "default": {
+                                            "description": "Server default status (panel server)",
+                                            "type": "boolean",
+                                            "example": "false"
+                                        },
+                                        "status": {
+                                            "description": "Server status",
+                                            "type": "integer",
+                                            "example": "1"
+                                        },
+                                        "php": {
+                                            "description": "Server PHP CLI version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "github_key": {
+                                            "description": "Server Github deploy key",
+                                            "type": "string"
+                                        },
+                                        "build": {
+                                            "description": "Server build version",
+                                            "type": "integer",
+                                            "example": "20210317001"
+                                        },
+                                        "cron": {
+                                            "description": "Server cron",
+                                            "type": "text"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "409": {
+                        "description": "Server conflict"
+                    }
+                }
+            }
+        },
+        "/api/servers/panel": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Panel server information",
+                "description": "Get panel server information.",
+                "operationId": "App\\Http\\Controllers\\ServerController::panel",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful server information",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "server_id": {
+                                            "description": "Server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "name": {
+                                            "description": "Server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "ip": {
+                                            "description": "Server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "provider": {
+                                            "description": "Server provider",
+                                            "type": "string",
+                                            "example": "AWS"
+                                        },
+                                        "domain": {
+                                            "description": "Server default domain for panel",
+                                            "type": "string",
+                                            "example": "panel.domain.ltd"
+                                        },
+                                        "php": {
+                                            "description": "Server PHP CLI version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "github_key": {
+                                            "description": "Server Github deploy key",
+                                            "type": "string"
+                                        },
+                                        "build": {
+                                            "description": "Server build version",
+                                            "type": "integer",
+                                            "example": "20210317001"
+                                        },
+                                        "cron": {
+                                            "description": "Server cron",
+                                            "type": "text"
+                                        },
+                                        "sites": {
+                                            "description": "The number of sites on this server",
+                                            "type": "integer",
+                                            "example": "12"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "404": {
+                        "description": "Server not found"
+                    }
+                }
+            }
+        },
+        "/api/servers/panel/domain": {
+            "patch": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Add a domain / subdomain to panel",
+                "description": "Add a domain / subdomain to panel.",
+                "operationId": "App\\Http\\Controllers\\ServerController::paneldomain",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Panel domain payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "domain": {
+                                        "description": "Panel domain",
+                                        "type": "string",
+                                        "example": "panel.domain.ltd"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful panel domain update"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "404": {
+                        "description": "Server not found"
+                    }
+                }
+            }
+        },
+        "/api/servers/panel/ssl": {
+            "post": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Require SSL for panel",
+                "description": "Require SSL for panel domain / subdomain.",
+                "operationId": "App\\Http\\Controllers\\ServerController::panelssl",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful SSL generation"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    },
+                    "404": {
+                        "description": "Server not found"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/ping": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server ping",
+                "description": "Check real time server ping.",
+                "operationId": "App\\Http\\Controllers\\ServerController::ping",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server to check.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful server ping check"
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "503": {
+                        "description": "Server unavailable"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/healthy": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server healthy",
+                "description": "Check real time server healthy.",
+                "operationId": "App\\Http\\Controllers\\ServerController::healthy",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server to check.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful server healthy check",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "cpu": {
+                                            "description": "Current usage of CPU in %",
+                                            "type": "float",
+                                            "example": "72.50"
+                                        },
+                                        "ram": {
+                                            "description": "Current usage of RAM in %",
+                                            "type": "float",
+                                            "example": "56.34"
+                                        },
+                                        "hdd": {
+                                            "description": "Current usage of HDD in %",
+                                            "type": "float",
+                                            "example": "32"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "500": {
+                        "description": "SSH server connection issue"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/rootreset": {
+            "post": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server root password reset",
+                "description": "Reset server root password (for cipi user).",
+                "operationId": "App\\Http\\Controllers\\ServerController::rootreset",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful passoword reset",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "password": {
+                                            "description": "New assigned password for cipi root user",
+                                            "type": "string",
+                                            "example": "Secret_123"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/servicerestart/{service}": {
+            "post": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "Server service restart",
+                "description": "Restart a server server (nginx, php, mysql, redis or supervisor).",
+                "operationId": "App\\Http\\Controllers\\ServerController::servicerestart",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "service",
+                        "in": "path",
+                        "description": "The service to restart.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful service restart"
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "400": {
+                        "description": "Bad request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "500": {
+                        "description": "SSH server connection issue"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/sites": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "List all server sites",
+                "description": "List all sites in required server.",
+                "operationId": "App\\Http\\Controllers\\ServerController::sites",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "site_id": {
+                                                "description": "Site unique ID",
+                                                "type": "string",
+                                                "example": "abc-123-def-456"
+                                            },
+                                            "domain": {
+                                                "description": "Main site domain",
+                                                "type": "string",
+                                                "example": "domain.ltd"
+                                            },
+                                            "username": {
+                                                "description": "Site username",
+                                                "type": "string",
+                                                "example": "cp123456"
+                                            },
+                                            "php": {
+                                                "description": "Site PHP version",
+                                                "type": "string",
+                                                "example": "7.4"
+                                            },
+                                            "basepath": {
+                                                "description": "Site basepath",
+                                                "type": "string",
+                                                "example": "/public"
+                                            },
+                                            "aliases": {
+                                                "description": "The number of aliases of this site",
+                                                "type": "integer",
+                                                "example": "8"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/servers/{server_id}/domains": {
+            "get": {
+                "tags": [
+                    "Servers"
+                ],
+                "summary": "List all server domains",
+                "description": "List all domains hosted in required server.",
+                "operationId": "App\\Http\\Controllers\\ServerController::domains",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "server_id",
+                        "in": "path",
+                        "description": "The id of the server.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successfull response (Domain list array)"
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/sites": {
+            "get": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "List all sites",
+                "description": "List all sites managed by panel.",
+                "operationId": "App\\Http\\Controllers\\SiteController::index",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "site_id": {
+                                                "description": "Site unique ID",
+                                                "type": "string",
+                                                "example": "abc-123-def-456"
+                                            },
+                                            "domain": {
+                                                "description": "Main site domain",
+                                                "type": "string",
+                                                "example": "domain.ltd"
+                                            },
+                                            "username": {
+                                                "description": "Site username",
+                                                "type": "string",
+                                                "example": "cp123456"
+                                            },
+                                            "server_id": {
+                                                "description": "Related server unique ID",
+                                                "type": "string",
+                                                "example": "abc-123-def-456"
+                                            },
+                                            "server_name": {
+                                                "description": "Related server name",
+                                                "type": "string",
+                                                "example": "Staging Server"
+                                            },
+                                            "server_ip": {
+                                                "description": "Related server IP",
+                                                "type": "string",
+                                                "example": "123.123.123.123"
+                                            },
+                                            "php": {
+                                                "description": "Site PHP version",
+                                                "type": "string",
+                                                "example": "7.4"
+                                            },
+                                            "basepath": {
+                                                "description": "Site basepath",
+                                                "type": "string",
+                                                "example": "public"
+                                            },
+                                            "aliases": {
+                                                "description": "The number of aliases of this site",
+                                                "type": "integer",
+                                                "example": "8"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Add a new site",
+                "description": "Add a new site in panel.",
+                "operationId": "App\\Http\\Controllers\\SiteController::create",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Site creation payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "server_id",
+                                    "domain"
+                                ],
+                                "properties": {
+                                    "server_id": {
+                                        "description": "Site server ID",
+                                        "type": "string",
+                                        "example": "abc-123-def-456"
+                                    },
+                                    "domain": {
+                                        "description": "Site main domain",
+                                        "type": "string",
+                                        "example": "domain.ltd"
+                                    },
+                                    "php": {
+                                        "description": "Site PHP version",
+                                        "type": "string",
+                                        "example": "7.4"
+                                    },
+                                    "basepath": {
+                                        "description": "Site basepath",
+                                        "type": "string",
+                                        "example": "public"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "site_id": {
+                                            "description": "Site unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "domain": {
+                                            "description": "Main site domain",
+                                            "type": "string",
+                                            "example": "domain.ltd"
+                                        },
+                                        "username": {
+                                            "description": "Site username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "password": {
+                                            "description": "Site password",
+                                            "type": "string",
+                                            "example": "Secret_123"
+                                        },
+                                        "database": {
+                                            "description": "Site database",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database_username": {
+                                            "description": "Site database username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database_password": {
+                                            "description": "Site database password",
+                                            "type": "string",
+                                            "example": "Secret_123"
+                                        },
+                                        "server_id": {
+                                            "description": "Related server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "server_name": {
+                                            "description": "Related server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "server_ip": {
+                                            "description": "Related server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "php": {
+                                            "description": "Site PHP version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "basepath": {
+                                            "description": "Site basepath",
+                                            "type": "string",
+                                            "example": "public"
+                                        },
+                                        "pdf": {
+                                            "description": "Site summary pdf (temp 3 minutes link)",
+                                            "type": "string",
+                                            "example": "https://panel.domain.ltd/pdf/123454/1233442"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Server not found or not installed"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "409": {
+                        "description": "Site domain conflict"
+                    },
+                    "500": {
+                        "description": "SSH server connection issue"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}": {
+            "get": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Show site information",
+                "description": "Get site information by site_id.",
+                "operationId": "App\\Http\\Controllers\\SiteController::show",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site to show.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "site_id": {
+                                            "description": "Site unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "domain": {
+                                            "description": "Main site domain",
+                                            "type": "string",
+                                            "example": "domain.ltd"
+                                        },
+                                        "username": {
+                                            "description": "Site username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database": {
+                                            "description": "Site database",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database_username": {
+                                            "description": "Site database username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "server_id": {
+                                            "description": "Related server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "server_name": {
+                                            "description": "Related server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "server_ip": {
+                                            "description": "Related server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "php": {
+                                            "description": "Site PHP version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "basepath": {
+                                            "description": "Site basepath",
+                                            "type": "string",
+                                            "example": "public"
+                                        },
+                                        "repository": {
+                                            "description": "Github repository",
+                                            "type": "string",
+                                            "example": "andreapollastri/cipi"
+                                        },
+                                        "branch": {
+                                            "description": "Git branch",
+                                            "type": "string",
+                                            "example": "latest"
+                                        },
+                                        "deploy": {
+                                            "description": "Deploy custom configuration",
+                                            "type": "text"
+                                        },
+                                        "supervisor": {
+                                            "description": "Supervisor configuration",
+                                            "type": "string"
+                                        },
+                                        "aliases": {
+                                            "description": "The count of related aliases",
+                                            "type": "integer",
+                                            "example": "8"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "409": {
+                        "description": "Site domain conflict"
+                    },
+                    "500": {
+                        "description": "SSH server connection issue"
+                    }
+                }
+            },
+            "delete": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Delete a Site",
+                "description": "Delete a site from panel.",
+                "operationId": "App\\Http\\Controllers\\SiteController::destroy",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful site deleted"
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            },
+            "patch": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Edit site information",
+                "description": "Edit site information by site_id.",
+                "operationId": "App\\Http\\Controllers\\SiteController::edit",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site to edit.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "description": "Site edit payload",
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "domain": {
+                                        "description": "Site main domain",
+                                        "type": "string",
+                                        "example": "domain.ltd"
+                                    },
+                                    "basepath": {
+                                        "description": "Site basepath",
+                                        "type": "string",
+                                        "example": "public"
+                                    },
+                                    "php": {
+                                        "description": "PHP FPM version",
+                                        "type": "string",
+                                        "example": "8.0"
+                                    },
+                                    "repository": {
+                                        "description": "Github repository",
+                                        "type": "string",
+                                        "example": "andreapollastri/cipi"
+                                    },
+                                    "branch": {
+                                        "description": "Git branch",
+                                        "type": "string",
+                                        "example": "latest"
+                                    },
+                                    "supervisor": {
+                                        "description": "Supervisor command",
+                                        "type": "string",
+                                        "example": "7.4"
+                                    },
+                                    "deploy": {
+                                        "description": "Deploy scripts",
+                                        "type": "text"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "site_id": {
+                                            "description": "Site unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "domain": {
+                                            "description": "Main site domain",
+                                            "type": "string",
+                                            "example": "domain.ltd"
+                                        },
+                                        "username": {
+                                            "description": "Site username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database": {
+                                            "description": "Site database",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "database_username": {
+                                            "description": "Site database username",
+                                            "type": "string",
+                                            "example": "cp123456"
+                                        },
+                                        "server_id": {
+                                            "description": "Related server unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "server_name": {
+                                            "description": "Related server name",
+                                            "type": "string",
+                                            "example": "Staging Server"
+                                        },
+                                        "server_ip": {
+                                            "description": "Related server IP",
+                                            "type": "string",
+                                            "example": "123.123.123.123"
+                                        },
+                                        "php": {
+                                            "description": "Site PHP version",
+                                            "type": "string",
+                                            "example": "7.4"
+                                        },
+                                        "basepath": {
+                                            "description": "Site basepath",
+                                            "type": "string",
+                                            "example": "public"
+                                        },
+                                        "deploy": {
+                                            "description": "Deploy custom configuration",
+                                            "type": "text"
+                                        },
+                                        "supervisor": {
+                                            "description": "Supervisor configuration",
+                                            "type": "string"
+                                        },
+                                        "aliases": {
+                                            "description": "The count of related aliases",
+                                            "type": "integer",
+                                            "example": "8"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "409": {
+                        "description": "Site domain conflict"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}/ssl": {
+            "post": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "SSL request for site (and its aliases)",
+                "description": "Require SSL certs for site and its aliases.",
+                "operationId": "App\\Http\\Controllers\\SiteController::ssl",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site to certificate (with its aliases).",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful SSL request"
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}/reset/ssh": {
+            "post": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Reset site SSH password",
+                "description": "Require a reset for site SSH password.",
+                "operationId": "App\\Http\\Controllers\\SiteController::resetssh",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful password reset",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "password": {
+                                            "description": "Site SSH password",
+                                            "type": "string",
+                                            "example": "Secret_123"
+                                        },
+                                        "pdf": {
+                                            "description": "Site summary pdf (temp 3 minutes link)",
+                                            "type": "string",
+                                            "example": "https://panel.domain.ltd/pdf/123454/1233442"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}/reset/db": {
+            "post": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Reset site MySql password",
+                "description": "Require a reset for site MySql password.",
+                "operationId": "App\\Http\\Controllers\\SiteController::resetdb",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful password reset",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "password": {
+                                            "description": "Site MySql password",
+                                            "type": "string",
+                                            "example": "Secret_123"
+                                        },
+                                        "pdf": {
+                                            "description": "Site summary pdf (temp 3 minutes link)",
+                                            "type": "string",
+                                            "example": "https://panel.domain.ltd/pdf/123454/1233442"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}/aliases": {
+            "get": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "List all site aliases",
+                "description": "List all aliases related to a site.",
+                "operationId": "App\\Http\\Controllers\\SiteController::aliases",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "alias_id": {
+                                                "description": "Site unique ID",
+                                                "type": "string",
+                                                "example": "abc-123-def-456"
+                                            },
+                                            "domain": {
+                                                "description": "Main site domain",
+                                                "type": "string",
+                                                "example": "domain.ltd"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    }
+                }
+            },
+            "post": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Add an alias to site",
+                "description": "Create an alias for required site.",
+                "operationId": "App\\Http\\Controllers\\SiteController::createalias",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful created",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "alias_id": {
+                                            "description": "Site unique ID",
+                                            "type": "string",
+                                            "example": "abc-123-def-456"
+                                        },
+                                        "domain": {
+                                            "description": "Main site domain",
+                                            "type": "string",
+                                            "example": "domain.ltd"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "400": {
+                        "description": "Bad Request"
+                    },
+                    "409": {
+                        "description": "Site domain conflict"
+                    },
+                    "404": {
+                        "description": "Site not found"
+                    }
+                }
+            }
+        },
+        "/api/sites/{site_id}/aliases/{alias_id}": {
+            "delete": {
+                "tags": [
+                    "Sites"
+                ],
+                "summary": "Delete an alias",
+                "description": "Delete an alias from a site.",
+                "operationId": "App\\Http\\Controllers\\SiteController::destroyalias",
+                "parameters": [
+                    {
+                        "name": "Authorization",
+                        "in": "header",
+                        "description": "Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "site_id",
+                        "in": "path",
+                        "description": "The id of the site.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "alias_id",
+                        "in": "path",
+                        "description": "The id of the alias to delete.",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Success Delete"
+                    },
+                    "401": {
+                        "description": "Unauthorized access error"
+                    },
+                    "404": {
+                        "description": "Resource not found"
+                    }
+                }
+            }
+        }
+    },
+    "security": [
+        []
+    ]
+}
