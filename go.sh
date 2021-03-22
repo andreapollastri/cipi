@@ -3,12 +3,13 @@
 
 
 #################################################### CONFIGURATION ###
-BUILD=201703171
-PASS=$(head -c 16  /dev/random | md5sum | cut -f 1 -d\ )
-DBPASS=$(head -c 16  /dev/random | md5sum | cut -f 1 -d\ )
-SERVERID=$(head -c 16  /dev/random | md5sum | cut -f 1 -d\ )
+BUILD=201703221
+PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
+DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
+SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 IP=$(curl -s https://checkip.amazonaws.com)
 REPO=andreapollastri/cipi
+
 
 
 ####################################################   CLI TOOLS   ###
@@ -670,6 +671,7 @@ echo " MySQL root user: cipi"
 echo " MySQL root pass: $DBPASS"
 echo ""
 echo " To manage your server visit: http://$IP"
+echo " Default credentials are: administrator / 12345678"
 echo ""
 echo "***********************************************************"
 echo "          DO NOT LOSE AND KEEP SAFE THIS DATA"
