@@ -610,13 +610,11 @@ class SiteController extends Controller
             EditSiteDomainSSH::dispatch($site, $olddomain)->delay(Carbon::now()->addSeconds(1));
         }
 
-        if ($request->basepath) {
-            if ($site->basepath != $request->basepath) {
-                $oldbasepath = $site->basepath;
-                $site->basepath = $request->basepath;
-                $site->save();
-                EditSiteBasepathSSH::dispatch($site, $oldbasepath)->delay(Carbon::now()->addSeconds(5));
-            }
+        if ($site->basepath != $request->basepath) {
+            $oldbasepath = $site->basepath;
+            $site->basepath = $request->basepath;
+            $site->save();
+            EditSiteBasepathSSH::dispatch($site, $oldbasepath)->delay(Carbon::now()->addSeconds(5));
         }
 
         if ($request->php) {
@@ -628,13 +626,11 @@ class SiteController extends Controller
             }
         }
 
-        if ($request->supervisor) {
-            if ($site->supervisor != $request->supervisor) {
-                $oldsupervisor = $site->supervisor;
-                $site->supervisor = $request->supervisor;
-                $site->save();
-                EditSiteSupervisorSSH::dispatch($site, $oldsupervisor)->delay(Carbon::now()->addSeconds(15));
-            }
+        if ($site->supervisor != $request->supervisor) {
+            $oldsupervisor = $site->supervisor;
+            $site->supervisor = $request->supervisor;
+            $site->save();
+            EditSiteSupervisorSSH::dispatch($site, $oldsupervisor)->delay(Carbon::now()->addSeconds(15));
         }
 
         $deploymod = false;
