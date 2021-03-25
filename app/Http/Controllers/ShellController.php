@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Site;
 use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
@@ -18,6 +19,17 @@ class ShellController extends Controller
             $server->database,
             $server->server_id
         ], $script);
+        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
+
+    public function deploy($site_id)
+    {
+        $site = Site::where('site_id', $site_id)->firstOrFail();
+        $script = Storage::get('cipi/deploy.sh');
+        $script = str_replace('???USER???', $site->username, $script);
+        $script = str_replace('???REPO???', $site->repository, $script);
+        $script = str_replace('???BRANCH???', $site->branch, $script);
+        $script = str_replace('???SCRIPT???', $site->deploy, $script);
         return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 

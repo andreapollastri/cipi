@@ -91,4 +91,10 @@ class ConfController extends Controller
         $script = Storage::get('cipi/nginx.conf');
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
+
+    public function supervisor()
+    {
+        $script = Storage::get('cipi/supervisor.conf');
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+    }
 }
