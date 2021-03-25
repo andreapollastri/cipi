@@ -1,14 +1,12 @@
 
 # Cipi - An Open Source Control Panel for your Cloud!
-![](http://cipi.sh/home/assets/images/home.gif)
-
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
 ## About
-Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, ffmpeg, fail2ban, Redis, API and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
+Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, ffmpeg, fail2ban, Redis, API and with a simple graphical interface useful to manage Laravel, Codeigniter, Symfony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
 
 ## Features
 - Easy install: setup one or more servers with a click in less than ten minutes without be a Linux expert.
@@ -36,9 +34,15 @@ Cipi Documentation is available at: [https://cipi.sh/docs/](https://cipi.sh/docs
 ```
 wget -O - https://cipi.sh/go.sh | bash
 ```
-At the end of installation process, Cipi will show some password that you have to conserve.
+#### Installation on AWS
+AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
 
-
+```
+$ ssh ubuntu@<your server IP address>
+$ ubuntu@aws:~$ sudo -s
+$ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
+```
+Remember to open ports: 22, 80 and 443.
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
 
@@ -51,15 +55,6 @@ Installation may take up to about 30 minutes which may also depend on your serve
 
 To correctly manage remote servers Cipi has to be on a public IP address... do not use it in localhost!
 
-#### Installation notes on AWS
-AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
-
-```
-$ ssh ubuntu@<your server IP address>
-$ ubuntu@aws:~$ sudo -s
-$ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
-```
-
 ## Cipi LEMP environment
 - nginx: 1.18
 - PHP-FPM: 8.0, 7.4, 7.3
@@ -69,10 +64,10 @@ $ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 - Composer: 2
 
 ## Contributing
-Thank you for considering contributing to the Cipi Project (pr, issues, feedbacks, ideas, code, promo, money, beers) :)
+Thank you for considering contributing to the Cipi Project (pr, issues, feedbacks, ideas, promo, money, beers) :)
 
 ## Problem with Cipi?
-Please open an issue.
+Please open an issue here: https://github.com/andreapollastri/cipi/issues.
 
 ## Security Vulnerabilities
 If you discover a security vulnerability within Cipi, please open an issue.
