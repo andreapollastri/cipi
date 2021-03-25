@@ -10,8 +10,9 @@ Manage Site
 @section('content')
 <ol class="breadcrumb mb-4">
     <li class="ml-1 breadcrumb-item active">IP:<b><span class="ml-1" id="siteip"></span></b></li>
-    <li class="ml-1 breadcrumb-item active">Aliases:<b><span class="ml-1" id="sitealiases"></span></b></li>
+    <li class="ml-1 breadcrumb-item active">ALIASES:<b><span class="ml-1" id="sitealiases"></span></b></li>
     <li class="ml-1 breadcrumb-item active">PHP:<b><span class="ml-1" id="sitephp"></span></b></li>
+    <li class="ml-1 breadcrumb-item active">DIR:<b><span class="ml-1">/home/</span><span id="siteuserinfo"></span>/web/<span id="sitebasepathinfo"></span></b></li>
 </ol>
 <div class="row">
     <div class="col-xl-4">
@@ -107,24 +108,25 @@ Manage Site
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fab fa-github fs-fw mr-1"></i>
-                Github deploy
+                Github repository
             </div>
             <div class="card-body">
-                <p>Configure your Github repository:</p>
+                <p>Configura un repository Github</p>
                 <div class="text-center">
-                    <button class="btn btn-warning" type="button" id="sitesetrepo">Edit repository</button>
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo">Repo configuration</button>
                     <div class="space"></div>
                 </div>
                 <div class="text-center">
-                    <div class="space"></div>
-                    <button class="btn btn-warning" type="button" id="editdeploy">Edit deploy scripts</button>
-                    <div class="space"></div>
-                </div>
-                <div class="text-center">
-                    <div class="space"></div>
-                    <button class="btn btn-danger" type="button" id="sitedeploy">RUN DEPLOY <i class="fas fa-circle-notch fa-spin d-none" id="sitedeployloading"></i></button>
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
                     <div class="space"></div>
                 </div>
+                <p>
+                    To run deploy:
+                    <ul style="font-size:14px;">
+                        <li>ssh <span id="repodeployinfouser1"></span>@<span id="repodeployinfoip"></span></li>
+                        <li>sh /home/<span id="repodeployinfouser2"></span>/git/deploy.sh</li>
+                    </ul>
+                </p>
             </div>
         </div>
     </div>  
@@ -167,6 +169,38 @@ Manage Site
 @section('extra')
 <input type="hidden" id="currentdomain">
 <input type="hidden" id="server_id">
+<div class="modal fade" id="repositoryModal" tabindex="-1" role="dialog" aria-labelledby="repositoryModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" id="repositorydialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="repositoryModalLabel">Github repository</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label for="repositoryproject">Project</label>
+                <div class="input-group">
+                    <input class="form-control" type="text" id="repositoryproject" placeholder="e.g. johndoe/helloworld" autocomplete="off" />
+                </div>
+                <div class="space"></div>
+                <label for="repositorybranch">Branch</label>
+                <div class="input-group">
+                    <input class="form-control" type="text" id="repositorybranch" placeholder="e.g. develop" autocomplete="off" />
+                </div>
+                <div class="space"></div>
+                <label for="deploykey">Deploy Key (<a href="#" id="copykey">Copy</a> and add it <a href="https://github.com/settings/ssh/new" target="blank">here</a>)</label>
+                <div class="input-group">
+                    <textarea id="deploykey" readonly style="width:100%;height:150px;font-size:10px;"></textarea>
+                </div>
+                <div class="space"></div>
+                <div class="text-center">
+                    <button class="btn btn-primary" type="button" id="repositorysubmit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="repositoryloading"></i></button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="modal fade" id="deployModal" tabindex="-1" role="dialog" aria-labelledby="deployModalLabel" aria-hidden="true">
     <div class="modal-dialog" role="document">
         <div class="modal-content">
@@ -253,11 +287,20 @@ Manage Site
                 $('#siteip').html(data.server_ip);
                 $('#sitealiases').html(data.aliases);
                 $('#sitephp').html(data.php);
+                $('#sitebasepathinfo').html(data.basepath);
+                $('#siteuserinfo').html(data.username);
                 $('#maintitle').html(data.domain);
                 $('#sitedomain').val(data.domain);
                 $('#sitebasepath').val(data.basepath);
                 $('#currentdomain').val(data.domain);
                 $('#server_id').val(data.server_id);
+                $('#sitesupervisor').val(data.supervisor);
+                $('#deploykey').html(data.deploy_key)
+                $('#repodeployinfouser1').html(data.username);
+                $('#repodeployinfouser2').html(data.username);
+                $('#repodeployinfoip').html(data.server_ip);
+                $('#repositoryproject').val(data.repository);
+                $('#repositorybranch').val(data.branch);
                 deploy.session.setValue(data.deploy);
                 getDataNoDT('/api/servers/'+data.server_id+'/domains');
                 switch (data.php) {
@@ -286,7 +329,6 @@ Manage Site
             },
         });
     }
-
     $(document).ajaxSuccess(function(){
         aliasesDelete();
     });
@@ -348,12 +390,46 @@ Manage Site
         });
     });
 
+
+    // Repository
+    $('#sitesetrepo').click(function() {
+        $('#repositoryModal').modal();
+    });
+
+    // Repository Submit
+    $('#repositorysubmit').click(function() {
+        $.ajax({
+            url: '/api/sites/{{ $site_id }}',
+            type: 'PATCH',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
+                'repository': $('#repositoryproject').val(),
+                'branch': $('#repositorybranch').val(),
+            }),
+            beforeSend: function() {
+                $('#repositoryloading').removeClass('d-none');
+            },
+            success: function(data) {
+                $('#repositoryloading').addClass('d-none');
+                $('#repositoryModal').modal('toggle');
+                siteInit();
+            },
+        });
+    });
+
+    //Deploy Key Copy
+    $("#copykey").click(function(){
+        $("#deploykey").select();
+        document.execCommand('copy');
+    });
+
     // Deploy editor
     var deploy = ace.edit("deploy");
     deploy.setTheme("ace/theme/monokai");
     deploy.session.setMode("ace/mode/sh");
 
-    // Deploy edit
+    // Deploy Edit
     $('#editdeploy').click(function() {
         $('#deployModal').modal();
     });
@@ -374,7 +450,7 @@ Manage Site
             success: function(data) {
                 $('#deployloading').addClass('d-none');
                 $('#deployModal').modal('toggle');
-                serverInit();
+                siteInit();
             },
         });
     });
@@ -447,7 +523,7 @@ Manage Site
             contentType: 'application/json',
             dataType: 'json',
             data: JSON.stringify({
-                'php': $('#phpver').val(),
+                'php': $('#sitephpver').val(),
             }),
             beforeSend: function() {
                 $('#sitephpversubmit').html('<i class="fas fa-circle-notch fa-spin"></i>');
@@ -455,9 +531,50 @@ Manage Site
             success: function(data) {
                 $('#sitephpversubmit').empty();
                 $('#sitephpversubmit').html('<i class="fas fas fa-edit"></i>');
+                siteInit();
             },
         });
-        siteInit();
+    });
+
+    // Supervisor
+    $('#sitesupervisorupdate').click(function() {
+        $.ajax({
+            url: '/api/sites/{{ $site_id }}',
+            type: 'PATCH',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
+                'supervisor': $('#sitesupervisor').val(),
+            }),
+            beforeSend: function() {
+                $('#sitesupervisorupdateloading').removeClass('d-none');
+            },
+            success: function(data) {
+                $('#sitesupervisorupdateloading').addClass('d-none');
+                siteInit();
+            },
+        });
+    });
+
+    // Basic info
+    $('#updateSite').click(function() {
+        $.ajax({
+            url: '/api/sites/{{ $site_id }}',
+            type: 'PATCH',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
+                'domain': $('#sitedomain').val(),
+                'basepath': $('#sitebasepath').val(),
+            }),
+            beforeSend: function() {
+                $('#updateSiteloadingloading').removeClass('d-none');
+            },
+            success: function(data) {
+                $('#updateSiteloadingloading').addClass('d-none');
+                siteInit();
+            },
+        });
     });
 </script>
 @endsection

@@ -9,17 +9,20 @@ use Firebase\JWT\JWT;
 use App\Models\Server;
 use App\Jobs\NewSiteSSH;
 use App\Jobs\SslSiteSSH;
-use phpseclib3\Net\SSH2;
 use App\Jobs\NewAliasSSH;
 use App\Jobs\SiteDbPwdSSH;
 use App\Jobs\DeleteSiteSSH;
 use Illuminate\Support\Str;
 use App\Jobs\DeleteAliasSSH;
+use App\Jobs\EditSitePhpSSH;
 use App\Jobs\SiteUserPwdSSH;
 use Illuminate\Http\Request;
+use App\Jobs\EditSiteDeploySSH;
+use App\Jobs\EditSiteDomainSSH;
+use App\Jobs\EditSiteBasepathSSH;
 use Barryvdh\DomPDF\Facade as PDF;
+use App\Jobs\EditSiteSupervisorSSH;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 
 class SiteController extends Controller
@@ -306,7 +309,7 @@ class SiteController extends Controller
             }
             $php = $request->php;
         } else {
-            $php = '8.0';
+            $php = config('cipi.default_php');
         }
 
         $server = Server::where('server_id', $request->server_id)->where('status', 1)->first();
@@ -436,7 +439,7 @@ class SiteController extends Controller
     *             @OA\Property(
     *                  property="deploy",
     *                  description="Deploy scripts",
-    *                  type="text",
+    *                  type="string",
     *             ),
     *          )
     *     ),
@@ -505,9 +508,26 @@ class SiteController extends Controller
      *                    example="public"
      *                ),
      *                @OA\Property(
+    *                       property="repository",
+    *                       description="Github repository",
+    *                       type="string",
+    *                       example="andreapollastri/cipi",
+    *                 ),
+    *                 @OA\Property(
+    *                       property="branch",
+    *                       description="Git branch",
+    *                       type="string",
+    *                       example="latest",
+    *                 ),
+     *                @OA\Property(
      *                    property="deploy",
      *                    description="Deploy custom configuration",
-     *                    type="text",
+     *                    type="string",
+     *                ),
+     *                @OA\Property(
+     *                    property="deploy_key",
+     *                    description="Deploy SSH Key",
+     *                    type="string",
      *                ),
      *                @OA\Property(
      *                    property="supervisor",
@@ -583,23 +603,72 @@ class SiteController extends Controller
                 }
             }
 
+            $olddomain = $site->domain;
             $site->domain = $request->domain;
+            $site->save();
 
-            //TODO
+            EditSiteDomainSSH::dispatch($site, $olddomain)->delay(Carbon::now()->addSeconds(1));
         }
 
         if ($request->basepath) {
-
-            //TODO
+            if ($site->basepath != $request->basepath) {
+                $oldbasepath = $site->basepath;
+                $site->basepath = $request->basepath;
+                $site->save();
+                EditSiteBasepathSSH::dispatch($site, $oldbasepath)->delay(Carbon::now()->addSeconds(5));
+            }
         }
-
 
         if ($request->php) {
-
-            //TODO
+            if ($site->php != $request->php) {
+                $oldphp = $site->php;
+                $site->php = $request->php;
+                $site->save();
+                EditSitePhpSSH::dispatch($site, $oldphp)->delay(Carbon::now()->addSeconds(10));
+            }
         }
+
+        if ($request->supervisor) {
+            if ($site->supervisor != $request->supervisor) {
+                $oldsupervisor = $site->supervisor;
+                $site->supervisor = $request->supervisor;
+                $site->save();
+                EditSiteSupervisorSSH::dispatch($site, $oldsupervisor)->delay(Carbon::now()->addSeconds(15));
+            }
+        }
+
+        $deploymod = false;
+
+        if ($request->deploy) {
+            if ($site->deploy != $request->deploy) {
+                $site->deploy = $request->deploy;
+                $site->save();
+                $deploymod = true;
+            }
+        }
+
+        if ($request->repository) {
+            if ($site->repository != $request->repository) {
+                $site->repository = $request->repository;
+                $site->save();
+                $deploymod = true;
+            }
+        }
+
+        if ($request->branch) {
+            if ($site->branch != $request->branch) {
+                $site->branch = $request->branch;
+                $site->save();
+                $deploymod = true;
+            }
+        }
+
+        if ($deploymod) {
+            EditSiteDeploySSH::dispatch($site)->delay(Carbon::now()->addSeconds(1));
+        }
+
+        $site->save();
         
-    
         return response()->json([
             'site_id'           => $site->site_id,
             'domain'            => $site->domain,
@@ -611,9 +680,10 @@ class SiteController extends Controller
             'server_ip'         => $site->server->ip,
             'php'               => $site->php,
             'basepath'          => $site->basepath,
-            'branch'            => $site->branch,
             'repository'        => $site->repository,
+            'branch'            => $site->branch,
             'deploy'            => $site->deploy,
+            'deploy_key'        => $site->server->github_key,
             'supervisor'        => $site->supervisor,
             'aliases'           => count($site->aliases)
         ]);
@@ -720,7 +790,12 @@ class SiteController extends Controller
      *                @OA\Property(
      *                    property="deploy",
      *                    description="Deploy custom configuration",
-     *                    type="text",
+     *                    type="string",
+     *                ),
+     *                @OA\Property(
+     *                    property="deploy_key",
+     *                    description="Deploy SSH Key",
+     *                    type="string",
      *                ),
      *                @OA\Property(
      *                    property="supervisor",
@@ -782,6 +857,7 @@ class SiteController extends Controller
             'repository'        => $site->repository,
             'branch'            => $site->branch,
             'deploy'            => $site->deploy,
+            'deploy_key'        => $site->server->github_key,
             'supervisor'        => $site->supervisor,
             'aliases'           => count($site->aliases)
         ]);

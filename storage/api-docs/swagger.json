@@ -1350,7 +1350,11 @@
                                         },
                                         "deploy": {
                                             "description": "Deploy custom configuration",
-                                            "type": "text"
+                                            "type": "string"
+                                        },
+                                        "deploy_key": {
+                                            "description": "Deploy SSH Key",
+                                            "type": "string"
                                         },
                                         "supervisor": {
                                             "description": "Supervisor configuration",
@@ -1492,7 +1496,7 @@
                                     },
                                     "deploy": {
                                         "description": "Deploy scripts",
-                                        "type": "text"
+                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -1557,9 +1561,23 @@
                                             "type": "string",
                                             "example": "public"
                                         },
+                                        "repository": {
+                                            "description": "Github repository",
+                                            "type": "string",
+                                            "example": "andreapollastri/cipi"
+                                        },
+                                        "branch": {
+                                            "description": "Git branch",
+                                            "type": "string",
+                                            "example": "latest"
+                                        },
                                         "deploy": {
                                             "description": "Deploy custom configuration",
-                                            "type": "text"
+                                            "type": "string"
+                                        },
+                                        "deploy_key": {
+                                            "description": "Deploy SSH Key",
+                                            "type": "string"
                                         },
                                         "supervisor": {
                                             "description": "Supervisor configuration",

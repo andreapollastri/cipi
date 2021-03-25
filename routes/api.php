@@ -35,6 +35,7 @@ Route::get('/servers/{server_id}/domains', [ServerController::class, 'domains'])
 //Sites
 Route::get('/sites', [SiteController::class, 'index']);
 Route::post('/sites', [SiteController::class, 'create']);
+Route::patch('/sites/{site_id}', [SiteController::class, 'edit']);
 Route::delete('/sites/{site_id}', [SiteController::class, 'destroy']);
 Route::get('/sites/{site_id}', [SiteController::class, 'show']);
 Route::post('/sites/{site_id}/ssl', [SiteController::class, 'ssl']);
