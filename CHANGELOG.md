@@ -10,6 +10,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+
+## [3.0] - 2021-03-25
+### New Features
+- Move to Laravel 8
+- PHP 8 Support
+- Now you can manage the same server that runs Cipi
+- Auto version update (so you don't need to reinstall it)
+- API REST (with Swagger OA http://YOUR-IP/api/docs)
+- Cronjob editor
+- New Queue system to deploy servers
+- node 15, mysql 8, ffmpeg, composer 2 and other extensions
+- PHP FPM / PHP CLI selector
+- Supervisor manager
+- Domain / basepath manager
+- Github repository manager
+- CPU / RAM realtime charts
+- JWT authentication
+- Improvements on UI/UX
+### Fixed
+- AWS and other provider installation issues
+
 ## [2.4.9] - 2020-05-15
 ### Fixed
 - Bug fix to solve alias creation/destroy in `AliasesController.php` e `aliasdel.sh`.

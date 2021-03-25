@@ -19,5 +19,6 @@
         //Global Settings
         'phpvers'       => ['8.0','7.4','7.3'],
         'services'      => ['nginx','php','mysql','redis','supervisor'],
+        'default_php'   => '8.0',
 
     ];

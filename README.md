@@ -7,30 +7,6 @@
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
-
-
-# CIPI 3 IS IN BETA VERSION - NOT READY YET FOR PRODUCTION PROPOUSES BUT YOU CAN TRY IT AND INSTALL IT BECAUSE LTS VERSION WILL BE AUTO-UPGRATED ON YOUR SYSTEM! AUTO UPDATES ARE A GREAT PROGRESS THAN VERSION 2!!!
-# THE SITE EDIT PART IS CURRENTLY INCOMPLETE SO IT WORKS PARTIALY (I'M SORRY).
-# THE LTS AND COMPLETE VERSION WILL BE REALESE SOON, IN THE MEANWHILE I NEED YOUR FEEDBACK
-# DOCUMENTATION AND NEW WEBSITE WILL BE PUBBLISH IN THE NEXT DAYS
-
-## First access is administrator / 12345678 (then you can change your credentials into Settings Area)
-
-## What's New?
-- Moved to Laravel 8
-- PHP 8 Support
-- Now you can manage the same server that runs Cipi
-- Auto version update (so you don't need to reinstall it)
-- API REST (with Swagger OA http://YOUR-IP/api/docs)
-- Cronjob editor
-- New Queue system to deploy servers
-- node 15, mysql 8, ffmpeg, composer 2 and other extensions
-- PHP CLI selector
-- CPU / RAM realtime charts
-- JWT authentication
-
-## I'm working on: Application installer, Site editor, PHP-FPM selector, supervisor site config and Git deploy!
-
 ## About
 Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, ffmpeg, fail2ban, Redis, API and with a simple graphical interface useful to manage Laravel, Codeigniter, Symphony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
 
@@ -88,7 +64,7 @@ $ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 - nginx: 1.18
 - PHP-FPM: 8.0, 7.4, 7.3
 - MySql: 8 
-- node: 15 (on Ubuntu 18.04) / 14 (on Ubuntu 20.04)
+- node: 15
 - npm: 7
 - Composer: 2
 
