@@ -262,7 +262,7 @@ Settings
                         $('#username').html(localStorage.username);
                     }
                     if(patchcall == 'changepass') {
-                        success('Passoword has been updated');
+                        success('Password has been updated');
                     }
                     if(patchcall == 'newapikey') {
                         success('New API Key:<br><b>'+data.apikey+'</b>');
