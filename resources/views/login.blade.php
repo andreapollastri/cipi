@@ -11,43 +11,44 @@
         <link rel="icon" type="image/png" href="/favicon.png" />
         <link href="/assets/css/app.css" rel="stylesheet" />
         <style>
-            .auth-bg {
+            /* .auth-bg {
                 background-image: url("/assets/bg/{{ config('cipi.background') }}.jpg");
                 background-size: cover;
                 background-position: bottom;
-            }
+            } */
         </style>
     </head>
 
-    <body class="bg-primary">
+    <body class="bg-secondary">
 
         <div id="layoutAuthentication">
             <div id="layoutAuthentication_content" class="auth-bg">
                 <main>
                     <div class="container">
-                        <div class="row justify-content-center">
+                        <div class="row justify-content-center align-items-center vh-100">
                             <div class="col-lg-5">
-                                <div class="card shadow-lg border-0 rounded-lg mt-5">
+                                <div class="card shadow rounded-lg border-0 mt-5">
                                     <div class="card-body">
                                         <form>
                                             <div class="text-center">
                                                 <h1>Login</h1>
+                                                <p class="text-secondary">Enter your credentials to access your account.</p>
                                             </div>
                                             <div class="form-group">
                                                 <label class="small mb-1" for="username">Username</label>
-                                                <input class="form-control py-4" id="username" type="email" placeholder="john.doe" />
+                                                <input class="form-control py-4" id="username" type="email" placeholder="administrador" />
                                             </div>
                                             <div class="form-group">
                                                 <label class="small mb-1" for="password">Password</label>
                                                 <input class="form-control py-4" id="password" type="password" placeholder="********" />
                                             </div>
-                                            <div class="form-group d-flex justify-content-end mt-4 mb-0">
-                                                <a class="btn btn-primary" id="login">OK <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></a>
+                                            <div class="form-group d-flex mt-4 mb-0">
+                                                <button class="btn btn-primary btn-block" id="login" type="button">Login <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></button>
                                             </div>
                                         </form>
                                     </div>
-                                    <div class="card-footer text-center">
-                                        <div class="small">&copy{{ Date('Y') }} - <a href="{{ config('cipi.website') }}" target="_blank"> {{ config('cipi.name') }}</a></div>
+                                    <div class="text-center mb-4">
+                                        <div class="small font-weight-bold">&copy{{ Date('Y') }} - <a href="{{ config('cipi.website') }}" target="_blank"> {{ config('cipi.name') }}</a></div>
                                     </div>
                                 </div>
                             </div>
