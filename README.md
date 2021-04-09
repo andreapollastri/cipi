@@ -1,5 +1,9 @@
 
 # Cipi - An Open Source Control Panel for your Cloud!
+ 
+ 
+<img src="https://raw.githubusercontent.com/andreapollastri/cipi/master/utility/design/banner.png">
+
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
