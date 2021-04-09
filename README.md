@@ -1,5 +1,5 @@
+<img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
 
-# Cipi - An Open Source Control Panel for your Cloud!
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
 ![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
@@ -28,7 +28,7 @@ Cipi is a Laravel based cloud server control panel that supports Digital Ocean, 
 - Always up to date: Cipi installs last versions of LTS dists and supports Ubuntu 20.04 LTS :)
 
 ## Documentation
-Cipi Documentation is available at: [https://cipi.sh/docs/](https://cipi.sh/docs/).
+Cipi Documentation is available at: [https://cipi.sh/docs.html](https://cipi.sh/docs.html).
 
 ## Installation
 ```
@@ -62,6 +62,13 @@ To correctly manage remote servers Cipi has to be on a public IP address... do n
 - node: 15
 - npm: 7
 - Composer: 2
+## Screenshots
+
+<img src="https://cipi.sh/assets/images/docs/dashboard.png"> 
+
+<img src="https://cipi.sh/assets/images/docs/server.png"> 
+
+<img src="https://cipi.sh/assets/images/docs/site.png"> 
 
 ## Contributing
 Thank you for considering contributing to the Cipi Project (pr, issues, feedbacks, ideas, promo, money, beers) :)
@@ -79,6 +86,9 @@ Cipi is an open-source software licensed under the MIT license.
 
 ## Why use Cipi?
 Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
+
+### Pay me a beer ;)
+https://paypal.me/andreapollastri
 
 ### Enjoy Cipi :)
 https://cipi.sh

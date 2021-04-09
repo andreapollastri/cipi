@@ -11,6 +11,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 (no unreleased versions)
 
 
+## [3.0.1] - 2021-04-09
+### Fixed
+- Basepath Patch API issue (it didn't work)
+- Typo fix in codebase
+### Changed
+- Updated `readme.md` version 3 docs and screenshots information
+### Upgrade
+- Updated PHPsec vendor
+
+
 ## [3.0] - 2021-03-25
 ### New Features
 - Move to Laravel 8
