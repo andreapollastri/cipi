@@ -1178,7 +1178,7 @@ class ServerController extends Controller
     *     ),
     *     @OA\Response(
     *          response=200,
-    *          description="Successful passoword reset",
+    *          description="Successful password reset",
     *          @OA\JsonContent(
     *              @OA\Property(
     *                  property="password",

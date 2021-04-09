@@ -812,7 +812,7 @@
                 ],
                 "responses": {
                     "200": {
-                        "description": "Successful passoword reset",
+                        "description": "Successful password reset",
                         "content": {
                             "application/json": {
                                 "schema": {
