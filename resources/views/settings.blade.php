@@ -188,7 +188,7 @@ Settings
         }
     });
 
-    //Passowrd Patch
+    //Password Patch
     $('#newpass').keyup(function() {
         $('#newpass').removeClass('is-invalid');
     });
