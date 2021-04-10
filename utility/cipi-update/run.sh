@@ -1,4 +1,5 @@
-cd /var/www/html && git branch latest
+cd /var/www/html && git stash
+cd /var/www/html && git checkout latest
 cd /var/www/html && git fetch
 cd /var/www/html && git pull
 cd /var/www/html && git reset --hard origin/latest
