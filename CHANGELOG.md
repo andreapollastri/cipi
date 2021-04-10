@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.2] - 2021-04-10
+### Fixed
+- Basepath Patch now manage correctly "empty" values
+### Updated
+- Update of Server Client and Panel versions
 
 ## [3.0.1] - 2021-04-09
 ### Fixed
