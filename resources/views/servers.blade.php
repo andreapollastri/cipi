@@ -2,7 +2,6 @@
 
 
 @section('title')
-Servers
 @endsection
 
 
@@ -11,7 +10,7 @@ Servers
 <div class="row">
     <div class="col-xl-12">
         <div class="card mb-4">
-            <div class="card-header text-right">
+            <div class="card-header d-flex justify-content-end">
                 <button class="btn btn-sm btn-secondary" id="newServer">
                     <i class="fas fa-plus mr-1"></i><b>New Server</b>
                 </button>
@@ -190,7 +189,7 @@ Servers
             'columnDefs': [
                 {
                     'targets': 0,
-                    'className': 'd-none d-md-table-cell',
+                    'className': 'text-center d-none d-md-table-cell',
                 },
                 {
                     'targets': 1,
@@ -210,7 +209,7 @@ Servers
                     'render': function ( data, type, row, meta ) {
                         if(data['status'] == 0) {
                             if(data['default']) {
-                                return '<span class="btn btn-sm btn-warning mr-3"><i class="fas fa-circle-notch fa-spin fa-fw"></i> <b class="d-none d-sm-inline">Wait...</b></span><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></span>';
+                                return '<button class="btn btn-sm btn-warning mr-3" type="button"><i class="fas fa-circle-notch fa-spin fa-fw"></i> <b class="d-none d-sm-inline">Wait...</b></button><button class="disabled btn btn-sm btn-danger" type="button"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
                             } else {
                                 return '<button data-id="'+data['server_id']+'" data-ip="'+data['ip']+'" class="btinstall btn btn-sm btn-secondary mr-3"><i class="fas fa-terminal fa-fw"></i> <b class="d-none d-sm-inline">Install</b></button><button data-id="'+data['server_id']+'" data-name="'+data['name']+'" data-ip="'+data['ip']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
                             }

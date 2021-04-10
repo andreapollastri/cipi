@@ -32,7 +32,7 @@
                                         <form>
                                             <div class="text-center">
                                                 <h1>Login</h1>
-                                                <p class="text-secondary">Enter your credentials to access your account.</p>
+                                                <p class="text-secondary">Enter your credentials to access your account</p>
                                             </div>
                                             <div class="form-group">
                                                 <label class="small mb-1" for="username">Username</label>
