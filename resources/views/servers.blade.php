@@ -2,6 +2,7 @@
 
 
 @section('title')
+Servers
 @endsection
 
 
