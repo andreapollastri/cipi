@@ -610,7 +610,7 @@ class SiteController extends Controller
             EditSiteDomainSSH::dispatch($site, $olddomain)->delay(Carbon::now()->addSeconds(1));
         }
 
-        if (isset($request->basepath)) {
+        if ($request->has('basepath')) {
             if ($site->basepath != $request->basepath) {
                 $oldbasepath = $site->basepath;
                 $site->basepath = $request->basepath;

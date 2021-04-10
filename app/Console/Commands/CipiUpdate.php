@@ -40,6 +40,15 @@ class CipiUpdate extends Command
      */
     public function handle()
     {
+
+        //2021-04-10 - Fix Client Server Versions
+        $servers = Server::where('build', '<>', '202104101');
+        foreach($servers as $server) {
+            $server->build = '202104101';
+            $server->save();
+        }
+
+
         $server = Server::where('default', 1)->first();
         
         $ssh = new SSH2($server->ip, 22);
