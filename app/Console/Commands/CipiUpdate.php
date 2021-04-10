@@ -42,7 +42,7 @@ class CipiUpdate extends Command
     {
 
         //2021-04-10 - Fix Client Server Versions
-        $servers = Server::where('build', '<>', '202104101');
+        $servers = Server::where('build', '<>', '202104101')->get();
         foreach($servers as $server) {
             $server->build = '202104101';
             $server->save();
