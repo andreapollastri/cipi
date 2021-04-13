@@ -78,30 +78,32 @@ Cipi is easy, stable, powerful and free for any personal and commercial use and 
 ## Roadmap... what's next?
 - Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
 - Codebase Tests (Unit and Feature)
-- Github hooks
-- More control to deploy flow in panel
+- Improve codebase quality
+- Improve UI/UX
 - Server Alerts Notification
+- Password recovery flow and SMTP integration in settings
+- Add open MySql port (optional)
 - Site php.ini custom configuration in panel
 - Site nginx custom configuration in panel
-- Password recovery flow and SMTP integration in settings
+- Extend Git Deploy to Gitlab and Bitbucket
+- Github / Git hooks
+- Zero Downtime deployment
+- More control on deploy flow in panel
 - Slack integration
 - Cloudflare integration
 - Digital Ocean integration
 - AWS integration
 - AWS s3 site backup
-- Extend Git Deploy to Gitlab and Bitbucket
-- Add open MySql port (optional)
-- Improve code quality
 
 ## Contributing
 Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, money, beers) :)
 
 In case of code...
-1. Fork it (https://github.com/andreapollastri/cipi)
-2. Create your feature branch (`git checkout -b feature/fooBar`)
-3. Commit your changes (`git commit -am 'Add some fooBar'`)
-4. Push to the branch (`git push origin feature/fooBar`)
-5. Create a new Pull Request
+- Fork it (https://github.com/andreapollastri/cipi)
+- Create your feature branch (`git checkout -b feature/fooBar`)
+- Commit your changes (`git commit -am 'Add some fooBar'`)
+- Push to the branch (`git push origin feature/fooBar`)
+- Create a new Pull Request
 
 ## Need support with Cipi?
 Please open an issue here: https://github.com/andreapollastri/cipi/issues.
