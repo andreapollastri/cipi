@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.4] - 2021-04-13
+### Changed
+- Moved all JS logic from Blade template to .js files
+- CS fix and improvements on PHP codebase
+- Added branch var into go.sh file
+
 ## [3.0.3] - 2021-04-10
 ### Fixed
 - Auto update script issue

@@ -6,65 +6,113 @@ use App\Models\Site;
 use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
+use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Storage;
 
 class ShellController extends Controller
 {
-    public function setup($server_id)
+
+    /**
+     * Server Setup script
+     *
+    */
+    public function setup(string $server_id): ResponseFactory
     {
         $server = Server::where('server_id', $server_id)->where('status', 0)->firstOrFail();
+
         $script = Storage::get('cipi/setup.sh');
         $script = Str::replaceArray('???', [
             $server->password,
             $server->database,
             $server->server_id
         ], $script);
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function deploy($site_id)
+    /**
+     * Server Deploy script
+     *
+    */
+    public function deploy(string $site_id): ResponseFactory
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
+
         $script = Storage::get('cipi/deploy.sh');
         $script = str_replace('???USER???', $site->username, $script);
         $script = str_replace('???REPO???', $site->repository, $script);
         $script = str_replace('???BRANCH???', $site->branch, $script);
         $script = str_replace('???SCRIPT???', $site->deploy, $script);
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+        
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function serversrootreset()
+    /**
+     * Server Root User Reset script
+     *
+    */
+    public function serversrootreset(): ResponseFactory
     {
         $script = Storage::get('cipi/rootreset.sh');
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function newsite()
+    /**
+     * New Site script
+     *
+    */
+    public function newsite(): ResponseFactory
     {
         $script = Storage::get('cipi/newsite.sh');
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function newalias($alias_id)
+    /**
+     * New Alias script
+     *
+    */
+    public function newalias(string $alias_id): ResponseFactory
     {
         $alias = Alias::where('alias_id', $alias_id)->firstOrFail();
+
         $script = Storage::get('cipi/newalias.sh');
         $script = str_replace('???DOMAIN???', $alias->domain, $script);
         $script = str_replace('???ALIASID???', $alias->alias_id, $script);
         $script = str_replace('???PHP???', $alias->site->php, $script);
         $script = str_replace('???REMOTE???', config('app.url'), $script);
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function delsite()
+    /**
+     * Delete Site script
+     *
+    */
+    public function delsite(): ResponseFactory
     {
         $script = Storage::get('cipi/delsite.sh');
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 
-    public function sitepass()
+
+    /**
+     * Reset Site Credentials script
+     *
+    */
+    public function sitepass(): ResponseFactory
     {
         $script = Storage::get('cipi/sitepass.sh');
-        return response($script)->withHeaders(['Content-Type' =>'application/x-sh']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
 }

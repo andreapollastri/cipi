@@ -14,13 +14,17 @@ use Illuminate\Http\Request;
 use App\Jobs\PanelDomainAddSSH;
 use App\Jobs\PanelDomainSslSSH;
 use App\Jobs\PanelDomainRemoveSSH;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
 class ServerController extends Controller
 {
+    
     /**
+     * List all servers
+     *
      * @OA\Get(
      *      path="/api/servers",
      *      summary="List all servers",
@@ -102,7 +106,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function index()
+    public function index(): JsonResponse
     {
         $servers = Server::all();
         $response = [];
@@ -121,11 +125,13 @@ class ServerController extends Controller
             array_push($response, $data);
         }
 
-        return $response;
+        return response()->json($response);
     }
 
     
     /**
+     * Add a new server
+     *
      * @OA\Post(
      *      path="/api/servers",
      *      summary="Add a new Server",
@@ -227,7 +233,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function create(Request $request)
+    public function create(Request $request): JsonResponse
     {
         $validator = Validator::make($request->all(), [
             'ip'    => 'required|ip',
@@ -277,11 +283,9 @@ class ServerController extends Controller
     }
 
 
-
-
-
-
     /**
+     * Delete a server
+     *
      * @OA\Delete(
      *      path="/api/servers/{server_id}",
      *      summary="Delete a Server",
@@ -319,7 +323,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function destroy($server_id)
+    public function destroy(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->first();
 
@@ -338,11 +342,14 @@ class ServerController extends Controller
         }
 
         $server->delete();
+
+        return response()->json([]);
     }
 
 
-
     /**
+     * Server information
+     *
      * @OA\Get(
      *      path="/api/servers/{server_id}",
      *      summary="Server information",
@@ -440,7 +447,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function show($server_id)
+    public function show(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -468,6 +475,8 @@ class ServerController extends Controller
 
 
     /**
+     * Panel server information
+     *
      * @OA\Get(
      *      path="/api/servers/panel",
      *      summary="Panel server information",
@@ -554,7 +563,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function panel()
+    public function panel(): JsonResponse
     {
         $server = Server::where('default', 1)->first();
 
@@ -591,6 +600,8 @@ class ServerController extends Controller
 
 
     /**
+     * Add a domain / subdomain to panel
+     *
      * @OA\Patch(
      *      path="/api/servers/panel/domain",
      *      summary="Add a domain / subdomain to panel",
@@ -604,18 +615,18 @@ class ServerController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\RequestBody(
-    *        required = true,
-    *        description = "Panel domain payload",
-    *        @OA\JsonContent(
-    *             type="object",
-    *             @OA\Property(
-    *                  property="domain",
-    *                  description="Panel domain",
-    *                  type="string",
-    *                  example="panel.domain.ltd",
-    *             ),
-    *          )
-    *      ),
+     *        required = true,
+     *        description = "Panel domain payload",
+     *        @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                  property="domain",
+     *                  description="Panel domain",
+     *                  type="string",
+     *                  example="panel.domain.ltd",
+     *             ),
+     *          )
+     *      ),
      *     @OA\Response(
      *          response=200,
      *          description="Successful panel domain update",
@@ -634,7 +645,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function paneldomain(Request $request)
+    public function paneldomain(Request $request): JsonResponse
     {
         $server = Server::where('default', 1)->first();
 
@@ -672,11 +683,14 @@ class ServerController extends Controller
             $newsite->save();
             PanelDomainAddSSH::dispatch($server)->delay(Carbon::now()->addSeconds(3));
         }
+
+        return response()->json([]);
     }
 
-    
 
     /**
+     * Require SSL for panel
+     *
      * @OA\Post(
      *      path="/api/servers/panel/ssl",
      *      summary="Require SSL for panel",
@@ -707,7 +721,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function panelssl()
+    public function panelssl(): JsonResponse
     {
         $server = Server::where('default', 1)->first();
 
@@ -728,157 +742,159 @@ class ServerController extends Controller
                 'errors' => 'Bad Request.'
             ], 400);
         }
-    }
 
-    
+        return response()->json([]);
+    }
 
 
     /**
-    * @OA\Patch(
-    *      path="/api/servers/{server_id}",
-    *      summary="Server edit",
-    *      tags={"Servers"},
-    *      description="Edit server information.",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *     ),
-    *      @OA\Parameter(
-    *          name="server_id",
-    *          description="The id of the server to edit.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
-    *     @OA\RequestBody(
-    *        required = true,
-    *        description = "Server creation payload",
-    *        @OA\JsonContent(
-    *             type="object",
-    *             @OA\Property(
-    *                  property="ip",
-    *                  description="Server IP",
-    *                  type="string",
-    *                  example="123.123.123.123",
-    *             ),
-    *             @OA\Property(
-    *                  property="name",
-    *                  description="Server name",
-    *                  type="string",
-    *                  example="Production Server",
-    *                  minLength=3
-    *             ),
-    *             @OA\Property(
-    *                  property="provider",
-    *                  description="Server provider",
-    *                  type="string",
-    *                  example="Digital Ocean",
-    *             ),
-    *             @OA\Property(
-    *                  property="location",
-    *                  description="Server location",
-    *                  type="string",
-    *                  example="Amsterdam",
-    *             ),
-    *             @OA\Property(
-    *                  property="php",
-    *                  description="Server PHP CLI version",
-    *                  type="string",
-    *                  example="7.4",
-    *             ),
-    *             @OA\Property(
-    *                  property="cron",
-    *                  description="Server crontab",
-    *                  type="text",
-    *             ),
-    *          )
-    *     ),
-    *     @OA\Response(
-    *          response=200,
-    *          description="Successful server editing",
-    *          @OA\JsonContent(
-    *              @OA\Property(
-    *                  property="server_id",
-    *                  description="Server unique ID",
-    *                  type="string",
-    *                  example="abc-123-def-456"
-    *              ),
-    *              @OA\Property(
-    *                  property="name",
-    *                  description="Server name",
-    *                  type="string",
-    *                  example="Staging Server",
-    *              ),
-    *              @OA\Property(
-    *                  property="ip",
-    *                  description="Server IP",
-    *                  type="string",
-    *                  example="123.123.123.123",
-    *              ),
-    *              @OA\Property(
-    *                  property="provider",
-    *                  description="Server provider",
-    *                  type="string",
-    *                  example="AWS",
-    *              ),
-    *              @OA\Property(
-    *                  property="default",
-    *                  description="Server default status (panel server)",
-    *                  type="boolean",
-    *                  example="false"
-    *              ),
-    *              @OA\Property(
-    *                  property="status",
-    *                  description="Server status",
-    *                  type="integer",
-    *                  example="1"
-    *              ),
-    *              @OA\Property(
-    *                  property="php",
-    *                  description="Server PHP CLI version",
-    *                  type="string",
-    *                  example="7.4"
-    *              ),
-    *              @OA\Property(
-    *                  property="github_key",
-    *                  description="Server Github deploy key",
-    *                  type="string"
-    *              ),
-    *              @OA\Property(
-    *                  property="build",
-    *                  description="Server build version",
-    *                  type="integer",
-    *                  example="20210317001"
-    *              ),
-    *              @OA\Property(
-    *                  property="cron",
-    *                  description="Server cron",
-    *                  type="text",
-    *              ),
-    *          )
-    *     ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Server not found or not installed"
-    *      ),
-    *      @OA\Response(
-    *          response=400,
-    *          description="Bad Request"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      ),
-    *      @OA\Response(
-    *          response=409,
-    *          description="Server conflict"
-    *      ),
-    * )
+     * Server edit
+     *
+     * @OA\Patch(
+     *      path="/api/servers/{server_id}",
+     *      summary="Server edit",
+     *      tags={"Servers"},
+     *      description="Edit server information.",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *     ),
+     *      @OA\Parameter(
+     *          name="server_id",
+     *          description="The id of the server to edit.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
+     *     @OA\RequestBody(
+     *        required = true,
+     *        description = "Server creation payload",
+     *        @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                  property="ip",
+     *                  description="Server IP",
+     *                  type="string",
+     *                  example="123.123.123.123",
+     *             ),
+     *             @OA\Property(
+     *                  property="name",
+     *                  description="Server name",
+     *                  type="string",
+     *                  example="Production Server",
+     *                  minLength=3
+     *             ),
+     *             @OA\Property(
+     *                  property="provider",
+     *                  description="Server provider",
+     *                  type="string",
+     *                  example="Digital Ocean",
+     *             ),
+     *             @OA\Property(
+     *                  property="location",
+     *                  description="Server location",
+     *                  type="string",
+     *                  example="Amsterdam",
+     *             ),
+     *             @OA\Property(
+     *                  property="php",
+     *                  description="Server PHP CLI version",
+     *                  type="string",
+     *                  example="7.4",
+     *             ),
+     *             @OA\Property(
+     *                  property="cron",
+     *                  description="Server crontab",
+     *                  type="text",
+     *             ),
+     *          )
+     *     ),
+     *     @OA\Response(
+     *          response=200,
+     *          description="Successful server editing",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="server_id",
+     *                  description="Server unique ID",
+     *                  type="string",
+     *                  example="abc-123-def-456"
+     *              ),
+     *              @OA\Property(
+     *                  property="name",
+     *                  description="Server name",
+     *                  type="string",
+     *                  example="Staging Server",
+     *              ),
+     *              @OA\Property(
+     *                  property="ip",
+     *                  description="Server IP",
+     *                  type="string",
+     *                  example="123.123.123.123",
+     *              ),
+     *              @OA\Property(
+     *                  property="provider",
+     *                  description="Server provider",
+     *                  type="string",
+     *                  example="AWS",
+     *              ),
+     *              @OA\Property(
+     *                  property="default",
+     *                  description="Server default status (panel server)",
+     *                  type="boolean",
+     *                  example="false"
+     *              ),
+     *              @OA\Property(
+     *                  property="status",
+     *                  description="Server status",
+     *                  type="integer",
+     *                  example="1"
+     *              ),
+     *              @OA\Property(
+     *                  property="php",
+     *                  description="Server PHP CLI version",
+     *                  type="string",
+     *                  example="7.4"
+     *              ),
+     *              @OA\Property(
+     *                  property="github_key",
+     *                  description="Server Github deploy key",
+     *                  type="string"
+     *              ),
+     *              @OA\Property(
+     *                  property="build",
+     *                  description="Server build version",
+     *                  type="integer",
+     *                  example="20210317001"
+     *              ),
+     *              @OA\Property(
+     *                  property="cron",
+     *                  description="Server cron",
+     *                  type="text",
+     *              ),
+     *          )
+     *     ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Server not found or not installed"
+     *      ),
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad Request"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      ),
+     *      @OA\Response(
+     *          response=409,
+     *          description="Server conflict"
+     *      ),
+     * )
     */
-    public function edit(Request $request, $server_id)
+    public function edit(Request $request, string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -976,6 +992,8 @@ class ServerController extends Controller
 
 
     /**
+     * Server ping
+     *
      * @OA\Get(
      *      path="/api/servers/{server_id}/ping",
      *      summary="Server ping",
@@ -1013,7 +1031,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function ping($server_id)
+    public function ping(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -1044,6 +1062,8 @@ class ServerController extends Controller
 
 
     /**
+     * Server healthy
+     *
      * @OA\Get(
      *      path="/api/servers/{server_id}/healthy",
      *      summary="Server healthy",
@@ -1105,7 +1125,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function healthy($server_id)
+    public function healthy(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -1133,16 +1153,23 @@ class ServerController extends Controller
             ]);
         }
 
-        $ssh = new SSH2($server->ip, 22);
-        if (!$ssh->login('cipi', $server->password)) {
+        try {
+            $ssh = new SSH2($server->ip, 22);
+            if (!$ssh->login('cipi', $server->password)) {
+                return response()->json([
+                    'message' => 'SSH error with server: '.$server->server_id,
+                    'errors' => 'Server Error.'
+                ], 500);
+            }
+            $ssh->setTimeout(360);
+            $status = $ssh->exec('echo "`LC_ALL=C top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk \'{print 100 - $1}\'`%;`free -m | awk \'/Mem:/ { printf("%3.1f%%", $3/$2*100) }\'`;`df -h / | awk \'/\// {print $(NF-1)}\'`"');
+            $ssh->exec('exit');
+        } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'SSH error with server: '.$server->server_id,
-                'errors' => 'Server Error.'
+                'message' => 'Something went wrong.',
+                'errors' => 'Error.'
             ], 500);
         }
-        $ssh->setTimeout(360);
-        $status = $ssh->exec('echo "`LC_ALL=C top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk \'{print 100 - $1}\'`%;`free -m | awk \'/Mem:/ { printf("%3.1f%%", $3/$2*100) }\'`;`df -h / | awk \'/\// {print $(NF-1)}\'`"');
-        $ssh->exec('exit');
 
         $status = str_replace('%', '', $status);
         $status = str_replace("\n", '', $status);
@@ -1157,48 +1184,50 @@ class ServerController extends Controller
     }
 
     /**
-    * @OA\Post(
-    *      path="/api/servers/{server_id}/rootreset",
-    *      summary="Server root password reset",
-    *      tags={"Servers"},
-    *      description="Reset server root password (for cipi user).",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *     ),
-    *      @OA\Parameter(
-    *          name="server_id",
-    *          description="The id of the server.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
-    *     @OA\Response(
-    *          response=200,
-    *          description="Successful password reset",
-    *          @OA\JsonContent(
-    *              @OA\Property(
-    *                  property="password",
-    *                  description="New assigned password for cipi root user",
-    *                  type="string",
-    *                  example="Secret_123"
-    *              ),
-    *          )
-    *     ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Server not found or not installed"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      ),
-    * )
+     * Server root password reset
+     *
+     * @OA\Post(
+     *      path="/api/servers/{server_id}/rootreset",
+     *      summary="Server root password reset",
+     *      tags={"Servers"},
+     *      description="Reset server root password (for cipi user).",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *     ),
+     *      @OA\Parameter(
+     *          name="server_id",
+     *          description="The id of the server.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *          response=200,
+     *          description="Successful password reset",
+     *          @OA\JsonContent(
+     *              @OA\Property(
+     *                  property="password",
+     *                  description="New assigned password for cipi root user",
+     *                  type="string",
+     *                  example="Secret_123"
+     *              ),
+     *          )
+     *     ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Server not found or not installed"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      ),
+     * )
     */
-    public function rootreset($server_id)
+    public function rootreset(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
@@ -1208,12 +1237,12 @@ class ServerController extends Controller
             ], 404);
         }
         
-        $oldpassword = $server->password;
-        $newpassword = Str::random(24);
-        $server->password = $newpassword;
+        $last_password = $server->password;
+        $new_password = Str::random(24);
+        $server->password = $new_password;
         $server->save();
 
-        RootResetSSH::dispatch($server, $newpassword, $oldpassword)->delay(Carbon::now()->addSeconds(1));
+        RootResetSSH::dispatch($server, $new_password, $last_password)->delay(Carbon::now()->addSeconds(1));
         
         return response()->json([
             'password' => $server->password
@@ -1222,55 +1251,57 @@ class ServerController extends Controller
 
 
     /**
-    * @OA\Post(
-    *      path="/api/servers/{server_id}/servicerestart/{service}",
-    *      summary="Server service restart",
-    *      tags={"Servers"},
-    *      description="Restart a server server (nginx, php, mysql, redis or supervisor).",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *     ),
-    *      @OA\Parameter(
-    *          name="server_id",
-    *          description="The id of the server.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
-    *     @OA\Parameter(
-    *          name="service",
-    *          description="The service to restart.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
-    *     @OA\Response(
-    *          response=200,
-    *          description="Successful service restart"
-    *      ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Server not found or not installed"
-    *      ),
-    *      @OA\Response(
-    *          response=400,
-    *          description="Bad request"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      ),
-    *      @OA\Response(
-    *          response=500,
-    *          description="SSH server connection issue"
-    *      ),
-    * )
+     * Server service restart
+     *
+     * @OA\Post(
+     *      path="/api/servers/{server_id}/servicerestart/{service}",
+     *      summary="Server service restart",
+     *      tags={"Servers"},
+     *      description="Restart a server server (nginx, php, mysql, redis or supervisor).",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *     ),
+     *      @OA\Parameter(
+     *          name="server_id",
+     *          description="The id of the server.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *          name="service",
+     *          description="The service to restart.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(
+     *          response=200,
+     *          description="Successful service restart"
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Server not found or not installed"
+     *      ),
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad request"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      ),
+     *      @OA\Response(
+     *          response=500,
+     *          description="SSH server connection issue"
+     *      ),
+     * )
     */
-    public function servicerestart($server_id, $service)
+    public function servicerestart(string $server_id, string $service): JsonResponse
     {
         if (!in_array($service, config('cipi.services'))) {
             return response()->json([
@@ -1278,6 +1309,7 @@ class ServerController extends Controller
                 'errors' => 'Bad Request.'
             ], 400);
         }
+
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
             return response()->json([
@@ -1285,41 +1317,54 @@ class ServerController extends Controller
                 'errors' => 'Server not found.'
             ], 404);
         }
-        $ssh = new SSH2($server->ip, 22);
-        if (!$ssh->login('cipi', $server->password)) {
+
+        try {
+            $ssh = new SSH2($server->ip, 22);
+            if (!$ssh->login('cipi', $server->password)) {
+                return response()->json([
+                    'message' => 'SSH error with server: '.$server->server_id,
+                    'errors' => 'Server Error.'
+                ], 500);
+            }
+
+            $ssh->setTimeout(360);
+            switch ($service) {
+                case 'nginx':
+                    $ssh->exec('sudo systemctl restart nginx.service');
+                    break;
+                case 'php':
+                    $ssh->exec('sudo service php8.0-fpm restart');
+                    $ssh->exec('sudo service php7.4-fpm restart');
+                    $ssh->exec('sudo service php7.3-fpm restart');
+                    break;
+                case 'mysql':
+                    $ssh->exec('sudo service mysql restart');
+                    break;
+                case 'redis':
+                    $ssh->exec('sudo systemctl restart redis.service');
+                    break;
+                case 'supervisor':
+                    $ssh->exec('service supervisor restart');
+                    break;
+                default:
+                    //
+                    break;
+            }
+            $ssh->exec('exit');
+
+            return response()->json([]);
+        } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'SSH error with server: '.$server->server_id,
-                'errors' => 'Server Error.'
+                'message' => 'Something went wrong.',
+                'errors' => 'Error.'
             ], 500);
         }
-        $ssh->setTimeout(360);
-        switch ($service) {
-            case 'nginx':
-                $ssh->exec('sudo systemctl restart nginx.service');
-                break;
-            case 'php':
-                $ssh->exec('sudo service php8.0-fpm restart');
-                $ssh->exec('sudo service php7.4-fpm restart');
-                $ssh->exec('sudo service php7.3-fpm restart');
-                break;
-            case 'mysql':
-                $ssh->exec('sudo service mysql restart');
-                break;
-            case 'redis':
-                $ssh->exec('sudo systemctl restart redis.service');
-                break;
-            case 'supervisor':
-                $ssh->exec('service supervisor restart');
-                break;
-            default:
-                //
-                break;
-        }
-        $ssh->exec('exit');
     }
 
 
     /**
+     * List all server sites
+     *
      * @OA\Get(
      *      path="/api/servers/{server_id}/sites",
      *      summary="List all server sites",
@@ -1332,13 +1377,13 @@ class ServerController extends Controller
      *          in="header",
      *          @OA\Schema(type="string")
      *     ),
-    *      @OA\Parameter(
-    *          name="server_id",
-    *          description="The id of the server.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
+     *      @OA\Parameter(
+     *          name="server_id",
+     *          description="The id of the server.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
      *     @OA\Response(
      *          response=200,
      *          description="Successful request",
@@ -1394,7 +1439,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function sites($server_id)
+    public function sites(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
@@ -1419,11 +1464,13 @@ class ServerController extends Controller
             array_push($response, $data);
         }
 
-        return $response;
+        return response()->json($response);
     }
 
 
     /**
+     * List all server domains
+     *
      * @OA\Get(
      *      path="/api/servers/{server_id}/domains",
      *      summary="List all server domains",
@@ -1436,13 +1483,13 @@ class ServerController extends Controller
      *          in="header",
      *          @OA\Schema(type="string")
      *     ),
-    *      @OA\Parameter(
-    *          name="server_id",
-    *          description="The id of the server.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *     ),
+     *      @OA\Parameter(
+     *          name="server_id",
+     *          description="The id of the server.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *     ),
      *     @OA\Response(
      *          response=200,
      *          description="Successfull response (Domain list array)"
@@ -1457,7 +1504,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function domains($server_id)
+    public function domains(string $server_id): JsonResponse
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
@@ -1476,6 +1523,6 @@ class ServerController extends Controller
             }
         }
 
-        return $response;
+        return response()->json($response);
     }
 }

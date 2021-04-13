@@ -7,10 +7,16 @@ use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Contracts\Routing\ResponseFactory;
 
 class ConfController extends Controller
 {
-    public function cron($server_id)
+
+    /**
+     * Crontab file configuration
+     *
+    */
+    public function cron(string $server_id): ResponseFactory
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->firstOrFail();
 
@@ -24,20 +30,35 @@ class ConfController extends Controller
                 ' '
             ], $script);
         }
-        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'text/plain']);
     }
 
+
+    /**
+     * Cipi nginx configuration
+     *
+    */
     public function panel()
     {
         $server = Server::where('default', 1)->firstOrFail();
+
         $site = Site::where('server_id', $server->id)->where('panel', 1)->firstOrFail();
         $script = Storage::get('cipi/panel.conf');
         $script = Str::replaceArray('???', [
             $site->domain
         ], $script);
-        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'text/plain']);
     }
 
+
+    /**
+     * Site host configuration
+     *
+    */
     public function host($site_id)
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
@@ -57,6 +78,11 @@ class ConfController extends Controller
     }
 
 
+    
+    /**
+     * Site alias configuration
+     *
+    */
     public function alias($alias_id)
     {
         $alias = Alias::where('alias_id', $alias_id)->firstOrFail();
@@ -76,6 +102,11 @@ class ConfController extends Controller
     }
 
 
+    
+    /**
+     * Site PHP configuration
+     *
+    */
     public function php($site_id)
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
@@ -86,12 +117,22 @@ class ConfController extends Controller
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
+    
+    /**
+     * Site nginx configuration
+     *
+    */
     public function nginx()
     {
         $script = Storage::get('cipi/nginx.conf');
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
+
+    /**
+     * Site supervisor configuration
+     *
+    */
     public function supervisor()
     {
         $script = Storage::get('cipi/supervisor.conf');
