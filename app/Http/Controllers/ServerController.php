@@ -13,8 +13,8 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Jobs\PanelDomainAddSSH;
 use App\Jobs\PanelDomainSslSSH;
-use App\Jobs\PanelDomainRemoveSSH;
 use Illuminate\Http\JsonResponse;
+use App\Jobs\PanelDomainRemoveSSH;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
@@ -106,7 +106,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function index(): JsonResponse
+    public function index()
     {
         $servers = Server::all();
         $response = [];
@@ -233,7 +233,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function create(Request $request): JsonResponse
+    public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'ip'    => 'required|ip',
@@ -323,7 +323,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function destroy(string $server_id): JsonResponse
+    public function destroy(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->first();
 
@@ -447,7 +447,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function show(string $server_id): JsonResponse
+    public function show(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -563,7 +563,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function panel(): JsonResponse
+    public function panel()
     {
         $server = Server::where('default', 1)->first();
 
@@ -645,7 +645,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function paneldomain(Request $request): JsonResponse
+    public function paneldomain(Request $request)
     {
         $server = Server::where('default', 1)->first();
 
@@ -721,7 +721,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function panelssl(): JsonResponse
+    public function panelssl()
     {
         $server = Server::where('default', 1)->first();
 
@@ -894,7 +894,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function edit(Request $request, string $server_id): JsonResponse
+    public function edit(Request $request, string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -1031,7 +1031,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function ping(string $server_id): JsonResponse
+    public function ping(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -1125,7 +1125,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function healthy(string $server_id): JsonResponse
+    public function healthy(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
@@ -1227,7 +1227,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function rootreset(string $server_id): JsonResponse
+    public function rootreset(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
@@ -1301,7 +1301,7 @@ class ServerController extends Controller
      *      ),
      * )
     */
-    public function servicerestart(string $server_id, string $service): JsonResponse
+    public function servicerestart(string $server_id, string $service)
     {
         if (!in_array($service, config('cipi.services'))) {
             return response()->json([
@@ -1439,7 +1439,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function sites(string $server_id): JsonResponse
+    public function sites(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
@@ -1504,7 +1504,7 @@ class ServerController extends Controller
      *      )
      * )
     */
-    public function domains(string $server_id): JsonResponse
+    public function domains(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {

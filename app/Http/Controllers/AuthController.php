@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Auth;
 use Firebase\JWT\JWT;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -16,7 +15,7 @@ class AuthController extends Controller
      * JWT Auth login via username and password
      *
     */
-    public function login(Request $request): JsonResponse
+    public function login(Request $request)
     {
         $request->validate([
             'username' => 'required',
@@ -47,7 +46,7 @@ class AuthController extends Controller
      * JWT Auth refresh token
      *
     */
-    public function refresh(Request $request): JsonResponse
+    public function refresh(Request $request)
     {
         $request->validate([
             'username' => 'required',
@@ -77,7 +76,7 @@ class AuthController extends Controller
      * Auth profile patch
      *
     */
-    public function update(Request $request): JsonResponse
+    public function update(Request $request)
     {
         $request->validate([
             'username' => 'required',
@@ -135,7 +134,7 @@ class AuthController extends Controller
      * JWT Auth sign out
      *
     */
-    public function logout(Request $request): JsonResponse
+    public function logout(Request $request)
     {
         $request->validate([
             'username' => 'required',

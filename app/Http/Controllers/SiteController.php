@@ -22,7 +22,6 @@ use App\Jobs\EditSiteDomainSSH;
 use App\Jobs\EditSiteBasepathSSH;
 use Barryvdh\DomPDF\Facade as PDF;
 use App\Jobs\EditSiteSupervisorSSH;
-use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
 
@@ -112,7 +111,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function index(): JsonResponse
+    public function index()
     {
         $sites = Site::where('panel', false)->get();
         $response = [];
@@ -291,7 +290,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function create(Request $request): JsonResponse
+    public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'domain'    => 'required',
@@ -567,7 +566,7 @@ class SiteController extends Controller
      *      ),
      * )
     */
-    public function edit(Request $request, string $site_id): JsonResponse
+    public function edit(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -841,7 +840,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function show(string $site_id): JsonResponse
+    public function show(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -915,7 +914,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function destroy(string $site_id): JsonResponse
+    public function destroy(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -975,7 +974,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function ssl(string $site_id): JsonResponse
+    public function ssl(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1043,7 +1042,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function resetssh(string $site_id): JsonResponse
+    public function resetssh(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1120,7 +1119,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function resetdb(string $site_id): JsonResponse
+    public function resetdb(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1147,7 +1146,7 @@ class SiteController extends Controller
     }
 
 
-    public function pdf(string $site_id, string $pdftoken): PDF
+    public function pdf(string $site_id, string $pdftoken)
     {
         try {
             JWT::decode($pdftoken, config('cipi.jwt_secret').'-Pdf', ['HS256']);
@@ -1225,7 +1224,7 @@ class SiteController extends Controller
      *      ),
      * )
     */
-    public function aliases(string $site_id): JsonResponse
+    public function aliases(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1307,7 +1306,7 @@ class SiteController extends Controller
      *      ),
      * )
     */
-    public function createalias(Request $request, string $site_id): JsonResponse
+    public function createalias(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1405,7 +1404,7 @@ class SiteController extends Controller
      *      ),
      * )
     */
-    public function destroyalias(string $site_id, string $alias_id): JsonResponse
+    public function destroyalias(string $site_id, string $alias_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 

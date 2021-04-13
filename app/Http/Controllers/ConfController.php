@@ -7,7 +7,6 @@ use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Contracts\Routing\ResponseFactory;
 
 class ConfController extends Controller
 {
@@ -16,7 +15,7 @@ class ConfController extends Controller
      * Crontab file configuration
      *
     */
-    public function cron(string $server_id): ResponseFactory
+    public function cron(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->firstOrFail();
 

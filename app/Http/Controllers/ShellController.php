@@ -6,7 +6,6 @@ use App\Models\Site;
 use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
-use Illuminate\Contracts\Routing\ResponseFactory;
 use Illuminate\Support\Facades\Storage;
 
 class ShellController extends Controller
@@ -16,7 +15,7 @@ class ShellController extends Controller
      * Server Setup script
      *
     */
-    public function setup(string $server_id): ResponseFactory
+    public function setup(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 0)->firstOrFail();
 
@@ -35,7 +34,7 @@ class ShellController extends Controller
      * Server Deploy script
      *
     */
-    public function deploy(string $site_id): ResponseFactory
+    public function deploy(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
 
@@ -53,7 +52,7 @@ class ShellController extends Controller
      * Server Root User Reset script
      *
     */
-    public function serversrootreset(): ResponseFactory
+    public function serversrootreset()
     {
         $script = Storage::get('cipi/rootreset.sh');
 
@@ -65,7 +64,7 @@ class ShellController extends Controller
      * New Site script
      *
     */
-    public function newsite(): ResponseFactory
+    public function newsite()
     {
         $script = Storage::get('cipi/newsite.sh');
 
@@ -77,7 +76,7 @@ class ShellController extends Controller
      * New Alias script
      *
     */
-    public function newalias(string $alias_id): ResponseFactory
+    public function newalias(string $alias_id)
     {
         $alias = Alias::where('alias_id', $alias_id)->firstOrFail();
 
@@ -95,7 +94,7 @@ class ShellController extends Controller
      * Delete Site script
      *
     */
-    public function delsite(): ResponseFactory
+    public function delsite()
     {
         $script = Storage::get('cipi/delsite.sh');
 
@@ -108,7 +107,7 @@ class ShellController extends Controller
      * Reset Site Credentials script
      *
     */
-    public function sitepass(): ResponseFactory
+    public function sitepass()
     {
         $script = Storage::get('cipi/sitepass.sh');
 
