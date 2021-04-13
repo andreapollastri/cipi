@@ -5,11 +5,12 @@
 ![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
 ![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
 ![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
+
 ## About
 Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, ffmpeg, fail2ban, Redis, API and with a simple graphical interface useful to manage Laravel, Codeigniter, Symfony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
 
 ## Features
-- Easy install: setup one or more servers with a click in less than ten minutes without be a Linux expert.
+- Easy install: setup one or more servers with a click in few minutes without be a Linux expert.
 
 - Server Management: manage one or more servers in as easy as a few clicks without be a LEMP Guru.
 
@@ -53,7 +54,7 @@ Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB m
 
 Installation may take up to about 30 minutes which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
 
-To correctly manage remote servers Cipi has to be on a public IP address... do not use it in localhost!
+To correctly manage remote servers Cipi has to be on a public IP address. Do not use it in localhost!
 
 ## Cipi LEMP environment
 - nginx: 1.18
@@ -62,6 +63,7 @@ To correctly manage remote servers Cipi has to be on a public IP address... do n
 - node: 15
 - npm: 7
 - Composer: 2
+
 ## Screenshots
 
 <img src="https://cipi.sh/assets/images/docs/dashboard.png"> 
@@ -70,22 +72,44 @@ To correctly manage remote servers Cipi has to be on a public IP address... do n
 
 <img src="https://cipi.sh/assets/images/docs/site.png"> 
 
+## Why use Cipi?
+Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
+
+## Roadmap... what's next?
+- Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
+- Codebase Tests (Unit and Feature)
+- Improve codebase quality
+- Improve UI/UX
+- Server Alerts Notification
+- Password recovery flow and SMTP integration in settings
+- Add open MySql port (optional)
+- Site php.ini custom configuration in panel
+- Site nginx custom configuration in panel
+- Extend Git Deploy to Gitlab and Bitbucket
+- Github / Git hooks
+- Zero Downtime deployment
+- More control on deploy flow in panel
+- Slack integration
+- Cloudflare integration
+- Digital Ocean integration
+- AWS integration
+- AWS s3 site backup
+
 ## Contributing
-Thank you for considering contributing to the Cipi Project (pr, issues, feedbacks, ideas, promo, money, beers) :)
+Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, money, beers) :)
 
-## Problem with Cipi?
+In case of code...
+- Fork it (https://github.com/andreapollastri/cipi)
+- Create your feature branch (`git checkout -b feature/fooBar`)
+- Commit your changes (`git commit -am 'Add some fooBar'`)
+- Push to the branch (`git push origin feature/fooBar`)
+- Create a new Pull Request
+
+## Need support with Cipi?
 Please open an issue here: https://github.com/andreapollastri/cipi/issues.
-
-## Security Vulnerabilities
-If you discover a security vulnerability within Cipi, please open an issue.
-
-All security vulnerabilities will be promptly addressed.
 
 ## Licence
 Cipi is an open-source software licensed under the MIT license.
-
-## Why use Cipi?
-Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
 
 ### Pay me a beer ;)
 https://paypal.me/andreapollastri

@@ -9,6 +9,7 @@ DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 IP=$(curl -s https://checkip.amazonaws.com)
 REPO=andreapollastri/cipi
+BRANCH=latest
 
 
 
@@ -554,7 +555,7 @@ clear
 sudo rm -rf /var/www/html
 cd /var/www && git clone https://github.com/$REPO.git html
 cd /var/www/html && git pull
-cd /var/www/html && git checkout latest
+cd /var/www/html && git checkout $BRANCH
 cd /var/www/html && git pull
 cd /var/www/html && sudo unlink .env
 cd /var/www/html && sudo cp .env.example .env

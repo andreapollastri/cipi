@@ -28,6 +28,8 @@ use Illuminate\Support\Facades\Validator;
 class SiteController extends Controller
 {
     /**
+     * List all sites
+     *
      * @OA\Get(
      *      path="/api/sites",
      *      summary="List all sites",
@@ -40,7 +42,7 @@ class SiteController extends Controller
      *          in="header",
      *          @OA\Schema(type="string")
      *     ),
-*     @OA\Response(
+     *     @OA\Response(
      *          response=200,
      *          description="Successful request",
      *          @OA\JsonContent(
@@ -129,13 +131,15 @@ class SiteController extends Controller
             array_push($response, $data);
         }
 
-        return $response;
+        return response()->json($response);
     }
 
 
 
 
     /**
+     * Add a new site
+     *
      * @OA\Post(
      *      path="/api/sites",
      *      summary="Add a new site",
@@ -376,6 +380,8 @@ class SiteController extends Controller
 
 
     /**
+     * Edit site information
+     *
      * @OA\Patch(
      *      path="/api/sites/{site_id}",
      *      summary="Edit site information",
@@ -389,60 +395,60 @@ class SiteController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site to edit.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *     @OA\RequestBody(
-    *        required = true,
-    *        description = "Site edit payload",
-    *        @OA\JsonContent(
-    *             type="object",
-    *             @OA\Property(
-    *                  property="domain",
-    *                  description="Site main domain",
-    *                  type="string",
-    *                  example="domain.ltd",
-    *             ),
-    *             @OA\Property(
-    *                  property="basepath",
-    *                  description="Site basepath",
-    *                  type="string",
-    *                  example="public",
-    *             ),
-    *             @OA\Property(
-    *                  property="php",
-    *                  description="PHP FPM version",
-    *                  type="string",
-    *                  example="8.0",
-    *             ),
-    *             @OA\Property(
-    *                  property="repository",
-    *                  description="Github repository",
-    *                  type="string",
-    *                  example="andreapollastri/cipi",
-    *             ),
-    *            @OA\Property(
-    *                  property="branch",
-    *                  description="Git branch",
-    *                  type="string",
-    *                  example="latest",
-    *             ),
-    *             @OA\Property(
-    *                  property="supervisor",
-    *                  description="Supervisor command",
-    *                  type="string",
-    *                  example="7.4",
-    *             ),
-    *             @OA\Property(
-    *                  property="deploy",
-    *                  description="Deploy scripts",
-    *                  type="string",
-    *             ),
-    *          )
-    *     ),
+     *          name="site_id",
+     *          description="The id of the site to edit.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *     @OA\RequestBody(
+     *        required = true,
+     *        description = "Site edit payload",
+     *        @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                  property="domain",
+     *                  description="Site main domain",
+     *                  type="string",
+     *                  example="domain.ltd",
+     *             ),
+     *             @OA\Property(
+     *                  property="basepath",
+     *                  description="Site basepath",
+     *                  type="string",
+     *                  example="public",
+     *             ),
+     *             @OA\Property(
+     *                  property="php",
+     *                  description="PHP FPM version",
+     *                  type="string",
+     *                  example="8.0",
+     *             ),
+     *             @OA\Property(
+     *                  property="repository",
+     *                  description="Github repository",
+     *                  type="string",
+     *                  example="andreapollastri/cipi",
+     *             ),
+     *            @OA\Property(
+     *                  property="branch",
+     *                  description="Git branch",
+     *                  type="string",
+     *                  example="latest",
+     *             ),
+     *             @OA\Property(
+     *                  property="supervisor",
+     *                  description="Supervisor command",
+     *                  type="string",
+     *                  example="7.4",
+     *             ),
+     *             @OA\Property(
+     *                  property="deploy",
+     *                  description="Deploy scripts",
+     *                  type="string",
+     *             ),
+     *          )
+     *     ),
      *     @OA\Response(
      *          response=200,
      *          description="Successful request",
@@ -508,17 +514,17 @@ class SiteController extends Controller
      *                    example="public"
      *                ),
      *                @OA\Property(
-    *                       property="repository",
-    *                       description="Github repository",
-    *                       type="string",
-    *                       example="andreapollastri/cipi",
-    *                 ),
-    *                 @OA\Property(
-    *                       property="branch",
-    *                       description="Git branch",
-    *                       type="string",
-    *                       example="latest",
-    *                 ),
+     *                       property="repository",
+     *                       description="Github repository",
+     *                       type="string",
+     *                       example="andreapollastri/cipi",
+     *                 ),
+     *                 @OA\Property(
+     *                       property="branch",
+     *                       description="Git branch",
+     *                       type="string",
+     *                       example="latest",
+     *                 ),
      *                @OA\Property(
      *                    property="deploy",
      *                    description="Deploy custom configuration",
@@ -560,7 +566,7 @@ class SiteController extends Controller
      *      ),
      * )
     */
-    public function edit(Request $request, $site_id)
+    public function edit(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -603,45 +609,47 @@ class SiteController extends Controller
                 }
             }
 
-            $olddomain = $site->domain;
+            $last_domain = $site->domain;
             $site->domain = $request->domain;
             $site->save();
 
-            EditSiteDomainSSH::dispatch($site, $olddomain)->delay(Carbon::now()->addSeconds(1));
+            EditSiteDomainSSH::dispatch($site, $last_domain)->delay(Carbon::now()->addSeconds(1));
+
+            return response()->json([]);
         }
 
         if ($request->has('basepath')) {
             if ($site->basepath != $request->basepath) {
-                $oldbasepath = $site->basepath;
+                $last_basepath = $site->basepath;
                 $site->basepath = $request->basepath;
                 $site->save();
-                EditSiteBasepathSSH::dispatch($site, $oldbasepath)->delay(Carbon::now()->addSeconds(5));
+                EditSiteBasepathSSH::dispatch($site, $last_basepath)->delay(Carbon::now()->addSeconds(5));
             }
         }
 
         if ($request->php) {
             if ($site->php != $request->php) {
-                $oldphp = $site->php;
+                $last_php = $site->php;
                 $site->php = $request->php;
                 $site->save();
-                EditSitePhpSSH::dispatch($site, $oldphp)->delay(Carbon::now()->addSeconds(10));
+                EditSitePhpSSH::dispatch($site, $last_php)->delay(Carbon::now()->addSeconds(10));
             }
         }
 
         if ($site->supervisor != $request->supervisor) {
-            $oldsupervisor = $site->supervisor;
+            $last_supervisor = $site->supervisor;
             $site->supervisor = $request->supervisor;
             $site->save();
-            EditSiteSupervisorSSH::dispatch($site, $oldsupervisor)->delay(Carbon::now()->addSeconds(15));
+            EditSiteSupervisorSSH::dispatch($site, $last_supervisor)->delay(Carbon::now()->addSeconds(15));
         }
 
-        $deploymod = false;
+        $deploy_patch = false;
 
         if ($request->deploy) {
             if ($site->deploy != $request->deploy) {
                 $site->deploy = $request->deploy;
                 $site->save();
-                $deploymod = true;
+                $deploy_patch = true;
             }
         }
 
@@ -649,7 +657,7 @@ class SiteController extends Controller
             if ($site->repository != $request->repository) {
                 $site->repository = $request->repository;
                 $site->save();
-                $deploymod = true;
+                $deploy_patch = true;
             }
         }
 
@@ -657,11 +665,11 @@ class SiteController extends Controller
             if ($site->branch != $request->branch) {
                 $site->branch = $request->branch;
                 $site->save();
-                $deploymod = true;
+                $deploy_patch = true;
             }
         }
 
-        if ($deploymod) {
+        if ($deploy_patch) {
             EditSiteDeploySSH::dispatch($site)->delay(Carbon::now()->addSeconds(1));
         }
 
@@ -690,6 +698,8 @@ class SiteController extends Controller
 
 
     /**
+     * Show site information
+     *
      * @OA\Get(
      *      path="/api/sites/{site_id}",
      *      summary="Show site information",
@@ -703,12 +713,12 @@ class SiteController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site to show.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
+     *          name="site_id",
+     *          description="The id of the site to show.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
      *     @OA\Response(
      *          response=200,
      *          description="Successful request",
@@ -774,17 +784,17 @@ class SiteController extends Controller
      *                    example="public"
      *                ),
      *                @OA\Property(
-    *                       property="repository",
-    *                       description="Github repository",
-    *                       type="string",
-    *                       example="andreapollastri/cipi",
-    *                 ),
-    *                 @OA\Property(
-    *                       property="branch",
-    *                       description="Git branch",
-    *                       type="string",
-    *                       example="latest",
-    *                 ),
+     *                       property="repository",
+     *                       description="Github repository",
+     *                       type="string",
+     *                       example="andreapollastri/cipi",
+     *                 ),
+     *                 @OA\Property(
+     *                       property="branch",
+     *                       description="Git branch",
+     *                       type="string",
+     *                       example="latest",
+     *                 ),
      *                @OA\Property(
      *                    property="deploy",
      *                    description="Deploy custom configuration",
@@ -830,7 +840,7 @@ class SiteController extends Controller
      *      )
      * )
     */
-    public function show(Request $request, $site_id)
+    public function show(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -865,44 +875,46 @@ class SiteController extends Controller
 
 
     /**
-    * @OA\Delete(
-    *      path="/api/sites/{site_id}",
-    *      summary="Delete a Site",
-    *      tags={"Sites"},
-    *      description="Delete a site from panel.",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site to delete.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Response(
-    *          response=200,
-    *          description="Successful site deleted",
-    *      ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
-    *      @OA\Response(
-    *          response=400,
-    *          description="Bad Request"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      )
-    * )
+     * Delete a Site
+     *
+     * @OA\Delete(
+     *      path="/api/sites/{site_id}",
+     *      summary="Delete a Site",
+     *      tags={"Sites"},
+     *      description="Delete a site from panel.",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Parameter(
+     *          name="site_id",
+     *          description="The id of the site to delete.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful site deleted",
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Site not found"
+     *      ),
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad Request"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      )
+     * )
     */
-    public function destroy($site_id)
+    public function destroy(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -921,44 +933,48 @@ class SiteController extends Controller
         }
 
         DeleteSiteSSH::dispatch($site)->delay(Carbon::now()->addSeconds(1));
+
+        return response()->json([]);
     }
 
 
     /**
-    * @OA\Post(
-    *      path="/api/sites/{site_id}/ssl",
-    *      summary="SSL request for site (and its aliases)",
-    *      tags={"Sites"},
-    *      description="Require SSL certs for site and its aliases.",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site to certificate (with its aliases).",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Response(
-    *          response=200,
-    *          description="Successful SSL request",
-    *      ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      )
-    * )
+     * SSL request for site (and its aliases)
+     *
+     * @OA\Post(
+     *      path="/api/sites/{site_id}/ssl",
+     *      summary="SSL request for site (and its aliases)",
+     *      tags={"Sites"},
+     *      description="Require SSL certs for site and its aliases.",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Parameter(
+     *          name="site_id",
+     *          description="The id of the site to certificate (with its aliases).",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
+     *          response=200,
+     *          description="Successful SSL request",
+     *      ),
+     *      @OA\Response(
+     *          response=404,
+     *          description="Site not found"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      )
+     * )
     */
-    public function ssl($site_id)
+    public function ssl(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -970,31 +986,35 @@ class SiteController extends Controller
         }
 
         SslSiteSSH::dispatch($site)->delay(Carbon::now()->addSeconds(3));
+
+        return response()->json([]);
     }
 
 
 
     /**
-    * @OA\Post(
-    *      path="/api/sites/{site_id}/reset/ssh",
-    *      summary="Reset site SSH password",
-    *      tags={"Sites"},
-    *      description="Require a reset for site SSH password.",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Response(
+     * Reset site SSH password
+     *
+     * @OA\Post(
+     *      path="/api/sites/{site_id}/reset/ssh",
+     *      summary="Reset site SSH password",
+     *      tags={"Sites"},
+     *      description="Require a reset for site SSH password.",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Parameter(
+     *          name="site_id",
+     *          description="The id of the site.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
      *          response=200,
      *          description="Successful password reset",
      *          @OA\JsonContent(
@@ -1012,17 +1032,17 @@ class SiteController extends Controller
      *                ),
      *          )
      *      ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      )
-    * )
+     *      @OA\Response(
+     *          response=404,
+     *          description="Site not found"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      )
+     * )
     */
-    public function resetssh($site_id)
+    public function resetssh(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1050,26 +1070,28 @@ class SiteController extends Controller
 
 
     /**
-    * @OA\Post(
-    *      path="/api/sites/{site_id}/reset/db",
-    *      summary="Reset site MySql password",
-    *      tags={"Sites"},
-    *      description="Require a reset for site MySql password.",
-    *      @OA\Parameter(
-    *          name="Authorization",
-    *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
-    *          required=true,
-    *          in="header",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *      @OA\Response(
+     * Reset site MySql password
+     *
+     * @OA\Post(
+     *      path="/api/sites/{site_id}/reset/db",
+     *      summary="Reset site MySql password",
+     *      tags={"Sites"},
+     *      description="Require a reset for site MySql password.",
+     *      @OA\Parameter(
+     *          name="Authorization",
+     *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
+     *          required=true,
+     *          in="header",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Parameter(
+     *          name="site_id",
+     *          description="The id of the site.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *      @OA\Response(
      *          response=200,
      *          description="Successful password reset",
      *          @OA\JsonContent(
@@ -1087,17 +1109,17 @@ class SiteController extends Controller
      *                ),
      *          )
      *      ),
-    *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
-    *      @OA\Response(
-    *          response=401,
-    *          description="Unauthorized access error"
-    *      )
-    * )
+     *      @OA\Response(
+     *          response=404,
+     *          description="Site not found"
+     *      ),
+     *      @OA\Response(
+     *          response=401,
+     *          description="Unauthorized access error"
+     *      )
+     * )
     */
-    public function resetdb($site_id)
+    public function resetdb(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1108,12 +1130,12 @@ class SiteController extends Controller
             ], 404);
         }
 
-        $oldpassword = $site->database;
+        $last_password = $site->database;
 
         $site->database = Str::random(24);
         $site->save();
 
-        SiteDbPwdSSH::dispatch($site, $oldpassword)->delay(Carbon::now()->addSeconds(1));
+        SiteDbPwdSSH::dispatch($site, $last_password)->delay(Carbon::now()->addSeconds(1));
 
         $pdftoken = JWT::encode(['iat' => time(),'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
 
@@ -1124,7 +1146,7 @@ class SiteController extends Controller
     }
 
 
-    public function pdf($site_id, $pdftoken)
+    public function pdf(string $site_id, string $pdftoken)
     {
         try {
             JWT::decode($pdftoken, config('cipi.jwt_secret').'-Pdf', ['HS256']);
@@ -1150,6 +1172,8 @@ class SiteController extends Controller
     }
 
     /**
+     * List all site aliases
+     *
      * @OA\Get(
      *      path="/api/sites/{site_id}/aliases",
      *      summary="List all site aliases",
@@ -1163,13 +1187,13 @@ class SiteController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-*     @OA\Response(
+     *          name="site_id",
+     *          description="The id of the site.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *     @OA\Response(
      *          response=200,
      *          description="Successful request",
      *          @OA\JsonContent(
@@ -1195,12 +1219,12 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      ),
      *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
+     *          response=404,
+     *          description="Site not found"
+     *      ),
      * )
     */
-    public function aliases($site_id)
+    public function aliases(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1221,10 +1245,12 @@ class SiteController extends Controller
             array_push($response, $data);
         }
 
-        return $response;
+        return response()->json($response);
     }
 
     /**
+     * Add an alias to site
+     *
      * @OA\Post(
      *      path="/api/sites/{site_id}/aliases",
      *      summary="Add an alias to site",
@@ -1238,49 +1264,49 @@ class SiteController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *     @OA\Response(
+     *          name="site_id",
+     *          description="The id of the site.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *     @OA\Response(
      *          response=200,
      *          description="Successful created",
      *          @OA\JsonContent(
-    *                @OA\Property(
-    *                    property="alias_id",
-    *                    description="Site unique ID",
-    *                    type="string",
-    *                    example="abc-123-def-456"
-    *                ),
-    *                @OA\Property(
-    *                    property="domain",
-    *                    description="Main site domain",
-    *                    type="string",
-    *                    example="domain.ltd"
-    *                ),
+     *                @OA\Property(
+     *                    property="alias_id",
+     *                    description="Site unique ID",
+     *                    type="string",
+     *                    example="abc-123-def-456"
+     *                ),
+     *                @OA\Property(
+     *                    property="domain",
+     *                    description="Main site domain",
+     *                    type="string",
+     *                    example="domain.ltd"
+     *                ),
      *           ),
      *      ),
      *      @OA\Response(
      *          response=401,
      *          description="Unauthorized access error"
      *      ),
-    *      @OA\Response(
-    *          response=400,
-    *          description="Bad Request"
-    *      ),
+     *      @OA\Response(
+     *          response=400,
+     *          description="Bad Request"
+     *      ),
      *      @OA\Response(
      *          response=409,
      *          description="Site domain conflict"
      *      ),
      *      @OA\Response(
-    *          response=404,
-    *          description="Site not found"
-    *      ),
+     *          response=404,
+     *          description="Site not found"
+     *      ),
      * )
     */
-    public function createalias(Request $request, $site_id)
+    public function createalias(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1336,6 +1362,8 @@ class SiteController extends Controller
 
 
     /**
+     * Delete an alias
+     *
      * @OA\Delete(
      *      path="/api/sites/{site_id}/aliases/{alias_id}",
      *      summary="Delete an alias",
@@ -1349,20 +1377,20 @@ class SiteController extends Controller
      *          @OA\Schema(type="string")
      *     ),
      *     @OA\Parameter(
-    *          name="site_id",
-    *          description="The id of the site.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *     @OA\Parameter(
-    *          name="alias_id",
-    *          description="The id of the alias to delete.",
-    *          required=true,
-    *          in="path",
-    *          @OA\Schema(type="string")
-    *      ),
-    *     @OA\Response(
+     *          name="site_id",
+     *          description="The id of the site.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *     @OA\Parameter(
+     *          name="alias_id",
+     *          description="The id of the alias to delete.",
+     *          required=true,
+     *          in="path",
+     *          @OA\Schema(type="string")
+     *      ),
+     *     @OA\Response(
      *          response=200,
      *          description="Success Delete"
      *      ),
@@ -1371,12 +1399,12 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      ),
      *      @OA\Response(
-    *          response=404,
-    *          description="Resource not found"
-    *      ),
+     *          response=404,
+     *          description="Resource not found"
+     *      ),
      * )
     */
-    public function destroyalias($site_id, $alias_id)
+    public function destroyalias(string $site_id, string $alias_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -1397,5 +1425,7 @@ class SiteController extends Controller
         }
 
         DeleteAliasSSH::dispatch($site, $alias)->delay(Carbon::now()->addSeconds(1));
+
+        return response()->json([]);
     }
 }
