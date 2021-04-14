@@ -44,6 +44,7 @@ $ ubuntu@aws:~$ sudo -s
 $ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 ```
 Remember to open ports: 22, 80 and 443.
+
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
 
@@ -59,10 +60,10 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 ## Cipi LEMP environment
 - nginx: 1.18
 - PHP-FPM: 8.0, 7.4, 7.3
-- MySql: 8 
+- MySql: 8
 - node: 15
 - npm: 7
-- Composer: 2
+- Composer: 2.x
 
 ## Screenshots
 
@@ -75,14 +76,14 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 ## Why use Cipi?
 Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
 
-## Roadmap... what's next?
+## Cipi Roadmap... what's next?
 - Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
 - Codebase Tests (Unit and Feature)
 - Improve codebase quality
 - Improve UI/UX
 - Server Alerts Notification
 - Password recovery flow and SMTP integration in settings
-- Add open MySql port (optional)
+- 3 Server modes: LEMP (current), DB and nginx balancer
 - Site php.ini custom configuration in panel
 - Site nginx custom configuration in panel
 - Extend Git Deploy to Gitlab and Bitbucket
@@ -91,9 +92,12 @@ Cipi is easy, stable, powerful and free for any personal and commercial use and 
 - More control on deploy flow in panel
 - Slack integration
 - Cloudflare integration
-- Digital Ocean integration
-- AWS integration
+- AWS, Digital Ocean and other providers integration
 - AWS s3 site backup
+- File manager into panel
+- Shell terminal into panel
+- Site HD space, resources and trafic limits
+- Performance improvements
 
 ## Contributing
 Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, money, beers) :)
@@ -101,18 +105,23 @@ Thank you for considering contributing to the Cipi Project (code, issues, feedba
 In case of code...
 - Fork it (https://github.com/andreapollastri/cipi)
 - Create your feature branch (`git checkout -b feature/fooBar`)
-- Commit your changes (`git commit -am 'Add some fooBar'`)
+- Commit your changes (`git commit -a -m 'Add some fooBar'`)
 - Push to the branch (`git push origin feature/fooBar`)
 - Create a new Pull Request
 
-## Need support with Cipi?
-Please open an issue here: https://github.com/andreapollastri/cipi/issues.
+In case of money...
+- Cipi was developed by Andrea Pollastri, pay him some beer: https://paypal.me/andreapollastri
+
+### Anyway... star this project, Thank You ;)
 
 ## Licence
 Cipi is an open-source software licensed under the MIT license.
 
-### Pay me a beer ;)
-https://paypal.me/andreapollastri
+## Need support with Cipi?
+Please open an issue here: https://github.com/andreapollastri/cipi/issues.
 
-### Enjoy Cipi :)
+## Write to Cipi
+Write an email to hello@cipi.sh
+
+## Enjoy Cipi :)
 https://cipi.sh

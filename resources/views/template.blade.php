@@ -64,9 +64,13 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-rocket"></i></div>
                                 Sites
                             </a>
-                            <a class="nav-link {{ request()->is('servers*') ? 'settings' : '' }}" href="/settings">
+                            <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="/settings">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-cog"></i></div>
                                 Settings
+                            </a>
+                            <a class="nav-link" href="{{ config('cipi.docs') }}" target="_blank">
+                                <div class="sb-nav-link-icon"><i class="fas fa-fw fa-book"></i></div>
+                                Documentation
                             </a>
                             <a class="nav-link" href="#" id="logout">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-sign-out-alt"></i></div>
