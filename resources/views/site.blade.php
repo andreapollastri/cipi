@@ -111,7 +111,7 @@ Manage Site
                 Github repository
             </div>
             <div class="card-body">
-                <p>Configura un repository Github</p>
+                <p>Set up a Github repository</p>
                 <div class="text-center">
                     <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo">Repo configuration</button>
                     <div class="space"></div>
