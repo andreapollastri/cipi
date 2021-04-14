@@ -112,7 +112,7 @@ In case of code...
 In case of money...
 - Cipi was developed by Andrea Pollastri, pay him some beer: https://paypal.me/andreapollastri
 
-### Anyway... star this project, Thank You ;)
+#### ...anyway star this project on Github, Thankyou ;)
 
 ## Licence
 Cipi is an open-source software licensed under the MIT license.
@@ -121,7 +121,7 @@ Cipi is an open-source software licensed under the MIT license.
 Please open an issue here: https://github.com/andreapollastri/cipi/issues.
 
 ## Write to Cipi
-Write an email to hello@cipi.sh
+Write an email to: hello@cipi.sh
 
 ## Enjoy Cipi :)
 https://cipi.sh
