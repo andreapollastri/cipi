@@ -10,6 +10,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.5] - 2021-04-14
+### Changed
+- Fixed sidebar active class bug
+- Added documentation in sidebar
+- Auto update script improvements
+- Readme update
+
 ## [3.0.4] - 2021-04-13
 ### Changed
 - CS fix and improvements on PHP codebase

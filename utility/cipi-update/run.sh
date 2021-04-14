@@ -1,8 +1,6 @@
 cd /var/www/html && git stash
-cd /var/www/html && git checkout latest
 cd /var/www/html && git fetch
 cd /var/www/html && git pull
-cd /var/www/html && git reset --hard origin/latest
 sudo chmod -R o+w /var/www/html/storage
 sudo chmod -R 775 /var/www/html/storage
 sudo chmod -R o+w /var/www/html/bootstrap/cache
