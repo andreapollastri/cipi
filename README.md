@@ -28,8 +28,11 @@ Cipi is a Laravel based cloud server control panel that supports Digital Ocean, 
 
 - Always up to date: Cipi installs last versions of LTS dists and supports Ubuntu 20.04 LTS :)
 
+## Discover Cipi
+Visit website: https://cipi.sh
+
 ## Documentation
-Cipi Documentation is available at: [https://cipi.sh/docs.html](https://cipi.sh/docs.html).
+Cipi Documentation is available at: https://cipi.sh/docs.html.
 
 ## Installation
 ```
@@ -123,5 +126,4 @@ Please open an issue here: https://github.com/andreapollastri/cipi/issues.
 ## Write to Cipi
 Write an email to: hello@cipi.sh
 
-## Enjoy Cipi :)
-https://cipi.sh
+### ...enjoy Cipi :)
