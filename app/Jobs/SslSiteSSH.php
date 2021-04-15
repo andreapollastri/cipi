@@ -36,11 +36,13 @@ class SslSiteSSH implements ShouldQueue
         $ssh = new SSH2($this->site->server->ip, 22);
         $ssh->login('cipi', $this->site->server->password);
         $ssh->setTimeout(360);
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo certbot --nginx -d '.$this->site->domain.' --non-interactive --agree-tos --register-unsafely-without-email');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
         $ssh->exec("echo ".$this->site->server->password." | sudo -S sudo sed -i 's/443 ssl/443 ssl http2/g' /etc/nginx/sites-enabled/".$this->site->username.".conf");
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
         foreach ($this->site->aliases as $alias) {
+            $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo certbot --nginx -d '.$alias->domain.' --non-interactive --agree-tos --register-unsafely-without-email');
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
             $ssh->exec("echo ".$this->site->server->password." | sudo -S sudo sed -i 's/443 ssl/443 ssl http2/g' /etc/nginx/sites-enabled/".$alias->domain.".conf");
