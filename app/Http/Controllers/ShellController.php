@@ -71,24 +71,7 @@ class ShellController extends Controller
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
-
-    /**
-     * New Alias script
-     *
-    */
-    public function newalias(string $alias_id)
-    {
-        $alias = Alias::where('alias_id', $alias_id)->firstOrFail();
-
-        $script = Storage::get('cipi/newalias.sh');
-        $script = str_replace('???DOMAIN???', $alias->domain, $script);
-        $script = str_replace('???ALIASID???', $alias->alias_id, $script);
-        $script = str_replace('???PHP???', $alias->site->php, $script);
-        $script = str_replace('???REMOTE???', config('app.url'), $script);
-
-        return response($script)
-                ->withHeaders(['Content-Type' =>'application/x-sh']);
-    }
+    
 
     /**
      * Delete Site script
