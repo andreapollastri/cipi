@@ -26,9 +26,9 @@ class Kernel extends ConsoleKernel
     {
         $schedule->command('servers:setupcheck')->everyMinute();
 
-        $schedule->command('cipi:update')->dailyAt('04:05');
+        $schedule->command('cipi:update')->dailyAt('12:05');
 
-        $schedule->command('cipi:activesetupcount')->dailyAt('22:01');
+        $schedule->command('cipi:activesetupcount')->dailyAt('03:03');
     }
 
     /**

@@ -44,7 +44,11 @@ class ActiveSetupCount extends Command
 
         // Useful to daily count how many Cipi Control Panel installations are active
         // around the world and show the total value into cipi.sh official website
-        file_get_contents(config('cipi.activesetupcount'));
+        try {
+            file_get_contents(config('cipi.activesetupcount'));
+        } catch (\Throwable $th) {
+            //
+        }
 
         return 0;
     }
