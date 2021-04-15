@@ -40,7 +40,7 @@ class ActiveSetupCount extends Command
      */
     public function handle()
     {
-        sleep(rand(0,9));
+        sleep(rand(0, 9));
 
         // Useful to daily count how many Cipi Control Panel installations are active
         // around the world and show the total value into cipi.sh official website

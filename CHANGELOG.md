@@ -10,13 +10,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.7] - 2021-04-15
+### Fixed
+- Fixed Supervisor Script issue
+### Added
+- Added Active Installation count
+
 ## [3.0.6] - 2021-04-15
 ### Fixed
 - Fixed SSL generation issues
 - Fixed new alias creation issues
 ### Changed
 - Typo fix into site section
-- Removed unsed namespaces
+- Removed unused namespaces and files
 
 ## [3.0.5] - 2021-04-14
 ### Changed
