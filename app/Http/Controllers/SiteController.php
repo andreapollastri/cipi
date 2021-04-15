@@ -636,11 +636,12 @@ class SiteController extends Controller
             }
         }
 
-        if ($site->supervisor != $request->supervisor) {
-            $last_supervisor = $site->supervisor;
-            $site->supervisor = $request->supervisor;
-            $site->save();
-            EditSiteSupervisorSSH::dispatch($site, $last_supervisor)->delay(Carbon::now()->addSeconds(15));
+        if ($request->has('supervisor')) {
+            if ($site->supervisor != $request->supervisor) {
+                $site->supervisor = $request->supervisor;
+                $site->save();
+                EditSiteSupervisorSSH::dispatch($site, $site->supervisor)->delay(Carbon::now()->addSeconds(15));
+            }
         }
 
         $deploy_patch = false;
