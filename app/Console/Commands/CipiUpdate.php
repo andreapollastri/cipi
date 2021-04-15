@@ -40,18 +40,10 @@ class CipiUpdate extends Command
      */
     public function handle()
     {
-
-        //2021-04-10 - Fix Client Server Versions
-        $servers = Server::where('build', '<>', '202104101')->get();
-        foreach ($servers as $server) {
-            $server->build = '202104101';
-            $server->save();
-        }
-
-
         $server = Server::where('default', 1)->first();
         
         $ssh = new SSH2($server->ip, 22);
+        $ssh->login('cipi', $server->password);
         $ssh->setTimeout(360);
         $ssh->exec('echo '.$server->password.' | sudo -s cd /var/www/html/utility/cipi-update && sh run.sh');
         $ssh->exec('exit');
