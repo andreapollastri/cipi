@@ -10,6 +10,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.6] - 2021-04-15
+### Fixed
+- Fixed SSL generation issues
+- Fixed new alias creation issues
+### Changed
+- Typo fix into site section
+- Removed unsed namespaces
+
 ## [3.0.5] - 2021-04-14
 ### Changed
 - Fixed sidebar active class bug

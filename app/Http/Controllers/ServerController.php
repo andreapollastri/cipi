@@ -13,7 +13,6 @@ use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 use App\Jobs\PanelDomainAddSSH;
 use App\Jobs\PanelDomainSslSSH;
-use Illuminate\Http\JsonResponse;
 use App\Jobs\PanelDomainRemoveSSH;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Http;
