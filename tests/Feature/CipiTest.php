@@ -2,6 +2,8 @@
 
 namespace Tests\Feature;
 
+use Illuminate\Foundation\Testing\WithoutMiddleware;
+use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -10,7 +12,7 @@ class CipiTest extends TestCase
   
     public function testRedirectToLogin()
     {
-        $this->get('/');
+        $response = $this->get('/');
         $response->assertRedirect('/login');
     }
 
