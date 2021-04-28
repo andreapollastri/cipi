@@ -614,8 +614,6 @@ class SiteController extends Controller
             $site->save();
 
             EditSiteDomainSSH::dispatch($site, $last_domain)->delay(Carbon::now()->addSeconds(1));
-
-            return response()->json([]);
         }
 
         if ($request->has('basepath')) {
