@@ -23,6 +23,7 @@ class CipiTest extends TestCase
         $response->assertStatus(200);
     }
   
+    /*
     public function testDefaultLogin()
     {
         $this->visit('/login')
@@ -31,5 +32,6 @@ class CipiTest extends TestCase
              ->press('OK')
              ->seePageIs('/dashboard');
     }
+    */
 
 }
