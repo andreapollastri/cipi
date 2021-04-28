@@ -10,10 +10,10 @@ use Tests\TestCase;
 class CipiTest extends TestCase
 {
   
-    public function testRedirectToLogin()
+    public function testRedirectToDashboard()
     {
         $response = $this->get('/');
-        $response->assertRedirect('/login');
+        $response->assertRedirect('/dashboard');
     }
 
     public function testShowLoginPage()
