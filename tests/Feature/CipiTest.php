@@ -10,7 +10,7 @@ class CipiTest extends TestCase
   
     public function testRedirectToLogin()
     {
-        $this->get('/')
+        $this->get('/');
         $response->assertRedirect('/login');
     }
 
