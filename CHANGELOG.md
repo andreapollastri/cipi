@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.0.9] - 2021-04-28
+### Fixed
+- Basepath Patch Error
+- Supported Cipi Installation on Contabo VPS
+
 ## [3.0.8] - 2021-04-15
 ### Fixed
 - Fixed Active Installation Count script
