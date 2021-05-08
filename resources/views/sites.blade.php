@@ -148,59 +148,68 @@ Sites
 
 @section('js')
 <script>
-    //Get DT Data 
+    //Get DT Data
     getData('/api/sites');
+
+    let dt = null;
 
     //Datatable
     function dtRender() {
-        $('#dt').DataTable( {
-            'processing': true,
-            'data': JSON.parse(localStorage.getItem('dtdata')),
-            'columns': [
-                { data: 'domain' },
-                { data: 'aliases' },
-                { data: 'server_name' },
-                { data: 'server_ip' },
-                { data: {
-                    'site_id': 'site_id',
-                    'domain': 'domain',
-                }}
-            ],
-            'columnDefs': [
-                {
-                    'targets': 1,
-                    'className': 'd-none d-md-table-cell text-center',
-                },
-                {
-                    'targets': 2,
-                    'className': 'text-center d-none d-lg-table-cell',
-                },
-                {
-                    'targets': 3,
-                    'className': 'text-center d-none d-xl-table-cell',
-                },
-                {
-                    'targets': 4,
-                    'className': 'text-center',
-                    'render': function ( data, type, row, meta ) {
-                        return '<button data-id="'+data['site_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="'+data['site_id']+'" data-name="'+data['domain']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
+        if ($.fn.dataTable.isDataTable('#dt')) {
+            dt = $('#dt').DataTable();
+        }
+        else {
+            dt = $('#dt').DataTable({
+                'processing': true,
+                'data': JSON.parse(localStorage.getItem('dtdata')),
+                'columns': [
+                    {data: 'domain'},
+                    {data: 'aliases'},
+                    {data: 'server_name'},
+                    {data: 'server_ip'},
+                    {
+                        data: {
+                            'site_id': 'site_id',
+                            'domain': 'domain',
+                        }
                     }
+                ],
+                'columnDefs': [
+                    {
+                        'targets': 1,
+                        'className': 'd-none d-md-table-cell text-center',
+                    },
+                    {
+                        'targets': 2,
+                        'className': 'text-center d-none d-lg-table-cell',
+                    },
+                    {
+                        'targets': 3,
+                        'className': 'text-center d-none d-xl-table-cell',
+                    },
+                    {
+                        'targets': 4,
+                        'className': 'text-center',
+                        'render': function (data, type, row, meta) {
+                            return '<button data-id="' + data['site_id'] + '" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="' + data['site_id'] + '" data-name="' + data['domain'] + '" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
+                        }
+                    }
+                ],
+                'bLengthChange': false,
+                'bAutoWidth': true,
+                'responsive': true,
+                'drawCallback': function (settings) {
+                    //Manage Site
+                    $(".btmanage").click(function () {
+                        window.location.href = '/sites/' + $(this).attr('data-id');
+                    });
+                    //Delete Site
+                    $(".btdelete").click(function () {
+                        siteDelete($(this).attr('data-id'), $(this).attr('data-domain'));
+                    });
                 }
-            ],
-            'bLengthChange': false,
-            'bAutoWidth': true,
-            'responsive': true,
-            'drawCallback': function(settings) {
-                //Manage Site
-                $(".btmanage").click(function() {
-                    window.location.href = '/sites/'+$(this).attr('data-id');
-                });
-                //Delete Site
-                $(".btdelete").click(function() {
-                    siteDelete($(this).attr('data-id'),$(this).attr('data-domain'));
-                });
-            }
-        });
+            });
+        }
     }
 
     //Delete Site
