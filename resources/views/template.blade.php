@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <script>if(localStorage.getItem('username') === null){window.location.replace('/login');} //Session Check</script>
 <html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
-    
+
     <head>
     <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
@@ -35,7 +35,7 @@
             }
             #mainloadingicon {
                 margin: 0 auto;
-                margin-top: 100px;    
+                margin-top: 100px;
                 z-index: 100000;
             }
         </style>
@@ -51,38 +51,38 @@
                 <nav class="sb-sidenav accordion sb-sidenav-dark" id="sidenavAccordion">
                     <div class="sb-sidenav-menu">
                         <div class="nav">
-                            <div class="sb-sidenav-menu-heading">MENU</div>
+                            <div class="sb-sidenav-menu-heading">{{ __('cipi.menu') }}</div>
                             <a class="nav-link {{ request()->is('dashboard*') ? 'active' : '' }}" href="/dashboard">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-th-large"></i></div>
-                                Dashboard
+                                {{ __('cipi.sidebar_menu.dashboard') }}
                             </a>
                             <a class="nav-link {{ request()->is('servers*') ? 'active' : '' }}" href="/servers">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-server"></i></div>
-                                Servers
+                                {{ __('cipi.sidebar_menu.servers') }}
                             </a>
                             <a class="nav-link {{ request()->is('sites*') ? 'active' : '' }}" href="/sites">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-rocket"></i></div>
-                                Sites
+                                {{ __('cipi.sidebar_menu.sites') }}
                             </a>
                             <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="/settings">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-cog"></i></div>
-                                Settings
+                                {{ __('cipi.sidebar_menu.settings') }}
                             </a>
                             <a class="nav-link" href="{{ config('cipi.docs') }}" target="_blank">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-book"></i></div>
-                                Documentation
+                                {{ __('cipi.sidebar_menu.documentation') }}
                             </a>
                             <a class="nav-link" href="#" id="logout">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-sign-out-alt"></i></div>
-                                Logout
+                                {{ __('cipi.sidebar_menu.logout') }}
                             </a>
                         </div>
                     </div>
                     <div class="sb-sidenav-footer">
-                        <div class="small">Panel version:</div>
+                        <div class="small">{{ __('cipi.panel_version') }}:</div>
                         <span id="panelversion"></span>
                         <div class="space"></div>
-                        <div class="small">Logged in as:</div>
+                        <div class="small">{{ __('cipi.logged_in_as') }}:</div>
                         <span id="username"></span>
                     </div>
                 </nav>
@@ -127,20 +127,20 @@
                 </main>
             </div>
             <div id="mainloading" class="d-none">
-                <p><i class="fas fa-circle-notch fa-spin" id="mainloadingicon"></i> Loading data...</p>
+                <p><i class="fas fa-circle-notch fa-spin" id="mainloadingicon"></i> {{ __('cipi.loading_data') }}...</p>
             </div>
             @yield('extra')
             <div class="modal fade" id="errorModal" tabindex="-1" role="dialog" aria-labelledby="errorModalLabel" aria-hidden="true">
                 <div class="modal-dialog" role="document">
                     <div class="modal-content">
                         <div class="modal-header">
-                            <h5 class="modal-title" id="errorModalLabel">System Error</h5>
+                            <h5 class="modal-title" id="errorModalLabel">{{ __('cipi.system_error') }}</h5>
                             <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                             <span aria-hidden="true">&times;</span>
                             </button>
                         </div>
                         <div class="modal-body">
-                            <p>Ops! Something went wrong... try later!</p>
+                            <p>{{ __('cipi.unknown_error') }}</p>
                             <div class="space"></div>
                         </div>
                     </div>
@@ -189,7 +189,7 @@
                 $('#fail').addClass('d-none');
                 $('#failtext').empty();
             });
-            
+
             //Tooltips
             $(function () {
                 $('[data-toggle="tooltip"]').tooltip()
@@ -320,7 +320,7 @@
                     }
                 });
             });
-        </script>     
+        </script>
         @yield('js')
     </body>
 </html>
