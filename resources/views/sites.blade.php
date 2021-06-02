@@ -124,7 +124,7 @@ Sites
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure to delete site <b><span id="deletesitename"></span></b> and its database and aliases?</p>
+                <p>Are you sure to delete site <b><span id="deletesitedomain"></span></b> and its database and aliases?</p>
                 <div class="space"></div>
                 <input type="hidden" id="deletesiteid" value="" />
                 <div class="space"></div>
@@ -148,7 +148,7 @@ Sites
 
 @section('js')
 <script>
-    //Get DT Data 
+    //Get DT Data
     getData('/api/sites');
 
     //Datatable
@@ -183,7 +183,7 @@ Sites
                     'targets': 4,
                     'className': 'text-center',
                     'render': function ( data, type, row, meta ) {
-                        return '<button data-id="'+data['site_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="'+data['site_id']+'" data-name="'+data['domain']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
+                        return '<button data-id="'+data['site_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="'+data['site_id']+'" data-domain="'+data['domain']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
                     }
                 }
             ],
