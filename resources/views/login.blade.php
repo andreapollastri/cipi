@@ -5,7 +5,7 @@
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <title>{{ config('cipi.name') }} | Login</title>
+        <title>{{ config('cipi.name') }} | {{ __('cipi.login') }}</title>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
         <link rel="icon" type="image/png" href="/favicon.png" />
@@ -31,18 +31,18 @@
                                     <div class="card-body">
                                         <form>
                                             <div class="text-center">
-                                                <h1>Login</h1>
+                                                <h1>{{ __('cipi.login') }}</h1>
                                             </div>
                                             <div class="form-group">
-                                                <label class="small mb-1" for="username">Username</label>
+                                                <label class="small mb-1" for="username">{{ __('cipi.username') }}</label>
                                                 <input class="form-control py-4" id="username" type="email" placeholder="john.doe" />
                                             </div>
                                             <div class="form-group">
-                                                <label class="small mb-1" for="password">Password</label>
+                                                <label class="small mb-1" for="password">{{ __('cipi.password') }}</label>
                                                 <input class="form-control py-4" id="password" type="password" placeholder="********" />
                                             </div>
                                             <div class="form-group d-flex justify-content-end mt-4 mb-0">
-                                                <a class="btn btn-primary" id="login">OK <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></a>
+                                                <a class="btn btn-primary" id="login">{{ __('cipi.login') }} <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></a>
                                             </div>
                                         </form>
                                     </div>
@@ -64,7 +64,7 @@
 
             //Clear current auth
             localStorage.clear();
-        
+
             //Validation check
             function loginValidate() {
                 validation = true;
@@ -139,12 +139,12 @@
             $(document).keypress(function(e) {
                 var keycode = (e.keyCode ? e.keyCode : e.which);
                 if(keycode == '13'){
-                    loginSubmit(); 
+                    loginSubmit();
                 }
             });
 
         </script>
 
     </body>
-    
+
 </html>
