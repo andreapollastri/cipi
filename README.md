@@ -79,6 +79,11 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 ## Why use Cipi?
 Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
 
+## Mobile App
+Christian Giupponi (co-founder of ZeroUno Agency - https://zerouno.io/) developed Cipi Mobile Application.<br>
+ANDROID VERSION: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
+IOS VERSION: Coming soon!<br><br>
+
 ## Cipi Roadmap... what's next?
 - Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
 - Codebase Tests (Unit and Feature)
