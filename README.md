@@ -1,3 +1,6 @@
+<h1>NEW CIPI VERSION IS WAITING FOR LARAVEL 9 ;) ... A NEW RELEASE WILL BE AVAILABLE ON 17TH MARCH 2022!</h1>
+<h2>I'm working to solve all issues bugs and to a new Vue based frontend! Sorry for the late! I'm Working for you!</h2>
+
 <img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
 
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
