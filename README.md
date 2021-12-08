@@ -67,8 +67,8 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 - nginx: 1.18
 - PHP-FPM: 8.1, 8.0, 7.4, 7.3
 - MySql: 8
-- node: 15
-- npm: 7
+- node: 16
+- npm: 8
 - Composer: 2.x
 
 ## Screenshots
