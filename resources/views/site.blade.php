@@ -140,6 +140,7 @@
                 <p>{{ __('cipi.php_fpm_version') }}:</p>
                 <div class="input-group">
                     <select class="form-control" id="sitephpver">
+                        <option value="8.1" id="php81">8.1</option>
                         <option value="8.0" id="php80">8.0</option>
                         <option value="7.4" id="php74">7.4</option>
                         <option value="7.3" id="php73">7.3</option>
@@ -304,6 +305,9 @@
                 deploy.session.setValue(data.deploy);
                 getDataNoDT('/api/servers/'+data.server_id+'/domains');
                 switch (data.php) {
+                    case '8.1':
+                        $('#php81').attr("selected","selected");
+                        break;
                     case '8.0':
                         $('#php80').attr("selected","selected");
                         break;

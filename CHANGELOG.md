@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+
+## [3.1.0] - 2021-04-28
+### Added
+- PHP 8.1 support
+
 ## [3.0.10] - 2021-04-28
 ### Fixed
 - Console Kernel Error Fix
