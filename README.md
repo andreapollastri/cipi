@@ -1,3 +1,6 @@
+<h1>CIPI IS STILL ALIVE</h1>
+<h2>I'm working to solve all issues bugs and to a new Vue based frontend! Sorry for the late!In the meanwhile I'll solve all open issues for current version... give some week to investigate bugs and deploy a big patch!!!</h2>
+
 <img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
 
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
@@ -62,10 +65,10 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 
 ## Cipi LEMP environment
 - nginx: 1.18
-- PHP-FPM: 8.0, 7.4, 7.3
+- PHP-FPM: 8.1, 8.0, 7.4, 7.3
 - MySql: 8
-- node: 15
-- npm: 7
+- node: 16
+- npm: 8
 - Composer: 2.x
 
 ## Screenshots
@@ -78,6 +81,11 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 
 ## Why use Cipi?
 Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
+
+## Mobile App
+Christian Giupponi (co-founder of ZeroUno Agency - https://zerouno.io/) developed Cipi Mobile Application.<br>
+ANDROID VERSION: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
+IOS VERSION: Coming soon!<br><br>
 
 ## Cipi Roadmap... what's next?
 - Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)

@@ -5,7 +5,7 @@
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
-        <title>{{ config('cipi.name') }} | File Not Found</title>
+        <title>{{ config('cipi.name') }} | {{ __('cipi.file_not_found') }}</title>
         <link href="/assets/css/app.css" rel="stylesheet" />
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
     </head>
@@ -20,10 +20,10 @@
                             <div class="col-lg-6">
                                 <div class="text-center mt-4">
                                     <img class="mb-4 img-error" src="/assets/img/notfound.png" />
-                                    <p class="lead"><b>Error 404</b> | File not found</p>
+                                    <p class="lead"><b>{{ __('cipi.error') }} 404</b> | {{ __('cipi.file_not_found') }}</p>
                                     <a href="/">
                                         <i class="fas fa-arrow-left mr-1"></i>
-                                        Return to Dashboard
+                                        {{ __('cipi.return_to_dashboard') }}
                                     </a>
                                 </div>
                             </div>
