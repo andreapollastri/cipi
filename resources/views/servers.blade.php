@@ -165,82 +165,91 @@
     //Get DT Data
     getData('/api/servers');
 
+    let dt = null;
+
     //Datatable
     function dtRender() {
-        $('#dt').DataTable( {
-            'processing': true,
-            'data': JSON.parse(localStorage.getItem('dtdata')),
-            'columns': [
-                { data: 'name' },
-                { data: 'ip' },
-                { data: 'provider' },
-                { data: 'location' },
-                { data: {
-                    'server_id': 'server_id',
-                    'default': 'default',
-                    'name': 'name',
-                    'status': 'status',
-                    'ip': 'ip'
-                }}
-            ],
-            'columnDefs': [
-                {
-                    'targets': 0,
-                    'className': 'd-none d-md-table-cell',
-                },
-                {
-                    'targets': 1,
-                    'className': 'text-center',
-                },
-                {
-                    'targets': 2,
-                    'className': 'text-center d-none d-lg-table-cell',
-                },
-                {
-                    'targets': 3,
-                    'className': 'text-center d-none d-xl-table-cell',
-                },
-                {
-                    'targets': 4,
-                    'className': 'text-center',
-                    'render': function ( data, type, row, meta ) {
-                        if(data['status'] == 0) {
-                            if(data['default']) {
-                                return '<span class="btn btn-sm btn-warning mr-3"><i class="fas fa-circle-notch fa-spin fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.wait') }}</b></span><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.delete') }}</b></span>';
-                            } else {
-                                return '<button data-id="'+data['server_id']+'" data-ip="'+data['ip']+'" class="btinstall btn btn-sm btn-secondary mr-3"><i class="fas fa-terminal fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.install') }}</b></button><button data-id="'+data['server_id']+'" data-name="'+data['name']+'" data-ip="'+data['ip']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.delete') }}</b></button>';
-                            }
-                        } else {
-                            if(data['default']) {
-                                return '<button data-id="'+data['server_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.manage') }}</b></button><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.delete') }}</b></span>';
-                            } else {
-                                return '<button data-id="'+data['server_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.manage') }}</b></button><button data-id="'+data['server_id']+'" data-name="'+data['name']+'" data-ip="'+data['ip']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">{{ __('cipi.delete') }}</b></button>';
-                            }
+        if ($.fn.dataTable.isDataTable('#dt')) {
+            dt = $('#dt').DataTable();
+        }
+        else {
+            dt = $('#dt').DataTable({
+                'processing': true,
+                'data': JSON.parse(localStorage.getItem('dtdata')),
+                'columns': [
+                    {data: 'name'},
+                    {data: 'ip'},
+                    {data: 'provider'},
+                    {data: 'location'},
+                    {
+                        data: {
+                            'server_id': 'server_id',
+                            'default': 'default',
+                            'name': 'name',
+                            'status': 'status',
+                            'ip': 'ip'
                         }
-
                     }
+                ],
+                'columnDefs': [
+                    {
+                        'targets': 0,
+                        'className': 'd-none d-md-table-cell',
+                    },
+                    {
+                        'targets': 1,
+                        'className': 'text-center',
+                    },
+                    {
+                        'targets': 2,
+                        'className': 'text-center d-none d-lg-table-cell',
+                    },
+                    {
+                        'targets': 3,
+                        'className': 'text-center d-none d-xl-table-cell',
+                    },
+                    {
+                        'targets': 4,
+                        'className': 'text-center',
+                        'render': function (data, type, row, meta) {
+                            if (data['status'] == 0) {
+                                if (data['default']) {
+                                    return '<span class="btn btn-sm btn-warning mr-3"><i class="fas fa-circle-notch fa-spin fa-fw"></i> <b class="d-none d-sm-inline">Wait...</b></span><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></span>';
+                                } else {
+                                    return '<button data-id="' + data['server_id'] + '" data-ip="' + data['ip'] + '" class="btinstall btn btn-sm btn-secondary mr-3"><i class="fas fa-terminal fa-fw"></i> <b class="d-none d-sm-inline">Install</b></button><button data-id="' + data['server_id'] + '" data-name="' + data['name'] + '" data-ip="' + data['ip'] + '" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
+                                }
+                            } else {
+                                if (data['default']) {
+                                    return '<button data-id="' + data['server_id'] + '" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></span>';
+                                } else {
+                                    return '<button data-id="' + data['server_id'] + '" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="' + data['server_id'] + '" data-name="' + data['name'] + '" data-ip="' + data['ip'] + '" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
+                                }
+                            }
+
+                        }
+                    }
+                ],
+                'bLengthChange': false,
+                'bAutoWidth': true,
+                'responsive': true,
+                'drawCallback': function (settings) {
+                    //Manage Server
+                    $(".btmanage").click(function () {
+                        window.location.href = '/servers/' + $(this).attr('data-id');
+                    });
+                    //Delete Server
+                    $(".btdelete").click(function () {
+                        serverDelete($(this).attr('data-id'), $(this).attr('data-ip'), $(this).attr('data-name'));
+                    });
+                    //Setup Server
+                    $(".btinstall").click(function () {
+                        $('#installserverid').html($(this).attr('data-id'));
+                        $('#installserverssh').html($(this).attr('data-ip'));
+                        $('#installServerModal').modal();
+                    });
                 }
-            ],
-            'bLengthChange': false,
-            'bAutoWidth': true,
-            'responsive': true,
-            'drawCallback': function(settings) {
-                //Manage Server
-                $(".btmanage").click(function() {
-                    window.location.href = '/servers/'+$(this).attr('data-id');
-                });
-                //Delete Server
-                $(".btdelete").click(function() {
-                    serverDelete($(this).attr('data-id'),$(this).attr('data-ip'),$(this).attr('data-name'));
-                });
-                //Setup Server
-                $(".btinstall").click(function() {
-                    $('#installserverid').html($(this).attr('data-id'));
-                    $('#installserverssh').html($(this).attr('data-ip'));
-                    $('#installServerModal').modal();
-                });
-            }
-        });
+            });
+        }
     }
 
     //Delete Server
