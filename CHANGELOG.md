@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 - Node upgrade to v16 (npm to v8)
 - Vendor Upgrade
+- Datatable Render Fix
 
 ## [3.0.10] - 2021-04-28
 ### Fixed
