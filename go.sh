@@ -1,7 +1,5 @@
 #!/bin/bash
 
-
-
 #################################################### CONFIGURATION ###
 BUILD=202112091
 PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
@@ -9,8 +7,11 @@ DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 IP=$(curl -s https://checkip.amazonaws.com)
 REPO=andreapollastri/cipi
-BRANCH=latest
-
+if [ -z "$1" ];
+    BRANCH=latest
+then
+    BRANCH=$1
+fi
 
 
 ####################################################   CLI TOOLS   ###
