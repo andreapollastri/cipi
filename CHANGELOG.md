@@ -13,7 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [3.1.0] - 2021-12-09
 ### Added
-- PHP 8.1 support
+- PHP 8.1 support (default version)
 - Optional installation Arg (GIT branch)
 
 ### Fixed
