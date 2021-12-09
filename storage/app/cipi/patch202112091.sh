@@ -1,3 +1,4 @@
+# PHP 8.1
 sudo apt-get -y install php8.1-fpm
 sudo apt-get -y install php8.1-common
 sudo apt-get -y install php8.1-curl
@@ -29,9 +30,9 @@ max_execution_time = 180
 max_input_time = 180
 EOF
 sudo service php8.1-fpm restart
-
-# PHP EXTRA
+sudo apt-get -y install php-dev php-pear
 sudo apt-get -y install php-dev php-pear
 
-# PHP EXTRA
-sudo apt-get -y install php-dev php-pear
+# NODE 16
+sudo curl -sL https://deb.nodesource.com/setup_16.x | sudo bash
+sudo apt-get -y install --only-upgrade nodejs

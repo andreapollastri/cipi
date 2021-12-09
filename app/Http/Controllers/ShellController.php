@@ -100,12 +100,12 @@ class ShellController extends Controller
 
 
     /**
-     * Client Patch - PHP 8.1
+     * Client Patch - 202112091
      *
     */
-    public function php81()
+    public function patch202112091()
     {
-        $script = Storage::get('cipi/client-patch-php81.sh');
+        $script = Storage::get('cipi/patch202112091.sh');
 
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
