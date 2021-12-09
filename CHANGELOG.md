@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 - Client Server Patch (build 202112091)
+- Domain Aliases Fix
 - Node upgrade to v16 (npm to v8)
 - Vendor Upgrade
 - Nginx Restart Issue Fix
