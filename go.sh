@@ -3,7 +3,7 @@
 
 
 #################################################### CONFIGURATION ###
-BUILD=202104281
+BUILD=202112091
 PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
@@ -544,7 +544,8 @@ echo "Let's Encrypt setup..."
 echo "${reset}"
 sleep 1s
 
-sudo snap install --beta --classic certbot
+sudo apt-get install -y certbot
+sudo apt-get install -y python3-certbot-nginx
 
 
 

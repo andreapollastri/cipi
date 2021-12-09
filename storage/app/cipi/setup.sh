@@ -547,7 +547,8 @@ echo "Let's Encrypt setup..."
 echo "${reset}"
 sleep 1s
 
-sudo snap install --beta --classic certbot
+sudo apt-get install -y certbot
+sudo apt-get install -y python3-certbot-nginx
 
 
 
