@@ -43,7 +43,7 @@ class ShellController extends Controller
         $script = str_replace('???REPO???', $site->repository, $script);
         $script = str_replace('???BRANCH???', $site->branch, $script);
         $script = str_replace('???SCRIPT???', $site->deploy, $script);
-        
+
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
@@ -71,7 +71,7 @@ class ShellController extends Controller
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
-    
+
 
     /**
      * Delete Site script
@@ -93,6 +93,19 @@ class ShellController extends Controller
     public function sitepass()
     {
         $script = Storage::get('cipi/sitepass.sh');
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
+
+
+    /**
+     * Client Patch - PHP 8.1
+     *
+    */
+    public function php81()
+    {
+        $script = Storage::get('cipi/client-patch-php81.sh');
 
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);

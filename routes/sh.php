@@ -9,3 +9,6 @@ Route::get('/servers/rootreset', [ShellController::class, 'serversrootreset']);
 Route::get('/newsite', [ShellController::class, 'newsite']);
 Route::get('/delsite', [ShellController::class, 'delsite']);
 Route::get('/sitepass', [ShellController::class, 'sitepass']);
+
+// Client Patch
+Route::get('/sh/client-patch/php81', [ShellController::class, 'php81']);
