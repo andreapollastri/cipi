@@ -19,7 +19,7 @@
         'activesetupcount'  => env('CIPI_ACTIVESETUPCOUNT', 'https://service.cipi.sh/setupcount'),
 
         //Global Settings
-        'phpvers'           => ['8.1', '8.0','7.4','7.3'],
+        'phpvers'           => ['8.1','8.0','7.4'],
         'services'          => ['nginx','php','mysql','redis','supervisor'],
         'default_php'       => '8.0',
 
