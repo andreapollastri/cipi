@@ -36,6 +36,9 @@ class SslSiteSSH implements ShouldQueue
         $ssh = new SSH2($this->site->server->ip, 22);
         $ssh->login('cipi', $this->site->server->password);
         $ssh->setTimeout(360);
+
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo fuser -k 80/tcp');
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo fuser -k 443/tcp');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo ufw disable');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo certbot --nginx -d '.$this->site->domain.' --non-interactive --agree-tos --register-unsafely-without-email');
@@ -44,6 +47,8 @@ class SslSiteSSH implements ShouldQueue
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo ufw --force enable');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
         foreach ($this->site->aliases as $alias) {
+            $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo fuser -k 80/tcp');
+            $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo fuser -k 443/tcp');
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo systemctl restart nginx.service');
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo ufw disable');
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo certbot --nginx -d '.$alias->domain.' --non-interactive --agree-tos --register-unsafely-without-email');
