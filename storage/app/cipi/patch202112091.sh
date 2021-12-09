@@ -1,3 +1,7 @@
+# NGINX RELOAD FIX
+sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
+sudo systemctl daemon-reload
+
 # PHP 8.1
 sudo apt-get -y install php8.1-fpm
 sudo apt-get -y install php8.1-common

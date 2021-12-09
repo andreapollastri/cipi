@@ -582,6 +582,9 @@ echo "Last steps..."
 echo "${reset}"
 sleep 1s
 
+sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
+sudo systemctl daemon-reload
+
 TASK=/etc/cron.d/cipi.crontab
 touch $TASK
 cat > "$TASK" <<EOF
