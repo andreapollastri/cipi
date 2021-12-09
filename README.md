@@ -94,18 +94,9 @@ IOS VERSION: Coming soon!<br><br>
 - Github webhook support
 - Vue Frontend
 - Minor Improvements!
+
 ## Contributing
-Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, money, beers) :)
-
-In case of code...
-- Fork it (https://github.com/andreapollastri/cipi)
-- Create your feature branch (`git checkout -b feature/fooBar`)
-- Commit your changes (`git commit -a -m 'Add some fooBar'`)
-- Push to the branch (`git push origin feature/fooBar`)
-- Create a new Pull Request
-
-In case of money...
-- Cipi was developed by Andrea Pollastri, pay him some beer: https://paypal.me/andreapollastri
+Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, beers) :)
 
 #### ...anyway star this project on Github, Thankyou ;)
 
