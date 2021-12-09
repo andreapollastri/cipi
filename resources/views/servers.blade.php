@@ -2,7 +2,7 @@
 
 
 @section('title')
-Servers
+    {{ __('cipi.titles.servers') }}
 @endsection
 
 
@@ -13,7 +13,7 @@ Servers
         <div class="card mb-4">
             <div class="card-header text-right">
                 <button class="btn btn-sm btn-secondary" id="newServer">
-                    <i class="fas fa-plus mr-1"></i><b>New Server</b>
+                    <i class="fas fa-plus mr-1"></i><b>{{ __('cipi.new_button', ['type' => __('cipi.server')]) }}</b>
                 </button>
             </div>
             <div class="card-body">
@@ -21,11 +21,11 @@ Servers
                     <table class="table table-bordered" id="dt" width="100%" cellspacing="0">
                         <thead>
                             <tr>
-                                <th class="text-center d-none d-md-table-cell">Name</th>
+                                <th class="text-center d-none d-md-table-cell">{{ __('cipi.name') }}</th>
                                 <th class="text-center">IP</th>
-                                <th class="text-center d-none d-lg-table-cell">Provider</th>
-                                <th class="text-center d-none d-xl-table-cell">Location</th>
-                                <th class="text-center">Actions</th>
+                                <th class="text-center d-none d-lg-table-cell">{{ __('cipi.provider') }}</th>
+                                <th class="text-center d-none d-xl-table-cell">{{ __('cipi.location') }}</th>
+                                <th class="text-center">{{ __('cipi.actions') }}</th>
                             </tr>
                         </thead>
                     </table>
@@ -43,53 +43,51 @@ Servers
     <div class="modal-dialog" role="document" id="newserverdialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="newServerModalLabel">Add a new server</h5>
+                <h5 class="modal-title" id="newServerModalLabel">{{ __('cipi.create_server_title') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
                 <div id="newserverform">
-                    <label for="newservername">Server name</label>
+                    <label for="newservername">{{ __('cipi.server_name') }}</label>
                     <div class="input-group">
                         <input class="form-control" type="text" id="newservername" placeholder="Production Server" autocomplete="off" />
                     </div>
                     <div class="space"></div>
-                    <label for="newserverip">Server IP</label>
+                    <label for="newserverip">{{ __('cipi.server_ip') }}</label>
                     <div class="input-group">
                         <input class="form-control" type="text" id="newserverip" placeholder="123.45.67.89" autocomplete="off" />
                     </div>
                     <div class="space"></div>
-                    <label for="newserverprovider">Server provider</label>
+                    <label for="newserverprovider">{{ __('cipi.server_provider') }}</label>
                     <div class="input-group">
                         <input class="form-control" type="text" id="newserverprovider" placeholder="Digital Ocean" autocomplete="off" />
                     </div>
                     <div class="space"></div>
-                    <label for="newserverlocation">Server location</label>
+                    <label for="newserverlocation">{{ __('cipi.server_location') }}</label>
                     <div class="input-group">
                         <input class="form-control" type="text" id="newserverlocation" placeholder="Amsterdam" autocomplete="off" />
                     </div>
                     <div class="space"></div>
                     <div class="text-center">
-                        <button class="btn btn-primary" type="button" id="submit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></button>
+                        <button class="btn btn-primary" type="button" id="submit">{{ __('cipi.confirm') }} <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></button>
                     </div>
                 </div>
                 <div id="newserverok" class="d-none">
-                    <p><b>To install your server:</b>
-                        <ul>
-                            <li>Use a clean Ubuntu Server 20.04 LTS fresh installation VPS</li>
-                            <li>Login into your VPS via SSH (as root):<br>
-                                <code><i>ssh root@<span id="newserverssh"></span></i></code>
-                            </li>
-                            <li>Run this command:<br>
-                                <code><i>wget -O - {{ URL::to('/sh/setup/') }}/<span id="newserverid"></span> | bash</i></code>
-                            </li>
-                            <li>Installation may take up to thirty minutes depending on your server resources</li>
-                            <li>Be sure that ports 22, 80 and 443 of your VPS firewall are open</li>
-                            <li>AWS disables root login by default. Use command 'sudo -s' to run as root</li>
-                            <li>Cipi doesn't work with NAT VPN and OpenVZ or in localhost</li>
-                            <li>Before install Cipi, please make sure your server is a clean Ubuntu 20.04 LTS VPS</li>
-                        </ul>
+                    <p><b>{{ __('cipi.server_setup_title') }}</b>
+                    <ul>
+                        <li>{!! __('cipi.server_setup_step1') !!}</li>
+                        <li>{!! __('cipi.server_setup_step2') !!}<br>
+                            <code><i>ssh root@<span id="newserverssh"></span></i></code></li>
+                        <li>{!! __('cipi.server_setup_step3') !!}<br>
+                            <code><i>wget -O - {{ URL::to('/sh/setup/') }}/<span id="newserverid"></span> | bash</i></code></li>
+                        <li>{!! __('cipi.server_setup_step4') !!}</li>
+                        <li>{!! __('cipi.server_setup_step5') !!}</li>
+                        <li>{!! __('cipi.server_setup_step6') !!}</li>
+                        <li>{!! __('cipi.server_setup_step7') !!}</li>
+                        <li>{!! __('cipi.server_setup_step8') !!}</li>
+                    </ul>
                     </p>
                 </div>
                 <div class="space"></div>
@@ -101,26 +99,24 @@ Servers
     <div class="modal-dialog modal-lg" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="installServerModalLabel">Server Setup</h5>
+                <h5 class="modal-title" id="installServerModalLabel">{{ __('cipi.server_setup') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p><b>To install your server:</b>
+                <p><b>{{ __('cipi.server_setup_title') }}</b>
                     <ul>
-                        <li>Use a clean Ubuntu Server 20.04 LTS fresh installation VPS</li>
-                        <li>Login into your VPS via SSH (as root):<br>
-                            <code><i>ssh root@<span id="installserverssh"></span></i></code>
-                        </li>
-                        <li>Run this command:<br>
-                            <code><i>wget -O - {{ URL::to('/sh/setup/') }}/<span id="installserverid"></span> | bash</i></code>
-                        </li>
-                        <li>Installation may take up to thirty minutes depending on your server resources</li>
-                        <li>Be sure that ports 22, 80 and 443 of your VPS firewall are open</li>
-                        <li>AWS disables root login by default. Use command 'sudo -s' to run as root</li>
-                        <li>Cipi doesn't work with NAT VPN and OpenVZ or in localhost</li>
-                        <li>Before install Cipi, please make sure your server is a clean Ubuntu 20.04 LTS VPS</li>
+                        <li>{!! __('cipi.server_setup_step1') !!}</li>
+                        <li>{!! __('cipi.server_setup_step2') !!}<br>
+                            <code><i>ssh root@<span id="installserverssh"></span></i></code></li>
+                        <li>{!! __('cipi.server_setup_step3') !!}<br>
+                            <code><i>wget -O - {{ URL::to('/sh/setup/') }}/<span id="installserverid"></span> | bash</i></code></li>
+                        <li>{!! __('cipi.server_setup_step4') !!}</li>
+                        <li>{!! __('cipi.server_setup_step5') !!}</li>
+                        <li>{!! __('cipi.server_setup_step6') !!}</li>
+                        <li>{!! __('cipi.server_setup_step7') !!}</li>
+                        <li>{!! __('cipi.server_setup_step8') !!}</li>
                     </ul>
                 </p>
                 <div class="space"></div>
@@ -132,22 +128,22 @@ Servers
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="deleteServerModalLabel">Delete server</h5>
+                <h5 class="modal-title" id="deleteServerModalLabel">{{ __('cipi.delete_server') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>Are you sure to delete server <b><span id="deleteservername"></span></b>?</p>
+                <p>{{ __('cipi.delete_server_confirmation') }} <b><span id="deleteservername"></span></b>?</p>
                 <div class="space"></div>
-                <label for="deleteserverip">To confirm it write server IP: <i><span id="deleteserveriptocopy"></span></i></label>
+                <label for="deleteserverip">{{ __('cipi.delete_server_confirmation_ip') }}: <i><span id="deleteserveriptocopy"></span></i></label>
                 <div class="input-group">
                     <input class="form-control" type="text" id="deleteserverip" autocomplete="off" />
                 </div>
                 <input type="hidden" id="deleteserverid" value="" />
                 <div class="space"></div>
                 <div class="text-center">
-                    <button class="btn btn-danger" type="button" id="delete">Delete <i class="fas fa-circle-notch fa-spin d-none" id="loadingdelete"></i></button>
+                    <button class="btn btn-danger" type="button" id="delete">{{ __('cipi.delete') }} <i class="fas fa-circle-notch fa-spin d-none" id="loadingdelete"></i></button>
                 </div>
                 <div class="space"></div>
             </div>
@@ -166,7 +162,7 @@ Servers
 
 @section('js')
 <script>
-    //Get DT Data 
+    //Get DT Data
     getData('/api/servers');
 
     //Datatable
@@ -180,7 +176,7 @@ Servers
                 { data: 'provider' },
                 { data: 'location' },
                 { data: {
-                    'server_id': 'server_id', 
+                    'server_id': 'server_id',
                     'default': 'default',
                     'name': 'name',
                     'status': 'status',
@@ -214,14 +210,14 @@ Servers
                             } else {
                                 return '<button data-id="'+data['server_id']+'" data-ip="'+data['ip']+'" class="btinstall btn btn-sm btn-secondary mr-3"><i class="fas fa-terminal fa-fw"></i> <b class="d-none d-sm-inline">Install</b></button><button data-id="'+data['server_id']+'" data-name="'+data['name']+'" data-ip="'+data['ip']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
                             }
-                        } else {    
+                        } else {
                             if(data['default']) {
                                 return '<button data-id="'+data['server_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><span class="disabled btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></span>';
                             } else {
                                 return '<button data-id="'+data['server_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="'+data['server_id']+'" data-name="'+data['name']+'" data-ip="'+data['ip']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
                             }
                         }
-                       
+
                     }
                 }
             ],

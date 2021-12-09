@@ -1,16 +1,17 @@
 #!/bin/bash
 
-
-
 #################################################### CONFIGURATION ###
-BUILD=202104281
+BUILD=202112091
 PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 IP=$(curl -s https://checkip.amazonaws.com)
 REPO=andreapollastri/cipi
-BRANCH=latest
-
+if [ -z "$1" ];
+    BRANCH=latest
+then
+    BRANCH=$1
+fi
 
 
 ####################################################   CLI TOOLS   ###
@@ -255,38 +256,6 @@ sleep 1s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
-sudo apt-get -y install php7.3-fpm
-sudo apt-get -y install php7.3-common
-sudo apt-get -y install php7.3-curl
-sudo apt-get -y install php7.3-openssl
-sudo apt-get -y install php7.3-bcmath
-sudo apt-get -y install php7.3-mbstring
-sudo apt-get -y install php7.3-tokenizer
-sudo apt-get -y install php7.3-mysql
-sudo apt-get -y install php7.3-sqlite3
-sudo apt-get -y install php7.3-pgsql
-sudo apt-get -y install php7.3-redis
-sudo apt-get -y install php7.3-memcached
-sudo apt-get -y install php7.3-json
-sudo apt-get -y install php7.3-zip
-sudo apt-get -y install php7.3-xml
-sudo apt-get -y install php7.3-soap
-sudo apt-get -y install php7.3-gd
-sudo apt-get -y install php7.3-imagick
-sudo apt-get -y install php7.3-fileinfo
-sudo apt-get -y install php7.3-imap
-sudo apt-get -y install php7.3-cli
-PHPINI=/etc/php/7.3/fpm/conf.d/cipi.ini
-sudo touch $PHPINI
-sudo cat > "$PHPINI" <<EOF
-memory_limit = 256M
-upload_max_filesize = 256M
-post_max_size = 256M
-max_execution_time = 180
-max_input_time = 180
-EOF
-sudo service php7.3-fpm restart
-
 sudo apt-get -y install php7.4-fpm
 sudo apt-get -y install php7.4-common
 sudo apt-get -y install php7.4-curl
@@ -351,6 +320,37 @@ max_input_time = 180
 EOF
 sudo service php8.0-fpm restart
 
+sudo apt-get -y install php8.1-fpm
+sudo apt-get -y install php8.1-common
+sudo apt-get -y install php8.1-curl
+sudo apt-get -y install php8.1-openssl
+sudo apt-get -y install php8.1-bcmath
+sudo apt-get -y install php8.1-mbstring
+sudo apt-get -y install php8.1-tokenizer
+sudo apt-get -y install php8.1-mysql
+sudo apt-get -y install php8.1-sqlite3
+sudo apt-get -y install php8.1-pgsql
+sudo apt-get -y install php8.1-redis
+sudo apt-get -y install php8.1-memcached
+sudo apt-get -y install php8.1-json
+sudo apt-get -y install php8.1-zip
+sudo apt-get -y install php8.1-xml
+sudo apt-get -y install php8.1-soap
+sudo apt-get -y install php8.1-gd
+sudo apt-get -y install php8.1-imagick
+sudo apt-get -y install php8.1-fileinfo
+sudo apt-get -y install php8.1-imap
+sudo apt-get -y install php8.1-cli
+PHPINI=/etc/php/8.1/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.1-fpm restart
 
 # PHP EXTRA
 sudo apt-get -y install php-dev php-pear
@@ -363,7 +363,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php8.0
+sudo update-alternatives --set php /usr/bin/php8.1
 
 
 
@@ -513,7 +513,8 @@ echo "Let's Encrypt setup..."
 echo "${reset}"
 sleep 1s
 
-sudo snap install --beta --classic certbot
+sudo apt-get install -y certbot
+sudo apt-get install -y python3-certbot-nginx
 
 
 
@@ -525,13 +526,13 @@ echo "${reset}"
 sleep 1s
 
 curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
-curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup16.x | sudo -E bash -
 NODE=/etc/apt/sources.list.d/nodesource.list
 sudo unlink NODE
 sudo touch $NODE
 sudo cat > "$NODE" <<EOF
-deb https://deb.nodesource.com/node_15.x focal main
-deb-src https://deb.nodesource.com/node_15.x focal main
+deb https://deb.nodesource.com/node_16.x focal main
+deb-src https://deb.nodesource.com/node_16.x focal main
 EOF
 sudo apt-get update
 sudo apt -y install nodejs
@@ -611,6 +612,9 @@ echo "${bggreen}${black}${bold}"
 echo "Last steps..."
 echo "${reset}"
 sleep 1s
+
+sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
+sudo systemctl daemon-reload
 
 TASK=/etc/cron.d/cipi.crontab
 touch $TASK

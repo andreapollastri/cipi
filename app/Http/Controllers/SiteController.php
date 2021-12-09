@@ -299,7 +299,7 @@ class SiteController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Bad Request.',
+                'message' => __('cipi.bad_request'),
                 'errors' => $validator->errors()->getMessages()
             ], 400);
         }
@@ -307,8 +307,8 @@ class SiteController extends Controller
         if ($request->php) {
             if (!in_array($request->php, config('cipi.phpvers'))) {
                 return response()->json([
-                    'message' => 'Bad Request.',
-                    'errors' => 'Invalid PHP version.'
+                    'message' => __('cipi.bad_request'),
+                    'errors' => __('cipi.invalid_php_version')
                 ], 400);
             }
             $php = $request->php;
@@ -320,8 +320,8 @@ class SiteController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -338,8 +338,8 @@ class SiteController extends Controller
         }
         if ($conflict) {
             return response()->json([
-                'message' => 'Required domain is used by another site/alias on this server.',
-                'errors' => 'Site domain conflict.'
+                'message' => __('cipi.site_domain_conflict_message'),
+                'errors' => __('cipi.site_domain_conflict')
             ], 409);
         }
 
@@ -572,8 +572,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -583,7 +583,7 @@ class SiteController extends Controller
             ]);
             if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Bad Request.',
+                    'message' => __('cipi.bad_request'),
                     'errors' => $validator->errors()->getMessages()
                 ], 400);
             }
@@ -594,15 +594,15 @@ class SiteController extends Controller
                 foreach ($sites as $site) {
                     if ($request->domain == $site->domain) {
                         return response()->json([
-                            'message' => 'There is another site with same domain into database.',
-                            'errors' => 'Server conflict.'
+                            'message' => __('cipi.server_conflict_domain_message'),
+                            'errors' => __('cipi.server_conflict')
                         ], 409);
                     }
                     foreach ($site->aliases as $alias) {
                         if ($request->domain == $alias->domain) {
                             return response()->json([
-                                'message' => 'There is another alias with same domain into database.',
-                                'errors' => 'Server conflict.'
+                                'message' => __('cipi.server_conflict_alias_message'),
+                                'errors' => __('cipi.server_conflict')
                             ], 409);
                         }
                     }
@@ -673,7 +673,7 @@ class SiteController extends Controller
         }
 
         $site->save();
-        
+
         return response()->json([
             'site_id'           => $site->site_id,
             'domain'            => $site->domain,
@@ -845,8 +845,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -919,15 +919,15 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
         if ($site->panel) {
             return response()->json([
-                'message' => 'Cannot delete default site from panel.',
-                'errors' => 'Bad Request.'
+                'message' => __('cipi.bad_request_default_site_delete'),
+                'errors' => __('cipi.bad_request')
             ], 400);
         }
 
@@ -979,8 +979,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1047,8 +1047,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1124,8 +1124,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1154,7 +1154,7 @@ class SiteController extends Controller
         }
 
         $site = Site::where('site_id', $site_id)->firstOrFail();
-        
+
         $data = [
             'username'      => $site->username,
             'password'      => $site->password,
@@ -1229,8 +1229,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1311,8 +1311,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1322,16 +1322,16 @@ class SiteController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Bad Request.',
+                'message' => __('cipi.bad_request'),
                 'errors' => $validator->errors()->getMessages()
             ], 400);
         }
 
         $conflict = false;
-        foreach ($site->server->allsites as $site) {
-            if ($site->domain == $request->domain) {
+        foreach ($site->server->allsites as $checksite) {
+            if ($checksite->domain == $request->domain) {
                 $conflict = true;
-                foreach ($site->aliases as $alias) {
+                foreach ($checksite->aliases as $alias) {
                     if ($alias->domain == $request->domain) {
                         $conflict = true;
                     }
@@ -1340,8 +1340,8 @@ class SiteController extends Controller
         }
         if ($conflict) {
             return response()->json([
-                'message' => 'Required domain is used by another site/alias on this server.',
-                'errors' => 'Domain conflict.'
+                'message' => __('cipi.site_domain_conflict_message'),
+                'errors' => __('cipi.site_domain_conflict')
             ], 409);
         }
 
@@ -1409,8 +1409,8 @@ class SiteController extends Controller
 
         if (!$site) {
             return response()->json([
-                'message' => 'Required site does not exists into panel.',
-                'errors' => 'Site not found.'
+                'message' => __('cipi.site_not_found_message'),
+                'errors' => __('cipi.site_not_found')
             ], 404);
         }
 
@@ -1418,8 +1418,8 @@ class SiteController extends Controller
 
         if (!$alias) {
             return response()->json([
-                'message' => 'Required alias does not exists into panel.',
-                'errors' => 'Alias not found.'
+                'message' => __('cipi.alias_not_found_message'),
+                'errors' => __('cipi.alias_not_found')
             ], 404);
         }
 

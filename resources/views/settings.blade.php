@@ -2,7 +2,7 @@
 
 
 @section('title')
-Settings
+    {{ __('cipi.titles.settings') }}
 @endsection
 
 
@@ -13,12 +13,12 @@ Settings
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-user fs-fw mr-1"></i>
-                Change Username
+                {{ __('cipi.change_username') }}
             </div>
             <div class="card-body">
-                <p>Current username: <b><span id="currentuser"></span></b></p>
+                <p>{{ __('cipi.current_username') }}: <b><span id="currentuser"></span></b></p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="New username (at least 6 chars)" id="newuser" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="{{ __('cipi.change_username_placeholder') }}" id="newuser" autocomplete="off" />
                     <div class="input-group-append">
                         <button class="btn btn-primary" type="button" id="changeuser"><i class="fas fa-edit"></i></button>
                     </div>
@@ -31,12 +31,12 @@ Settings
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-key fs-fw mr-1"></i>
-                Change Password
+                {{ __('cipi.change_password') }}
             </div>
             <div class="card-body">
-                <p>Update your password</p>
+                <p>{{ __('cipi.update_password') }}</p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="New password (at least 8 chars)" id="newpass" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="{{ __('cipi.change_password_placeholder') }}" id="newpass" autocomplete="off" />
                     <div class="input-group-append">
                         <button class="btn btn-primary" type="button" id="changepass"><i class="fas fa-edit"></i></button>
                     </div>
@@ -51,14 +51,14 @@ Settings
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-globe fs-fw mr-1"></i>
-                Panel URL
+                {{ __('cipi.panel_url') }}
             </div>
             <div class="card-body">
-                <p>Custom panel domain/subdomain</p>
+                <p>{{ __('cipi.panel_url_text') }}</p>
                 <div class="input-group">
                     <input class="form-control" type="text" placeholder="panel.domain.ltd" id="panelurl" autocomplete="off" />
                     <div class="input-group-append">
-                        <button class="btn btn-warning" type="button" id="panelurlssl" data-toggle="tooltip" data-placement="top" title="Require SSL"><i class="fas fa-lock"></i></button>
+                        <button class="btn btn-warning" type="button" id="panelurlssl" data-toggle="tooltip" data-placement="top" title="{{ __('cipi.panel_url_force_ssl') }}"><i class="fas fa-lock"></i></button>
                     </div>
                     <div class="input-group-append">
                         <button class="btn btn-primary" type="button" id="panelurlsubmit"><i class="fas fa-edit"></i></button>
@@ -72,14 +72,14 @@ Settings
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-code fs-fw mr-1"></i>
-                Panel API
+                {{ __('cipi.panel_api') }}
             </div>
             <div class="card-body">
-                <p>API Endpoint:  <b>{{ URL::to('/api/') }}</b></p>
+                <p>{{ __('cipi.panel_api_endpoint') }}:  <b>{{ URL::to('/api/') }}</b></p>
                 <div class="text-center">
-                    <button class="btn btn-primary mr-3" type="button" id="newapikey">Renew API Key</button>
+                    <button class="btn btn-primary mr-3" type="button" id="newapikey">{{ __('cipi.renew_api_key') }}</button>
                     <a href="/api/docs" target="_blank">
-                        <button class="btn btn-warning" type="button">Documentation</button>
+                        <button class="btn btn-warning" type="button">{{ __('cipi.documentation') }}</button>
                     </a>
                 </div>
                 <div class="space"></div>
@@ -96,19 +96,19 @@ Settings
     <div class="modal-dialog" role="document">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="authorizeModalLabel">Action Authorization</h5>
+                <h5 class="modal-title" id="authorizeModalLabel">{{ __('cipi.action_authorization_modal_title') }}</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                 <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <p>To authorize this action insert your current password:</p>
+                <p>{{ __('cipi.action_authorization_modal_text') }}:</p>
                 <div class="input-group">
                     <input class="form-control" type="password" id="currentpass" />
                 </div>
                 <div class="space"></div>
                 <div class="text-center">
-                    <button class="btn btn-primary" type="button" id="submit">Submit <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></button>
+                    <button class="btn btn-primary" type="button" id="submit">{{ __('cipi.submit') }} <i class="fas fa-circle-notch fa-spin d-none" id="loading"></i></button>
                 </div>
                 <div class="space"></div>
             </div>
@@ -257,15 +257,15 @@ Settings
                     localStorage.refresh_token=data.refresh_token;
                     localStorage.username=data.username;
                     if(patchcall == 'changeuser') {
-                        success('Username has been updated');
+                        success('{{ __('cipi.username_updated_success') }}');
                         $('#currentuser').html(localStorage.username);
                         $('#username').html(localStorage.username);
                     }
                     if(patchcall == 'changepass') {
-                        success('Password has been updated');
+                        success('{{ __('cipi.password_updated_success') }}');
                     }
                     if(patchcall == 'newapikey') {
-                        success('New API Key:<br><b>'+data.apikey+'</b>');
+                        success('{{ __('cipi.new_api_key_success') }}:<br><b>'+data.apikey+'</b>');
                     }
                     $('#authorizeModal').modal("hide");
                     $(window).scrollTop(0);
@@ -277,7 +277,7 @@ Settings
                         $('#newuser').val('');
                         $('#newpass').val('');
                         $('#currentpass').val('');
-                        fail('Ops! Something went wrong... Try again!');
+                        fail('{{ __('cipi.unknown_error') }}');
                         $('#authorizeModal').modal("hide");
                     }
                 }

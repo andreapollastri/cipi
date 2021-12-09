@@ -26,8 +26,8 @@ class AuthController extends Controller
 
         if (!$user) {
             return response()->json([
-                'message' => 'Given credentials are invalid.',
-                'errors' => 'Username and password don\'t match.'
+                'message' => __('cipi.invalid_login_message'),
+                'errors' => __('cipi.invalid_login')
             ], 401);
         }
 
@@ -65,8 +65,8 @@ class AuthController extends Controller
             ]);
         } else {
             return response()->json([
-                'message' => 'Given token is invalid.',
-                'errors' => 'Invalid token.'
+                'message' => __('cipi.invalid_token_message'),
+                'errors' => __('cipi.invalid_token')
             ], 401);
         }
     }
@@ -87,8 +87,8 @@ class AuthController extends Controller
 
         if (!$user) {
             return response()->json([
-                'message' => 'Given credentials are invalid.',
-                'errors' => 'Username and password don\'t match.'
+                'message' => __('cipi.invalid_login_message'),
+                'errors' => __('cipi.invalid_login')
             ], 401);
         }
 
@@ -103,8 +103,8 @@ class AuthController extends Controller
                 $user->username = $newuser;
             } else {
                 return response()->json([
-                    'message' => 'Required username is used into database.',
-                    'errors' => 'Username Conflict.'
+                    'message' => __('cipi.username_conflict_message'),
+                    'errors' => __('cipi.username_conflict')
                 ], 409);
             }
         }
@@ -148,8 +148,8 @@ class AuthController extends Controller
             $user->save();
         } else {
             return response()->json([
-                'message' => 'Given token is invalid.',
-                'errors' => 'Invalid token.'
+                'message' => __('cipi.invalid_token_message'),
+                'errors' => __('cipi.invalid_token')
             ], 401);
         }
     }

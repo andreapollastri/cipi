@@ -10,6 +10,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+
+## [3.1.0] - 2021-12-09
+### Added
+- PHP 8.1 support (default version)
+- Optional installation Arg (GIT branch)
+
+### Fixed
+- Client Server Patch (build 202112091)
+- Domain Aliases Fix
+- Node upgrade to v16 (npm to v8)
+- Vendor Upgrade
+- Nginx Restart Issue Fix
+- Certbot vendor update
+- Minor Fixes
+
+### Removed
+- PHP 7.3 from new installations
+
 ## [3.0.10] - 2021-04-28
 ### Fixed
 - Console Kernel Error Fix

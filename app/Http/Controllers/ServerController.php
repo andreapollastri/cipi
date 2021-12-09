@@ -20,7 +20,7 @@ use Illuminate\Support\Facades\Validator;
 
 class ServerController extends Controller
 {
-    
+
     /**
      * List all servers
      *
@@ -127,7 +127,7 @@ class ServerController extends Controller
         return response()->json($response);
     }
 
-    
+
     /**
      * Add a new server
      *
@@ -241,22 +241,22 @@ class ServerController extends Controller
 
         if ($validator->fails()) {
             return response()->json([
-                'message' => 'Bad Request.',
+                'message' => __('cipi.bad_request'),
                 'errors' => $validator->errors()->getMessages()
             ], 400);
         }
 
         if ($request->ip == $request->server('SERVER_ADDR')) {
             return response()->json([
-                'message' => 'You cannot add a server with the same current server IP.',
-                'errors' => 'Server conflict.'
+                'message' => __('cipi.server_conflict_ip_current_message'),
+                'errors' => __('cipi.server_conflict')
             ], 409);
         }
 
         if (Server::where('ip', $request->ip)->first()) {
             return response()->json([
-                'message' => 'There is another server with same IP into database.',
-                'errors' => 'Server conflict.'
+                'message' => __('cipi.server_conflict_ip_duplicate_message'),
+                'errors' => __('cipi.server_conflict')
             ], 409);
         }
 
@@ -328,15 +328,15 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message_default'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
         if ($server->default) {
             return response()->json([
-                'message' => 'Cannot delete default server from panel.',
-                'errors' => 'Bad Request.'
+                'message' => __('cipi.delete_default_server_message'),
+                'errors' => __('cipi.bad_request')
             ], 400);
         }
 
@@ -452,8 +452,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -568,8 +568,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Panel is not associated to a native server.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_native_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -650,8 +650,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Panel is not associated to a native server.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_native_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -667,7 +667,7 @@ class ServerController extends Controller
             ]);
             if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Bad Request.',
+                    'message' => __('cipi.bad_request'),
                     'errors' => $validator->errors()->getMessages()
                 ], 400);
             }
@@ -726,8 +726,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Panel is not associated to a native server.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_native_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -737,8 +737,8 @@ class ServerController extends Controller
             PanelDomainSslSSH::dispatch($server, $site)->delay(Carbon::now()->addSeconds(3));
         } else {
             return response()->json([
-                'message' => 'This is a SSL request but any panel domain has been configured for this server.',
-                'errors' => 'Bad Request.'
+                'message' => __('cipi.ssl_request_error_message'),
+                'errors' => __('cipi.bad_request')
             ], 400);
         }
 
@@ -899,8 +899,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -910,20 +910,20 @@ class ServerController extends Controller
             ]);
             if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Bad Request.',
+                    'message' => __('cipi.bad_request'),
                     'errors' => $validator->errors()->getMessages()
                 ], 400);
             }
             if (!$server->default && $request->ip == str_replace("\n", '', file_get_contents('https://checkip.amazonaws.com'))) {
                 return response()->json([
-                    'message' => 'You cannot edit a server using the same current server IP.',
-                    'errors' => 'Server conflict.'
+                    'message' => __('cipi.edit_server_current_ip_error_message'),
+                    'errors' => __('cipi.server_conflict')
                 ], 409);
             }
             if (Server::where('ip', $request->ip)->where('server_id', '<>', $server_id)->first()) {
                 return response()->json([
-                    'message' => 'There is another server with same IP into database.',
-                    'errors' => 'Server conflict.'
+                    'message' => __('cipi.server_conflict_ip_duplicate_message'),
+                    'errors' => __('cipi.server_conflict')
                 ], 409);
             }
             if ($server->default) {
@@ -939,7 +939,7 @@ class ServerController extends Controller
             ]);
             if ($validator->fails()) {
                 return response()->json([
-                    'message' => 'Bad Request.',
+                    'message' => __('cipi.bad_request'),
                     'errors' => $validator->errors()->getMessages()
                 ], 400);
             }
@@ -963,14 +963,14 @@ class ServerController extends Controller
         if ($request->php) {
             if (!in_array($request->php, config('cipi.phpvers'))) {
                 return response()->json([
-                    'message' => 'Bad Request.',
+                    'message' => __('cipi.bad_request'),
                     'errors' => 'Invalid PHP version.'
                 ], 400);
             }
             PhpCliSSH::dispatch($server, $request->php)->delay(Carbon::now()->addSeconds(3));
             $server->php = $request->php;
         }
-        
+
         $server->save();
 
         return response()->json([
@@ -1036,8 +1036,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -1047,14 +1047,14 @@ class ServerController extends Controller
                 //
             } else {
                 return response()->json([
-                    'message' => 'Required server is currently not available.',
-                    'errors' => 'Server Unavailable.'
+                    'message' => __('cipi.server_unavailable_message'),
+                    'errors' => __('cipi.server_unavailable')
                 ], 503);
             }
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Required server is currently not available.',
-                'errors' => 'Server Unavailable.'
+                'message' => __('cipi.server_unavailable_message'),
+                'errors' => __('cipi.server_unavailable')
             ], 503);
         }
     }
@@ -1130,8 +1130,8 @@ class ServerController extends Controller
 
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -1156,8 +1156,8 @@ class ServerController extends Controller
             $ssh = new SSH2($server->ip, 22);
             if (!$ssh->login('cipi', $server->password)) {
                 return response()->json([
-                    'message' => 'SSH error with server: '.$server->server_id,
-                    'errors' => 'Server Error.'
+                    'message' => __('cipi.server_error_ssh_error_message').$server->server_id,
+                    'errors' => __('cipi.server_error')
                 ], 500);
             }
             $ssh->setTimeout(360);
@@ -1165,8 +1165,8 @@ class ServerController extends Controller
             $ssh->exec('exit');
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Something went wrong.',
-                'errors' => 'Error.'
+                'message' => __('cipi.something_error_message'),
+                'errors' => __('cipi.error')
             ], 500);
         }
 
@@ -1231,18 +1231,18 @@ class ServerController extends Controller
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
-        
+
         $last_password = $server->password;
         $new_password = Str::random(24);
         $server->password = $new_password;
         $server->save();
 
         RootResetSSH::dispatch($server, $new_password, $last_password)->delay(Carbon::now()->addSeconds(1));
-        
+
         return response()->json([
             'password' => $server->password
         ]);
@@ -1304,16 +1304,16 @@ class ServerController extends Controller
     {
         if (!in_array($service, config('cipi.services'))) {
             return response()->json([
-                'message' => 'Required service is not valid.',
-                'errors' => 'Bad Request.'
+                'message' => __('cipi.invalid_service_error_message'),
+                'errors' => __('cipi.bad_request')
             ], 400);
         }
 
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 
@@ -1321,8 +1321,8 @@ class ServerController extends Controller
             $ssh = new SSH2($server->ip, 22);
             if (!$ssh->login('cipi', $server->password)) {
                 return response()->json([
-                    'message' => 'SSH error with server: '.$server->server_id,
-                    'errors' => 'Server Error.'
+                    'message' => __('cipi.server_error_ssh_error_message').$server->server_id,
+                    'errors' => __('cipi.server_error')
                 ], 500);
             }
 
@@ -1332,6 +1332,7 @@ class ServerController extends Controller
                     $ssh->exec('sudo systemctl restart nginx.service');
                     break;
                 case 'php':
+                    $ssh->exec('sudo service php8.1-fpm restart');
                     $ssh->exec('sudo service php8.0-fpm restart');
                     $ssh->exec('sudo service php7.4-fpm restart');
                     $ssh->exec('sudo service php7.3-fpm restart');
@@ -1354,8 +1355,8 @@ class ServerController extends Controller
             return response()->json([]);
         } catch (\Throwable $th) {
             return response()->json([
-                'message' => 'Something went wrong.',
-                'errors' => 'Error.'
+                'message' => __('cipi.something_error_message'),
+                'errors' => __('cipi.error')
             ], 500);
         }
     }
@@ -1443,11 +1444,11 @@ class ServerController extends Controller
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
-        
+
         $sites = Site::where('panel', false)->where('server_id', $server->id)->get();
         $response = [];
 
@@ -1508,8 +1509,8 @@ class ServerController extends Controller
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
         if (!$server) {
             return response()->json([
-                'message' => 'Required server does not exists into panel or it is not installed yet.',
-                'errors' => 'Server not found.'
+                'message' => __('cipi.server_not_found_message'),
+                'errors' => __('cipi.server_not_found')
             ], 404);
         }
 

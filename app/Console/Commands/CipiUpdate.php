@@ -41,16 +41,28 @@ class CipiUpdate extends Command
     public function handle()
     {
 
-        //2021-04-28 - Fix Client Server Versions
-        $servers = Server::where('build', '<>', '202104281')->get();
+        //2021-12-09 - PHP 8.1 to client
+        $servers = Server::where('build', '<>', '202112091')->get();
 
         foreach ($servers as $server) {
-            $server->build = '202104281';
+            $ssh = new SSH2($this->server->ip, 22);
+            $ssh->login('cipi', $this->server->password);
+            $ssh->setTimeout(360);
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink newsite');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/php81');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix php81');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash php81');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink php81');
+            $ssh->exec('exit');
+
+
+
+            $server->build = '202112091';
             $server->save();
         }
-        
+
         $server = Server::where('default', 1)->first();
-        
+
         $ssh = new SSH2($server->ip, 22);
         $ssh->login('cipi', $server->password);
         $ssh->setTimeout(360);

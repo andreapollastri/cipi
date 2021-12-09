@@ -1,6 +1,3 @@
-<h1>CIPI IS STILL ALIVE</h1>
-<h2>I'm working to solve all issues bugs and to a new Vue based frontend! Sorry for the late!In the meanwhile I'll solve all open issues for current version... give some week to investigate bugs and deploy a big patch!!!</h2>
-
 <img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
 
 ![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
@@ -65,10 +62,10 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 
 ## Cipi LEMP environment
 - nginx: 1.18
-- PHP-FPM: 8.0, 7.4, 7.3
+- PHP-FPM: 8.1, 8.0, 7.4, 7.3
 - MySql: 8
-- node: 15
-- npm: 7
+- node: 16
+- npm: 8
 - Composer: 2.x
 
 ## Screenshots
@@ -87,29 +84,16 @@ Christian Giupponi (co-founder of ZeroUno Agency - https://zerouno.io/) develope
 ANDROID VERSION: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
 IOS VERSION: Coming soon!<br><br>
 
-## Cipi Roadmap... what's next?
-- Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
-- Codebase Tests (Unit and Feature)
-- Improve codebase quality
-- Improve UI/UX
-- Server Alerts Notification
-- Password recovery flow and SMTP integration in settings
-- 3 Server modes: LEMP (current), DB and nginx balancer
-- Site php.ini custom configuration in panel
-- Site nginx custom configuration in panel
-- Extend Git Deploy to Gitlab and Bitbucket
-- Github / Git hooks
-- Zero Downtime deployment
-- More control on deploy flow in panel
-- Slack integration
-- Cloudflare integration
-- AWS, Digital Ocean and other providers integration
-- AWS s3 site backup
-- File manager into panel
-- Shell terminal into panel
-- Site HD space, resources and trafic limits
-- Performance improvements
+## Cipi Roadmap... what's next? 
 
+<h1>Version 4 on May 2022</h1>
+
+- Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
+- Laravel 9 support
+- Backup on s3
+- Github webhook support
+- Vue Frontend
+- Minor Improvements!
 ## Contributing
 Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, money, beers) :)
 
