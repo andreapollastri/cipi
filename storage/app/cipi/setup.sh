@@ -3,7 +3,7 @@
 
 
 #################################################### CONFIGURATION ###
-BUILD=202104281
+BUILD=202112091
 PASS=???
 DBPASS=???
 SERVERID=???
@@ -547,7 +547,8 @@ echo "Let's Encrypt setup..."
 echo "${reset}"
 sleep 1s
 
-sudo snap install --beta --classic certbot
+sudo apt-get install -y certbot
+sudo apt-get install -y python3-certbot-nginx
 
 
 
@@ -580,6 +581,9 @@ echo "${bggreen}${black}${bold}"
 echo "Last steps..."
 echo "${reset}"
 sleep 1s
+
+sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
+sudo systemctl daemon-reload
 
 TASK=/etc/cron.d/cipi.crontab
 touch $TASK
