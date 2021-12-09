@@ -252,38 +252,6 @@ sleep 1s
 sudo add-apt-repository -y ppa:ondrej/php
 sudo apt-get update
 
-sudo apt-get -y install php7.3-fpm
-sudo apt-get -y install php7.3-common
-sudo apt-get -y install php7.3-curl
-sudo apt-get -y install php7.3-openssl
-sudo apt-get -y install php7.3-bcmath
-sudo apt-get -y install php7.3-mbstring
-sudo apt-get -y install php7.3-tokenizer
-sudo apt-get -y install php7.3-mysql
-sudo apt-get -y install php7.3-sqlite3
-sudo apt-get -y install php7.3-pgsql
-sudo apt-get -y install php7.3-redis
-sudo apt-get -y install php7.3-memcached
-sudo apt-get -y install php7.3-json
-sudo apt-get -y install php7.3-zip
-sudo apt-get -y install php7.3-xml
-sudo apt-get -y install php7.3-soap
-sudo apt-get -y install php7.3-gd
-sudo apt-get -y install php7.3-imagick
-sudo apt-get -y install php7.3-fileinfo
-sudo apt-get -y install php7.3-imap
-sudo apt-get -y install php7.3-cli
-PHPINI=/etc/php/7.3/fpm/conf.d/cipi.ini
-sudo touch $PHPINI
-sudo cat > "$PHPINI" <<EOF
-memory_limit = 256M
-upload_max_filesize = 256M
-post_max_size = 256M
-max_execution_time = 180
-max_input_time = 180
-EOF
-sudo service php7.3-fpm restart
-
 sudo apt-get -y install php7.4-fpm
 sudo apt-get -y install php7.4-common
 sudo apt-get -y install php7.4-curl
@@ -397,7 +365,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php8.0
+sudo update-alternatives --set php /usr/bin/php8.1
 
 
 

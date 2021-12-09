@@ -42,10 +42,9 @@ class CipiUpdate extends Command
     {
 
         //2021-12-09 - PHP 8.1 to client
-        $servers = Server::where('build', '<>','202112091')->get();
+        $servers = Server::where('build', '<>', '202112091')->get();
 
         foreach ($servers as $server) {
-
             $ssh = new SSH2($this->server->ip, 22);
             $ssh->login('cipi', $this->server->password);
             $ssh->setTimeout(360);
