@@ -86,13 +86,9 @@ IOS VERSION: Coming soon!<br><br>
 
 ## Cipi Roadmap... what's next? 
 
-<h1>Version 4 on May 2022</h1>
-
-- Application Autoinstaller (Laravel, WP, phpmyadmin, Prestashop, ...)
+<h4>Version 4 on May 2022</h4>
 - Laravel 9 support
 - Backup on s3
-- Github webhook support
-- Vue Frontend
 - Minor Improvements!
 
 ## Contributing

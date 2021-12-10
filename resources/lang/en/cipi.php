@@ -63,6 +63,7 @@ return [
         'sites' => 'Sites',
         'settings' => 'Settings',
         'documentation' => 'Documentation',
+        'app' => 'Mobile App',
         'logout' => 'Logout',
     ],
     //Sidebar info
