@@ -37,7 +37,7 @@
 	<hr>
     <br>
     <center>
-        <p>{!! __('pdf_site_php_version', ['domain' => $domain, 'php' => $php]) !!}</p>
+        <p>{!! __('cipi.pdf_site_php_version', ['domain' => $domain, 'php' => $php]) !!}</p>
     </center>
     <br>
 	<center>

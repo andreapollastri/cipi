@@ -6,8 +6,9 @@
     <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="googlebot" content="noindex">
         <title>{{ config('cipi.name') }} | @yield('title')</title>
-        <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="cipi-version" content="{{ Storage::get('cipi/version.md') }}">
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
@@ -67,10 +68,6 @@
                             <a class="nav-link {{ request()->is('settings*') ? 'active' : '' }}" href="/settings">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-cog"></i></div>
                                 {{ __('cipi.sidebar_menu.settings') }}
-                            </a>
-                            <a class="nav-link" href="{{ config('cipi.docs') }}" target="_blank">
-                                <div class="sb-nav-link-icon"><i class="fas fa-fw fa-book"></i></div>
-                                {{ __('cipi.sidebar_menu.documentation') }}
                             </a>
                             <a class="nav-link" href="{{ config('cipi.app') }}" target="_blank">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-mobile-alt"></i></div>
@@ -163,6 +160,17 @@
         <script>
             //Init Datatable Data
             localStorage.dtdata = '';
+
+            //Datatable Render Check
+            function dtRender() {
+                if( document.getElementById('dt').innerHTML == 'OFF'){
+                    renderMake();
+                } else {
+                    $('#dt').DataTable().clear().destroy();
+                    renderMake();
+                }
+
+            }
 
             //Vars in Page
             $('#username').html(localStorage.username);
