@@ -17,6 +17,7 @@
         'docs'              => env('CIPI_DOCS', 'https://cipi.sh/docs.html'),
         'background'        => env('CIPI_BACKGROUNG', 'login'),
         'activesetupcount'  => env('CIPI_ACTIVESETUPCOUNT', 'https://service.cipi.sh/setupcount'),
+        'app'               => env('CIPI_APP', 'https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi'),
 
         //Global Settings
         'phpvers'           => ['8.1','8.0','7.4'],
