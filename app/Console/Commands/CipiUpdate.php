@@ -41,25 +41,39 @@ class CipiUpdate extends Command
     public function handle()
     {
 
-        //2021-12-09 - PHP 8.1 to client
-        $servers = Server::where('build', '<>', '202112091')->get();
+        // 2021-12-09 patch
+        $servers = Server::where('build', '<', '202112091')->get();
 
         foreach ($servers as $server) {
             $ssh = new SSH2($this->server->ip, 22);
             $ssh->login('cipi', $this->server->password);
             $ssh->setTimeout(360);
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink newsite');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/php81');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix php81');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash php81');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink php81');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112091');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix 202112091');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash 202112091');
+            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink 202112091');
             $ssh->exec('exit');
-
-
 
             $server->build = '202112091';
             $server->save();
         }
+
+         // 2021-12-10 and 2021-12-09 patches
+         $servers = Server::where('build', '<', '202112101')->get();
+
+         foreach ($servers as $server) {
+             $ssh = new SSH2($this->server->ip, 22);
+             $ssh->login('cipi', $this->server->password);
+             $ssh->setTimeout(360);
+             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
+             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix 202112101');
+             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash 202112101');
+             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink 202112101');
+             $ssh->exec('exit');
+
+             $server->build = '202112101';
+             $server->save();
+         }
 
         $server = Server::where('default', 1)->first();
 

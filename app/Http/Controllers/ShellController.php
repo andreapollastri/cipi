@@ -110,4 +110,16 @@ class ShellController extends Controller
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
+
+    /**
+     * Client Patch - 202112101
+     *
+    */
+    public function patch202112101()
+    {
+        $script = Storage::get('cipi/patch202112101.sh');
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
 }

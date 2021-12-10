@@ -223,14 +223,14 @@
                 complete: function(data) {
                     setTimeout(function() {
                         $('#dt').DataTable().clear().destroy();
-                    }, 500);
+                    }, 1500);
                     setTimeout(function() {
                         getData('/api/sites',false);
                         $('#deleteSiteModal').modal('toggle');
                         $('#deletesitedomain').html('');
                         $('#deletesiteid').val('');
                         $('#loadingdelete').addClass('d-none');
-                    }, 1500);
+                    }, 6500);
                 },
             });
         });
