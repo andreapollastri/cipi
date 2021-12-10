@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 (no unreleased versions)
+
+## [3.1.4] - 2021-12-10
+### Fixes
+- Login BG fix
 ## [3.1.3] - 2021-12-10
 ### Fixes
 - Views fix
