@@ -10,27 +10,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
-## [3.1.5] - 2021-12-10
+## [3.1.6] - 2021-12-10
+### Fixed
+- Mobile App link in menù
+- Minor fix in views
 
+## [3.1.5] - 2021-12-10
 ## Added
 - Cipi App link in menù
-### Fixes
+### Fixed
 - PHP 7.3 legacy support fix
 
 ## [3.1.4] - 2021-12-10
-### Fixes
+### Fixed
 - Login BG fix
 
 ## [3.1.3] - 2021-12-10
-### Fixes
+### Fixed
 - Views fix
 
 ## [3.1.2] - 2021-12-10
-### Fixes
+### Fixed
 - Domains conflict fix
 
 ## [3.1.1] - 2021-12-09
-### Fixes
+### Fixed
 - Let's Encrypt Issue on Nginx Fix
 - Domain Edit Issue Fix
 
@@ -46,7 +50,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Vendor Upgrade
 - Nginx Restart Issue Fix
 - Certbot vendor update
-- Minor Fixes
+- Minor Fixed
 
 ### Removed
 - PHP 7.3 from new installations

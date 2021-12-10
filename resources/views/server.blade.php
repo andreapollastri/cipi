@@ -49,22 +49,22 @@
             <div class="card-body">
                 <p>{{ __('cipi.server_name') }}:</p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Production" id="servername" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="e.g. Production" id="servername" autocomplete="off" />
                 </div>
                 <div class="space"></div>
                 <p>{{ __('cipi.server_ip') }}:</p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="123.123.123.123" id="serverip" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="e.g. 123.123.123.123" id="serverip" autocomplete="off" />
                 </div>
                 <div class="space"></div>
                 <p>{{ __('cipi.server_provider') }}:</p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Digital Ocean" id="serverprovider" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="e.g. Digital Ocean" id="serverprovider" autocomplete="off" />
                 </div>
                 <div class="space"></div>
                 <p>{{ __('cipi.server_location') }}:</p>
                 <div class="input-group">
-                    <input class="form-control" type="text" placeholder="Amsterdam" id="serverlocation" autocomplete="off" />
+                    <input class="form-control" type="text" placeholder="e.g. Amsterdam" id="serverlocation" autocomplete="off" />
                 </div>
                 <div class="space"></div>
                 <div class="text-center">
