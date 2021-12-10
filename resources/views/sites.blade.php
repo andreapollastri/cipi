@@ -221,6 +221,7 @@
                     $('#loadingdelete').removeClass('d-none');
                 },
                 complete: function(data) {
+                    $('#dt').DataTable().clear().destroy();
                     getData('/api/sites',false);
                     $('#deleteSiteModal').modal('toggle');
                     $('#deletesitedomain').html('');
