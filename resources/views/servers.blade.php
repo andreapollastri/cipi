@@ -52,22 +52,22 @@
                 <div id="newserverform">
                     <label for="newservername">{{ __('cipi.server_name') }}</label>
                     <div class="input-group">
-                        <input class="form-control" type="text" id="newservername" placeholder="Production Server" autocomplete="off" />
+                        <input class="form-control" type="text" id="newservername" placeholder="e.g. Production" autocomplete="off" />
                     </div>
                     <div class="space"></div>
                     <label for="newserverip">{{ __('cipi.server_ip') }}</label>
                     <div class="input-group">
-                        <input class="form-control" type="text" id="newserverip" placeholder="123.45.67.89" autocomplete="off" />
+                        <input class="form-control" type="text" id="newserverip" placeholder="e.g. 123.45.67.89" autocomplete="off" />
                     </div>
                     <div class="space"></div>
                     <label for="newserverprovider">{{ __('cipi.server_provider') }}</label>
                     <div class="input-group">
-                        <input class="form-control" type="text" id="newserverprovider" placeholder="Digital Ocean" autocomplete="off" />
+                        <input class="form-control" type="text" id="newserverprovider" placeholder="e.g. Digital Ocean" autocomplete="off" />
                     </div>
                     <div class="space"></div>
                     <label for="newserverlocation">{{ __('cipi.server_location') }}</label>
                     <div class="input-group">
-                        <input class="form-control" type="text" id="newserverlocation" placeholder="Amsterdam" autocomplete="off" />
+                        <input class="form-control" type="text" id="newserverlocation" placeholder="e.g. Amsterdam" autocomplete="off" />
                     </div>
                     <div class="space"></div>
                     <div class="text-center">
