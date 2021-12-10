@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Google Bot noindex, nofollow (for Panel)
 ### Fixed
 - Client Server Patch (build 202112101)
+- System Update Error Fix
 - Site Domains and Paths in lowercase
 - SSL Nginx Restart Fix
 - PHP Version fix in site PDFs
