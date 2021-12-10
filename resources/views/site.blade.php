@@ -15,7 +15,7 @@
     <li class="ml-1 breadcrumb-item active text-uppercase">{{ __('cipi.site_base_path') }}:<b><span class="ml-1">/home/</span><span id="siteuserinfo"></span>/web/<span id="sitebasepathinfo"></span></b></li>
 </ol>
 <div class="row">
-    <div class="col-xl-4">
+    <div class="col-xl-6">
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-info-circle fs-fw mr-1"></i>
@@ -39,7 +39,7 @@
             </div>
         </div>
     </div>
-    <div class="col-xl-4">
+    <div class="col-xl-6">
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fas fa-globe fs-fw mr-1"></i>
@@ -62,6 +62,8 @@
             </div>
         </div>
     </div>
+</div>
+<div class="row">
     <div class="col-xl-4">
         <div class="card mb-4">
             <div class="card-header">
@@ -77,30 +79,6 @@
                 <button class="btn btn-warning btn mr-3" type="button" id="sitesshreset">SSH</button>
                 <button class="btn btn-warning btn mr-3" type="button" id="sitemysqlreset">MySql</button>
                 <div class="space" style="min-height:38px"></div>
-            </div>
-        </div>
-    </div>
-</div>
-<div class="row">
-    <div class="col-xl-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fas fa-rocket fs-fw mr-1"></i>
-                {{ __('cipi.application_installer') }}
-            </div>
-            <div class="card-body text-center">
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <h5>{{ __('cipi.coming_soon') }}</h5>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
-                <div class="space"></div>
             </div>
         </div>
     </div>
