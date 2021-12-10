@@ -327,10 +327,10 @@ class SiteController extends Controller
 
         $conflict = false;
         foreach ($server->allsites as $checksite) {
-            if ($checksite->domain == $request->domain) {
+            if ($checksite->domain == strtolower($request->domain)) {
                 $conflict = true;
                 foreach ($checksite->aliases as $alias) {
-                    if ($alias->domain == $request->domain) {
+                    if ($alias->domain == strtolower($request->domain)) {
                         $conflict = true;
                     }
                 }
@@ -350,7 +350,7 @@ class SiteController extends Controller
         $site = new Site();
         $site->site_id    = $site_id;
         $site->server_id  = $server->id;
-        $site->domain     = $request->domain;
+        $site->domain     = strtolower($request->domain);
         $site->php        = $php;
         $site->basepath   = $request->basepath;
         $site->username   = 'cp'.hash('crc32', (Str::uuid()->toString())).rand(1, 9);
@@ -577,7 +577,7 @@ class SiteController extends Controller
             ], 404);
         }
 
-        if ($request->domain) {
+        if (strtolower($request->domain)) {
             $validator = Validator::make($request->all(), [
                 'domain' => 'required'
             ]);
@@ -588,18 +588,18 @@ class SiteController extends Controller
                 ], 400);
             }
 
-            if ($site->domain != $request->domain) {
+            if ($site->domain != strtolower($request->domain)) {
                 $sites = Site::where('server_id', $site->server->id)->get();
 
                 foreach ($sites as $checksite) {
-                    if ($request->domain == $checksite->domain) {
+                    if (strtolower($request->domain) == $checksite->domain) {
                         return response()->json([
                             'message' => __('cipi.server_conflict_domain_message'),
                             'errors' => __('cipi.server_conflict')
                         ], 409);
                     }
                     foreach ($checksite->aliases as $alias) {
-                        if ($request->domain == $alias->domain) {
+                        if (strtolower($request->domain) == $alias->domain) {
                             return response()->json([
                                 'message' => __('cipi.server_conflict_alias_message'),
                                 'errors' => __('cipi.server_conflict')
@@ -610,16 +610,16 @@ class SiteController extends Controller
             }
 
             $last_domain = $site->domain;
-            $site->domain = $request->domain;
+            $site->domain = strtolower($request->domain);
             $site->save();
 
             EditSiteDomainSSH::dispatch($site, $last_domain)->delay(Carbon::now()->addSeconds(1));
         }
 
         if ($request->has('basepath')) {
-            if ($site->basepath != $request->basepath) {
+            if ($site->basepath != strtolower($request->basepath)) {
                 $last_basepath = $site->basepath;
-                $site->basepath = $request->basepath;
+                $site->basepath = strtolower($request->basepath);
                 $site->save();
                 EditSiteBasepathSSH::dispatch($site, $last_basepath)->delay(Carbon::now()->addSeconds(5));
             }
@@ -1329,10 +1329,10 @@ class SiteController extends Controller
 
         $conflict = false;
         foreach ($site->server->allsites as $checksite) {
-            if ($checksite->domain == $request->domain) {
+            if ($checksite->domain == strtolower($request->domain)) {
                 $conflict = true;
                 foreach ($checksite->aliases as $alias) {
-                    if ($alias->domain == $request->domain) {
+                    if ($alias->domain == strtolower($request->domain)) {
                         $conflict = true;
                     }
                 }
@@ -1348,7 +1348,7 @@ class SiteController extends Controller
         $alias = new Alias();
         $alias->alias_id  = Str::uuid();
         $alias->site_id   = $site->id;
-        $alias->domain    = $request->domain;
+        $alias->domain    = strtolower($request->domain);
         $alias->save();
 
         NewAliasSSH::dispatch($site, $alias)->delay(Carbon::now()->addSeconds(3));
