@@ -165,8 +165,8 @@
     //Get DT Data
     getData('/api/servers');
 
-    //Datatable
-    function dtRender() {
+    // Render Make
+    function renderMake() {
         $('#dt').DataTable( {
             'processing': true,
             'data': JSON.parse(localStorage.getItem('dtdata')),
@@ -273,18 +273,7 @@
                         validation = false;
                         $('#loadingdelete').removeClass('d-none');
                     },
-                    success: function(data) {
-                        $('#dt').DataTable().clear().destroy();
-                        getData('/api/servers',false);
-                        $('#deleteServerModal').modal('toggle');
-                        $('#deleteservername').html('');
-                        $('#deleteserverip').val('');
-                        $('#deleteserverid').val('');
-                        $('#deleteserveriptocopy').html('');
-                        $('#loadingdelete').addClass('d-none');
-                    },
                     complete: function(data) {
-                        $('#dt').DataTable().clear().destroy();
                         getData('/api/servers',false);
                         $('#deleteServerModal').modal('toggle');
                         $('#deleteservername').html('');

@@ -5,6 +5,9 @@
         <meta charset="utf-8" />
         <meta http-equiv="X-UA-Compatible" content="IE=edge" />
         <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no" />
+        <meta name="robots" content="noindex, nofollow">
+        <meta name="googlebot" content="noindex">
+        <meta name="cipi-version" content="{{ Storage::get('cipi/version.md') }}">
         <title>{{ config('cipi.name') }} | {{ __('cipi.login') }}</title>
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.1/js/all.min.js"></script>
@@ -47,7 +50,7 @@
                                         </form>
                                     </div>
                                     <div class="card-footer text-center">
-                                        <div class="small">&copy{{ Date('Y') }} - <a href="{{ config('cipi.website') }}" target="_blank"> {{ config('cipi.name') }}</a></div>
+                                        <div class="small">&copy{{ Date('Y') }} - <a href="{{ config('cipi.website') }}" target="_blank"> {{ config('cipi.name') }}</a> - v{{ Storage::get('cipi/version.md') }}</div>
                                     </div>
                                 </div>
                             </div>

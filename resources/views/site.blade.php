@@ -10,9 +10,9 @@
 @section('content')
 <ol class="breadcrumb mb-4">
     <li class="ml-1 breadcrumb-item active">IP:<b><span class="ml-1" id="siteip"></span></b></li>
-    <li class="ml-1 breadcrumb-item active text-uppercase">{{ __('cipi.aliases') }}:<b><span class="ml-1" id="sitealiases"></span></b></li>
+    <li class="ml-1 breadcrumb-item active">{{ __('cipi.aliases') }}:<b><span class="ml-1" id="sitealiases"></span></b></li>
     <li class="ml-1 breadcrumb-item active">PHP:<b><span class="ml-1" id="sitephp"></span></b></li>
-    <li class="ml-1 breadcrumb-item active text-uppercase">{{ __('cipi.site_base_path') }}:<b><span class="ml-1">/home/</span><span id="siteuserinfo"></span>/web/<span id="sitebasepathinfo"></span></b></li>
+    <li class="ml-1 breadcrumb-item active">{{ __('cipi.site_base_path') }}:<b><span class="ml-1">/home/</span><span id="siteuserinfo"></span>/web/<span id="sitebasepathinfo"></span></b></li>
 </ol>
 <div class="row">
     <div class="col-xl-6">

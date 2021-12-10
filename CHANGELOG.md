@@ -10,6 +10,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.7] - 2021-12-10
+
+### Added
+- Google Bot noindex, nofollow (for Panel)
+### Fixed
+- PHP Version fix in site PDFs
+- Datatable Render Issue
+- Minor Template Fix
+### Removed
+- Documentation link
+
 ## [3.1.6] - 2021-12-10
 ### Fixed
 - Mobile App link in menù

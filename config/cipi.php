@@ -14,7 +14,6 @@
         //Branding
         'name'              => env('CIPI_NAME', 'Cipi Control Panel'),
         'website'           => env('CIPI_WEBSITE', 'https://cipi.sh'),
-        'docs'              => env('CIPI_DOCS', 'https://cipi.sh/docs.html'),
         'background'        => env('CIPI_BACKGROUNG', 'login'),
         'activesetupcount'  => env('CIPI_ACTIVESETUPCOUNT', 'https://service.cipi.sh/setupcount'),
         'app'               => env('CIPI_APP', 'https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi'),
