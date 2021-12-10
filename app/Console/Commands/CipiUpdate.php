@@ -45,13 +45,13 @@ class CipiUpdate extends Command
         $servers = Server::where('build', '<', '202112091')->get();
 
         foreach ($servers as $server) {
-            $ssh = new SSH2($this->server->ip, 22);
-            $ssh->login('cipi', $this->server->password);
+            $ssh = new SSH2($server->ip, 22);
+            $ssh->login('cipi', $server->password);
             $ssh->setTimeout(360);
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112091');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix 202112091');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash 202112091');
-            $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink 202112091');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112091');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112091');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112091');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112091');
             $ssh->exec('exit');
 
             $server->build = '202112091';
@@ -62,13 +62,13 @@ class CipiUpdate extends Command
          $servers = Server::where('build', '<', '202112101')->get();
 
          foreach ($servers as $server) {
-             $ssh = new SSH2($this->server->ip, 22);
-             $ssh->login('cipi', $this->server->password);
+             $ssh = new SSH2($server->ip, 22);
+             $ssh->login('cipi', $server->password);
              $ssh->setTimeout(360);
-             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
-             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo dos2unix 202112101');
-             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo bash 202112101');
-             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink 202112101');
+             $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
+             $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112101');
+             $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112101');
+             $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112101');
              $ssh->exec('exit');
 
              $server->build = '202112101';
