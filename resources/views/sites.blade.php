@@ -221,12 +221,16 @@
                     $('#loadingdelete').removeClass('d-none');
                 },
                 complete: function(data) {
-                    $('#dt').DataTable().clear().destroy();
-                    getData('/api/sites',false);
-                    $('#deleteSiteModal').modal('toggle');
-                    $('#deletesitedomain').html('');
-                    $('#deletesiteid').val('');
-                    $('#loadingdelete').addClass('d-none');
+                    setTimeout(function() {
+                        $('#dt').DataTable().clear().destroy();
+                    }, 500);
+                    setTimeout(function() {
+                        getData('/api/sites',false);
+                        $('#deleteSiteModal').modal('toggle');
+                        $('#deletesitedomain').html('');
+                        $('#deletesiteid').val('');
+                        $('#loadingdelete').addClass('d-none');
+                    }, 1500);
                 },
             });
         });

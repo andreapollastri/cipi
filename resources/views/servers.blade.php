@@ -274,13 +274,18 @@
                         $('#loadingdelete').removeClass('d-none');
                     },
                     complete: function(data) {
-                        getData('/api/servers',false);
-                        $('#deleteServerModal').modal('toggle');
-                        $('#deleteservername').html('');
-                        $('#deleteserverip').val('');
-                        $('#deleteserverid').val('');
-                        $('#deleteserveriptocopy').html('');
-                        $('#loadingdelete').addClass('d-none');
+                        setTimeout(function() {
+                            $('#dt').DataTable().clear().destroy();
+                        }, 500);
+                        setTimeout(function() {
+                            getData('/api/servers',false);
+                            $('#deleteServerModal').modal('toggle');
+                            $('#deleteservername').html('');
+                            $('#deleteserverip').val('');
+                            $('#deleteserverid').val('');
+                            $('#deleteserveriptocopy').html('');
+                            $('#loadingdelete').addClass('d-none');
+                        }, 1500);
                     },
                 });
             }
