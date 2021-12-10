@@ -591,14 +591,14 @@ class SiteController extends Controller
             if ($site->domain != $request->domain) {
                 $sites = Site::where('server_id', $site->server->id)->get();
 
-                foreach ($sites as $site) {
-                    if ($request->domain == $site->domain) {
+                foreach ($sites as $checksite) {
+                    if ($request->domain == $checksite->domain) {
                         return response()->json([
                             'message' => __('cipi.server_conflict_domain_message'),
                             'errors' => __('cipi.server_conflict')
                         ], 409);
                     }
-                    foreach ($site->aliases as $alias) {
+                    foreach ($checksite->aliases as $alias) {
                         if ($request->domain == $alias->domain) {
                             return response()->json([
                                 'message' => __('cipi.server_conflict_alias_message'),
