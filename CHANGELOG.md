@@ -10,6 +10,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.2] - 2021-12-10
+### Fixes
+- Domains conflict fix
 ## [3.1.1] - 2021-12-09
 ### Fixes
 - Let's Encrypt Issue on Nginx Fix

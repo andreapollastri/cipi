@@ -326,10 +326,10 @@ class SiteController extends Controller
         }
 
         $conflict = false;
-        foreach ($server->allsites as $site) {
-            if ($site->domain == $request->domain) {
+        foreach ($server->allsites as $checksite) {
+            if ($checksite->domain == $request->domain) {
                 $conflict = true;
-                foreach ($site->aliases as $alias) {
+                foreach ($checksite->aliases as $alias) {
                     if ($alias->domain == $request->domain) {
                         $conflict = true;
                     }
