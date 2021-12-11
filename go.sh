@@ -363,7 +363,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php8.1
+sudo update-alternatives --set php /usr/bin/php8.0
 
 
 
@@ -678,6 +678,7 @@ echo " MySQL root user: cipi"
 echo " MySQL root pass: $DBPASS"
 echo ""
 echo " To manage your server visit: http://$IP"
+echo " and click on 'dashboard' button."
 echo " Default credentials are: administrator / 12345678"
 echo ""
 echo "***********************************************************"

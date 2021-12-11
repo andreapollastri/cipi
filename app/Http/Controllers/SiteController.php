@@ -353,7 +353,7 @@ class SiteController extends Controller
         $site->domain     = strtolower($request->domain);
         $site->php        = $php;
         $site->basepath   = $request->basepath;
-        $site->username   = 'cp'.hash('crc32', (Str::uuid()->toString())).rand(1, 9);
+        $site->username   = config('cipi.users_prefix').hash('crc32', (Str::uuid()->toString())).rand(1, 9);
         $site->password   = Str::random(24);
         $site->database   = Str::random(24);
         $site->deploy     = ' ';

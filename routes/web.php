@@ -14,7 +14,12 @@ use App\Http\Controllers\SiteController;
 |
 */
 
-Route::redirect('/', '/dashboard');
+Route::get('/', function () {
+    if (filter_var(request()->getHttpHost(), FILTER_VALIDATE_IP)) || request()->getHttpHost() == \App\Models\Site::where(['panel' => 1])->pluck('domain')->first()) {
+        return view('welcome');
+    }
+    return file_get_contents('/var/www/html/utility/zero-page/index.php');
+});
 
 Route::get('/login', function () {
     return view('login');

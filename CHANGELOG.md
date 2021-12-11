@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.8] - 2021-12-11
+
+### Added
+- Configurable users and db/path naming prefix
+- Selective Dashboard login check
+
+### Fixed
+- JWT Key Logic
+- PHP 8.0 by default (not 8.1) because WP is not ready to it
+- Main welcome page Fix
+- Client welcome page Fix
+- New Sites Welcome Page
+- New Login Page
+
+### Removed
+- Mobile App link into sidebar
+
 ## [3.1.7] - 2021-12-10
 
 ### Added
