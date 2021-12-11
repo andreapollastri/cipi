@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.10] - 2021-12-11
+
+### Fixed
+- Default PHP Version
+- No bot meta in default pages
+
 ## [3.1.9] - 2021-12-11
 
 ### Fixed
