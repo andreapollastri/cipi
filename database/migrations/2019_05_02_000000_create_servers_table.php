@@ -22,7 +22,7 @@ class CreateServersTable extends Migration
             $table->string('database');
             $table->string('provider')->nullable();
             $table->string('location')->nullable();
-            $table->string('php')->default('8.1');
+            $table->string('php')->default(config('cipi.default_php'));
             $table->text('github_key')->nullable();
             $table->text('cron')->nullable();
             $table->boolean('default')->default(false);
