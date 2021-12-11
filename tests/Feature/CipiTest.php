@@ -9,12 +9,6 @@ use Tests\TestCase;
 
 class CipiTest extends TestCase
 {
-  
-    public function testWelcomePage()
-    {
-        $response = $this->get('/');
-        $response->assertStatus(200);
-    }
 
     public function testRedirectToLogin()
     {
