@@ -365,7 +365,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php8.1
+sudo update-alternatives --set php /usr/bin/php8.0
 
 
 

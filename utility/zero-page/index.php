@@ -28,7 +28,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Coming Soon...</title>
+    <title><?php echo substr($quotes[$randquote]['quote'], 0, 21); ?>...</title>
     <style>
         html {
             font-family: Arial, sans-serif;

@@ -69,10 +69,6 @@
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-cog"></i></div>
                                 {{ __('cipi.sidebar_menu.settings') }}
                             </a>
-                            <a class="nav-link" href="{{ config('cipi.app') }}" target="_blank">
-                                <div class="sb-nav-link-icon"><i class="fas fa-fw fa-mobile-alt"></i></div>
-                                {{ __('cipi.sidebar_menu.app') }}
-                            </a>
                             <a class="nav-link" href="#" id="logout">
                                 <div class="sb-nav-link-icon"><i class="fas fa-fw fa-sign-out-alt"></i></div>
                                 {{ __('cipi.sidebar_menu.logout') }}

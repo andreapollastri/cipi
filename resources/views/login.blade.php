@@ -15,9 +15,7 @@
         <link href="/assets/css/app.css" rel="stylesheet" />
         <style>
             .auth-bg {
-                background-image: url("/assets/bg/{{ config('cipi.background') }}.jpg");
-                background-size: cover;
-                background-position: bottom;
+                background: #212529;
             }
         </style>
     </head>
