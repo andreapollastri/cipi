@@ -10,6 +10,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.9] - 2021-12-11
+
+### Fixed
+- Not Configured Domains Message
+
 ## [3.1.8] - 2021-12-11
 
 ### Added
