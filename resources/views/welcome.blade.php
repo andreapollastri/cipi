@@ -66,7 +66,7 @@
     <body>
         <div class="flex-center position-ref full-height">
             <div class="top-right links">
-                <a href="/dashoboard">Dashboard</a>
+                <a href="/dashboard">Dashboard</a>
             </div>
 
             <div class="content">
