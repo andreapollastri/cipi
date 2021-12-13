@@ -35,7 +35,7 @@ Visit website: https://cipi.sh
 Cipi Documentation is available at: https://cipi.sh/docs.html.
 
 ## Installation
-```
+```bash
 wget -O - https://cipi.sh/go.sh | bash
 ```
 #### Installation on AWS
@@ -46,19 +46,20 @@ $ ssh ubuntu@<your server IP address>
 $ ubuntu@aws:~$ sudo -s
 $ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 ```
-Remember to open ports: 22, 80 and 443.
+Remember to open ports: 22, 80 and 443!
 
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
 
 - Ubuntu 20.04 x86_64 LTS (Fresh installation)
-- If the server is virtual (VPS), OpenVZ may not be supported (Kernel 2.6)
+- If the server is virtual (VPS), OpenVZ may not be supported
+- We are checking Cipi compatibility within Oracle / ARM (not full supported yet)
 
-Hardware Requirement: More than 1GB of HDD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP Address (NAT VPS is not supported) / External firewall / For VPS providers such as AWS, those providers already include an external firewall for your VPS. Please open port 22, 80 and 443 to install Cipi.
+Hardware Requirement: More than 1GB of HD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP  Address (IPv6 and NAT VPS are not supported) / For VPS providers such as AWS, those providers already include an external firewall for your VPS. Please open port 22, 80 and 443 to install Cipi.
 
 Installation may take up to about 30 minutes which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
 
-To correctly manage remote servers Cipi has to be on a public IP address. Do not use it in localhost!
+To correctly manage remote servers Cipi has to be on a public IP address (IPv4). Do not use it in localhost!
 
 ## Cipi LEMP environment
 - nginx: 1.18
@@ -66,7 +67,7 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 - MySql: 8
 - node: 16
 - npm: 8
-- Composer: 2.x
+- Composer: 2
 
 ## Screenshots
 
@@ -80,16 +81,16 @@ To correctly manage remote servers Cipi has to be on a public IP address. Do not
 Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
 
 ## Mobile App
-Christian Giupponi (co-founder of ZeroUno Agency - https://zerouno.io/) developed Cipi Mobile Application.<br>
-ANDROID VERSION: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
-IOS VERSION: Coming soon!<br><br>
+Christian Giupponi (https://zerouno.io) has developed the Cipi Mobile App.<br>
+Android: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
+iOS: Coming soon!<br><br>
 
 ## Cipi Roadmap... what's next? 
-
-<h4>Version 4 on May 2022</h4>
+- Cipi Version 4 (half 2022)
 - Laravel 9 support
 - Backup on s3
-- Minor Improvements!
+- Apps installer
+- ...
 
 ## Contributing
 Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, beers) :)

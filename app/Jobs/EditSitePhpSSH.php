@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\Site;
 use phpseclib3\Net\SSH2;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;
@@ -41,8 +40,10 @@ class EditSitePhpSSH implements ShouldQueue
         $ssh->login('cipi', $this->site->server->password);
         $ssh->setTimeout(360);
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo rpl -i "php'.$this->oldphp.'-fpm" "php'.$this->site->php.'-fpm" /etc/nginx/sites-available/'.$this->site->username.'.conf');
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo rpl -i "php'.$this->oldphp.'-fpm" "php'.$this->site->php.'-fpm" /etc/nginx/sites-enabled/'.$this->site->username.'.conf');
         foreach ($this->site->aliases as $alias) {
             $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo rpl -i "php'.$this->oldphp.'-fpm" "php'.$this->site->php.'-fpm" /etc/nginx/sites-available/'.$alias->domain.'.conf');
+            $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo rpl -i "php'.$this->oldphp.'-fpm" "php'.$this->site->php.'-fpm" /etc/nginx/sites-enabled/'.$alias->domain.'.conf');
         }
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo mv /etc/php/'.$this->oldphp.'/fpm/pool.d/'.$this->site->username.'.conf /etc/php/'.$this->site->php.'/fpm/pool.d/'.$this->site->username.'.conf');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo rpl "listen = /run/php/php'.$this->oldphp.'-fpm-'.$this->site->username.'.sock" "listen = /run/php/php'.$this->site->php.'-fpm-'.$this->site->username.'.sock" /etc/php/'.$this->site->php.'/fpm/pool.d/'.$this->site->username.'.conf');

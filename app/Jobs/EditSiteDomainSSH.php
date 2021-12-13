@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\Site;
 use phpseclib3\Net\SSH2;
 use Illuminate\Bus\Queueable;
 use Illuminate\Queue\SerializesModels;

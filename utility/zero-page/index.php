@@ -17,9 +17,9 @@
       ['quote' => 'Work hard, be kind, and amazing things will happen.', 'author' => 'Conan O’Brien'],
       ['quote' => 'In the middle of every difficulty lies opportunity.', 'author' => 'Albert Einstein']
   ];
-  
+
   $randquote = array_rand($quotes);
-  
+
 ?>
 
 <!DOCTYPE html>
@@ -28,7 +28,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?php echo substr($quotes[$randquote]['quote'], 0, 21); ?>...</title>
+    <title><?php echo substr($quotes[$randquote]['quote'], 0, 27); ?>...</title>
     <meta name="robots" content="noindex, nofollow">
     <meta name="googlebot" content="noindex">
     <style>

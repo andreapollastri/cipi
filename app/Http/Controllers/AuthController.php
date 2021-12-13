@@ -12,6 +12,32 @@ class AuthController extends Controller
 {
 
     /**
+     * Auth login via username and password for mobile app
+     *
+    */
+    public function appLogin(Request $request)
+    {
+        $request->validate([
+            'username' => 'required',
+            'password' => 'required',
+        ]);
+
+        $user = Auth::attempt($request->username, $request->password);
+
+        if (!$user) {
+            return response()->json([
+                'message' => __('cipi.invalid_login_message'),
+                'errors' => __('cipi.invalid_login')
+            ], 401);
+        }
+
+        return response()->json([
+            'username' => $user->username,
+            'apikey' => $user->apikey
+        ]);
+    }
+
+    /**
      * JWT Auth login via username and password
      *
     */

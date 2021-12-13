@@ -2,7 +2,6 @@
 
 namespace App\Models;
 
-use App\Models\Cron;
 use App\Models\Site;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -18,7 +17,7 @@ class Server extends Model
         'created_at',
         'updated_at'
     ];
-    
+
     public function sites()
     {
         return $this->hasMany(Site::class)->where('panel', false);

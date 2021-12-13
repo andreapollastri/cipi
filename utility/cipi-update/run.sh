@@ -11,4 +11,3 @@ cd /var/www/html && php artisan view:cache
 cd /var/www/html && php artisan config:cache
 cd /var/www/html && php artisan migrate --force
 sudo chown -R www-data:www-data /var/www/html
-curl -s 'https://service.cipi.sh/setupcount' > /dev/null
