@@ -2,10 +2,7 @@
 
 namespace App\Console\Commands;
 
-use App\Models\Server;
-use phpseclib3\Net\SSH2;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 
 class ActiveSetupCount extends Command
 {

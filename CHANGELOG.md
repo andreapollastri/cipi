@@ -10,6 +10,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.11] - 2021-12-13
+
+### Added
+- Sites Log Rotation Logic
+
+### Fixed
+- Solved APP login issue
+- Solved PHP switch error
+- Cipi commands
+- Composer Update
+- Favicon
+- Readme file
+- Minor Fix
+
+### Removed
+- Unused namespaces
+
 ## [3.1.10] - 2021-12-11
 
 ### Fixed

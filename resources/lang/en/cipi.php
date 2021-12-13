@@ -8,7 +8,7 @@ return [
     |--------------------------------------------------------------------------
     */
 
-    //Errors
+    // Errors
     'error' => 'Error',
     'forbidden' => 'Forbidden',
     'return_to_dashboard' => 'Return to Dashboard',
@@ -16,14 +16,14 @@ return [
     'internal_server_error' => 'Internal Server Error',
     'system_error' => 'System Error',
     'unknown_error' => 'Ops! Something went wrong... try later!',
-    //AuthController errors
+    // AuthController errors
     'invalid_login' => 'Username and password don\'t match',
     'invalid_login_message' => 'Given credentials are invalid',
     'invalid_token' => 'Invalid token',
     'invalid_token_message' => 'Given token is invalid',
     'username_conflict' => 'Username Conflict',
     'username_conflict_message' => 'Required username is used into database',
-    //ServerController errors
+    // ServerController errors
     'server_not_found_native_message' => 'Panel is not associated to a native server',
     'server_conflict_ip_current_message' => 'You cannot add a server with the same current server IP',
     'server_conflict_ip_duplicate_message' => 'There is another server with same IP into database',
@@ -37,7 +37,7 @@ return [
     'server_error_ssh_error_message' => 'SSH error with server: ',
     'something_error_message' => 'Something went wrong.',
     'invalid_service_error_message' => 'Required service is not valid',
-    //SiteController errors
+    // SiteController errors
     'bad_request' => 'Bad Request.',
     'bad_request_default_site_delete' => 'Cannot delete default site from panel',
     'invalid_php_version' => 'Invalid PHP version.',
@@ -55,7 +55,7 @@ return [
     'domain_conflict' => 'Domain conflict',
     'domain_conflict_message' => 'Required domain is used by another site/alias on this server',
 
-    //Sidebar Menu
+    // Sidebar Menu
     'menu' => 'MENU',
     'sidebar_menu' => [
         'dashboard' => 'Dashboard',
@@ -65,11 +65,11 @@ return [
         'app' => 'Mobile App',
         'logout' => 'Logout',
     ],
-    //Sidebar info
+    // Sidebar info
     'panel_version' => 'Panel version',
     'logged_in_as' => 'Logged in as',
 
-    //Titles
+    // Titles
     'titles' => [
         'dashboard' => 'Dashboard',
         'servers' => 'Manage Servers',
@@ -79,7 +79,7 @@ return [
         'settings' => 'Manage Settings',
     ],
 
-    //General
+    // General
     'loading_data' => 'Loading data',
     'no_results_found' => 'There\'s nothing here, yet!',
     'loading_please_wait' => 'Loading, please wait',
@@ -105,15 +105,15 @@ return [
     'unknown' => 'Unknown',
     'submit' => 'Submit',
 
-    //Dashboard
+    // Dashboard
     'dashboard' => 'Dashboard',
     'add_new_server' => 'ADD A SERVER NOW',
 
-    //PDF
-    'pdf_site_php_version' => 'Your site <i>:domain</i> is PHP :php based!',
-    'pdf_take_care' => 'Take care about this data :)',
+    // PDF
+    'pdf_site_php_version' => 'Your site <i>:domain</i> is PHP :php based.',
+    'pdf_take_care' => 'Take care about this data!',
 
-    //Servers
+    // Servers
     'server' => 'Server',
     'servers' => 'Servers',
     'install' => 'Install',
@@ -139,7 +139,7 @@ return [
     'server_provider' => 'Server Provider',
     'server_location' => 'Server Location',
 
-    //Server
+    // Server
     'server_cpu_realtime_load' => 'CPU Realtime Load',
     'server_ram_realtime_load' => 'RAM Realtime Load',
     'server_information' => 'Server Information',
@@ -161,7 +161,7 @@ return [
     'require_password_reset_modal_text' => 'Are you sure to reset Cipi user password?',
     'new_password_success' => 'New Cipi user password',
 
-    //Sites
+    // Sites
     'site' => 'Site',
     'sites' => 'Sites',
     'domain' => 'Domain',
@@ -176,7 +176,7 @@ return [
     'delete_site_modal_title' => 'Delete Site',
     'delete_site_modal_text' => 'Are you sure to delete site <b><span id="deletesitename"></span></b> and its database and aliases?',
 
-    //Site
+    // Site
     'basic_information' => 'Basic information',
     'manage_aliases' => 'Manage Aliases',
     'add_alias' => 'Add Alias',
@@ -195,14 +195,14 @@ return [
     'repository_project' => 'Project',
     'repository_branch' => 'Branch',
     'repository_deploy_key' => 'Deploy Key',
-    'repository_deploy_key_info' => '(<a href="#" id="copykey">Copy</a> and add it <a href="https://github.com/settings/ssh/new" target="blank">here</a>)',
+    'repository_deploy_key_info' => '(<a href="#" id="copykey">Copy</a> and add it <a href="https:// github.com/settings/ssh/new" target="blank">here</a>)',
     'deploy_scripts' => 'Site Deploy Scripts',
     'require_ssh_password_reset_modal_text' => 'Are you sure to reset site SSH password?',
     'require_mysql_password_reset_modal_text' => 'Are you sure to reset site MySql password?',
     'new_ssh_password_success' => 'Your SSH password has been reset',
     'new_mysql_password_success' => 'Your Mysql password has been reset',
 
-    //Settings
+    // Settings
     'change_username' => 'Change Username',
     'change_username_placeholder' => 'New username (at least 6 chars)',
     'current_username' => 'Current Username',

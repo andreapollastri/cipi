@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Site;
-use App\Models\Alias;
 use App\Models\Server;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;

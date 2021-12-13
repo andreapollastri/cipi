@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Models\Server;
 use phpseclib3\Net\SSH2;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Http;
 
 class CipiUpdate extends Command
 {
@@ -58,22 +57,22 @@ class CipiUpdate extends Command
             $server->save();
         }
 
-         // 2021-12-10 and 2021-12-09 patches
-         $servers = Server::where('build', '<', '202112101')->get();
+        // 2021-12-10 and 2021-12-09 patches
+        $servers = Server::where('build', '<', '202112101')->get();
 
-         foreach ($servers as $server) {
-             $ssh = new SSH2($server->ip, 22);
-             $ssh->login('cipi', $server->password);
-             $ssh->setTimeout(360);
-             $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
-             $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112101');
-             $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112101');
-             $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112101');
-             $ssh->exec('exit');
+        foreach ($servers as $server) {
+            $ssh = new SSH2($server->ip, 22);
+            $ssh->login('cipi', $server->password);
+            $ssh->setTimeout(360);
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112101');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112101');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112101');
+            $ssh->exec('exit');
 
-             $server->build = '202112101';
-             $server->save();
-         }
+            $server->build = '202112101';
+            $server->save();
+        }
 
         $server = Server::where('default', 1)->first();
 

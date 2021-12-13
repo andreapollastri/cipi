@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
 use App\Http\Controllers\SiteController;
 
 /*
@@ -24,6 +25,9 @@ Route::get('/', function () {
 Route::get('/login', function () {
     return view('login');
 });
+
+// Login via Mobile App
+Route::post('/app/login', [AuthController::class, 'appLogin']);
 
 Route::get('/dashboard', function () {
     return view('dashboard');
