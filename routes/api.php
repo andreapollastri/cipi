@@ -44,3 +44,6 @@ Route::post('/sites/{site_id}/reset/db', [SiteController::class, 'resetdb']);
 Route::get('/sites/{site_id}/aliases', [SiteController::class, 'aliases']);
 Route::post('/sites/{site_id}/aliases', [SiteController::class, 'createalias']);
 Route::delete('/sites/{site_id}/aliases/{alias_id}', [SiteController::class, 'destroyalias']);
+
+// Get API Key From API login
+Route::post('/login',[AuthController::class, 'appLogin'])->middleware('throttle:10,3');

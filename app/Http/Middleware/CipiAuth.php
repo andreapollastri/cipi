@@ -21,6 +21,10 @@ class CipiAuth
      */
     public function handle(Request $request, Closure $next)
     {
+        if($request->path() == 'api/login') {
+            return $next($request);
+        }
+
         $auth   = $request->header('Authorization');
         $token  = null;
         $apikey = null;

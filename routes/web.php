@@ -26,9 +26,6 @@ Route::get('/login', function () {
     return view('login');
 });
 
-// Login via Mobile App
-Route::post('/app/login', [AuthController::class, 'appLogin']);
-
 Route::get('/dashboard', function () {
     return view('dashboard');
 });
