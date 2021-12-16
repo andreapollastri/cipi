@@ -10,6 +10,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 (no unreleased versions)
 
+## [3.1.12] - 2021-12-16
+## Added 
+- Api login rate limit
+### Fixed
+- Curl setup issue
+
 ## [3.1.11] - 2021-12-13
 
 ### Added
