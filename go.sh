@@ -5,7 +5,6 @@ BUILD=202112101
 PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
-IP=$(curl -s https://checkip.amazonaws.com)
 REPO=andreapollastri/cipi
 if [ -z "$1" ];
     BRANCH=latest
@@ -118,6 +117,16 @@ sleep 1s
 sudo apt-get update
 sudo apt-get -y install software-properties-common curl wget nano vim rpl sed zip unzip openssl expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix zsh htop ffmpeg
 
+
+# GET IP
+clear
+clear
+echo "${bggreen}${black}${bold}"
+echo "Getting IP..."
+echo "${reset}"
+sleep 1s
+
+IP=$(curl -s https://checkip.amazonaws.com)
 
 
 # MOTD WELCOME MESSAGE
