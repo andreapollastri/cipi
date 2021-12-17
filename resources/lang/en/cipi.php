@@ -195,7 +195,7 @@ return [
     'repository_project' => 'Project',
     'repository_branch' => 'Branch',
     'repository_deploy_key' => 'Deploy Key',
-    'repository_deploy_key_info' => '(<a href="#" id="copykey">Copy</a> and add it <a href="https:// github.com/settings/ssh/new" target="blank">here</a>)',
+    'repository_deploy_key_info' => '(<a href="#" id="copykey">Copy</a> and add it <a href="https://github.com/settings/ssh/new" target="blank">here</a>)',
     'deploy_scripts' => 'Site Deploy Scripts',
     'require_ssh_password_reset_modal_text' => 'Are you sure to reset site SSH password?',
     'require_mysql_password_reset_modal_text' => 'Are you sure to reset site MySql password?',
