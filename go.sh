@@ -621,6 +621,7 @@ echo "${reset}"
 sleep 1s
 
 sudo chown www-data:cipi -R /var/www/html
+sudo chmod -R 750 /var/www/html
 sudo echo 'DefaultStartLimitIntervalSec=1s' >> /usr/lib/systemd/system/user@.service
 sudo echo 'DefaultStartLimitBurst=50' >> /usr/lib/systemd/system/user@.service
 sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
