@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #################################################### CONFIGURATION ###
-BUILD=202112101
+BUILD=202112181
 PASS=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DBPASS=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 SERVERID=$(openssl rand -base64 12|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
@@ -204,8 +204,6 @@ sudo chmod 640 /etc/shadow
 sudo useradd -m -s /bin/bash cipi
 echo "cipi:$PASS"|sudo chpasswd
 sudo usermod -aG sudo cipi
-
-
 
 
 # NGINX
@@ -621,6 +619,7 @@ echo "${bggreen}${black}${bold}"
 echo "Last steps..."
 echo "${reset}"
 sleep 1s
+sudo cp /bin/bash /bin/rbash
 sudo echo 'DefaultStartLimitIntervalSec=1s' >> /usr/lib/systemd/system/user@.service
 sudo echo 'DefaultStartLimitBurst=50' >> /usr/lib/systemd/system/user@.service
 sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
