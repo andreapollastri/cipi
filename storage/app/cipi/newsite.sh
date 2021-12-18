@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 
 BASE_PATH=
-USER_SHELL=/bin/rbash
+USER_SHELL=/bin/bash
 
 while [ -n "$1" ] ; do
     case $1 in

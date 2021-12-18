@@ -550,7 +550,8 @@ echo "Last steps..."
 echo "${reset}"
 sleep 1s
 
-sudo cp /bin/bash /bin/rbash
+sudo chown www-data:cipi -R /var/www/html
+sudo chmod -R 750 /var/www/html
 sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
 sudo systemctl daemon-reload
 
