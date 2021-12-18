@@ -39,38 +39,20 @@ class CipiUpdate extends Command
      */
     public function handle()
     {
-
-        // 2021-12-09 patch
-        $servers = Server::where('build', '<', '202112091')->get();
-
-        foreach ($servers as $server) {
-            $ssh = new SSH2($server->ip, 22);
-            $ssh->login('cipi', $server->password);
-            $ssh->setTimeout(360);
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112091');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112091');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112091');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112091');
-            $ssh->exec('exit');
-
-            $server->build = '202112091';
-            $server->save();
-        }
-
-        // 2021-12-10 and 2021-12-09 patches
-        $servers = Server::where('build', '<', '202112101')->get();
+        // 2021-12-18 patch
+        $servers = Server::where('build', '<', '202112181')->get();
 
         foreach ($servers as $server) {
             $ssh = new SSH2($server->ip, 22);
             $ssh->login('cipi', $server->password);
             $ssh->setTimeout(360);
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112101');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112101');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112101');
-            $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112101');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo wget '.config('app.url').'/sh/client-patch/202112181');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo dos2unix 202112181');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo bash 202112181');
+            $ssh->exec('echo '.$server->password.' | sudo -S sudo unlink 202112181');
             $ssh->exec('exit');
 
-            $server->build = '202112101';
+            $server->build = '202112181';
             $server->save();
         }
 

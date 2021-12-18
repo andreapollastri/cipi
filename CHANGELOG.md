@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 (no unreleased versions)
+## [3.1.14] - 2021-12-18
+
+### Added
+- Build 202112181
+- Client Patch 202112181
+
+### Fixed
+- User Permission Fix
+- Api login error
+- Typo fixes in  Github SSH Key Link
 
 ## [3.1.13] - 2021-12-16
 ### Fixed
