@@ -609,7 +609,7 @@ sudo chmod -R o+w /var/www/html/storage
 sudo chmod -R 775 /var/www/html/storage
 sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 775 /var/www/html/bootstrap/cache
-sudo chown -R www-data:www-data /var/www/html
+sudo chown -R www-data:cipi /var/www/html
 
 
 
