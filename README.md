@@ -48,6 +48,9 @@ $ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
 ```
 Remember to open ports: 22, 80 and 443!
 
+#### Installation on Digital Ocean
+<iframe width="560" height="315" src="https://www.youtube.com/embed/3dfb867miU0" title="YouTube video player" frameborder="0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>
+
 #### Installation Note
 Before you can use Cipi, please make sure your server fulfils these requirements:
 
