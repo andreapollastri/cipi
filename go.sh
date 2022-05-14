@@ -582,6 +582,7 @@ sudo chmod -R 777 /var/www/html/storage
 sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 777 /var/www/html/bootstrap/cache
 cd /var/www/html && composer update --no-interaction
+cd /var/www/html && composer require guzzlehttp/psr7:1.5.2
 cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan cache:clear
 cd /var/www/html && php artisan storage:link
