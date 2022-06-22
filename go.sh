@@ -533,7 +533,7 @@ echo "${reset}"
 sleep 1s
 
 curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
-curl -sL https://deb.nodesource.com/setup16.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 NODE=/etc/apt/sources.list.d/nodesource.list
 sudo unlink NODE
 sudo touch $NODE
@@ -582,6 +582,7 @@ sudo chmod -R 777 /var/www/html/storage
 sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 777 /var/www/html/bootstrap/cache
 cd /var/www/html && composer update --no-interaction
+cd /var/www/html && composer require guzzlehttp/psr7:1.5.2
 cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan cache:clear
 cd /var/www/html && php artisan storage:link
