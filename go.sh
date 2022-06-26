@@ -232,7 +232,7 @@ sleep 1s
 
 sudo apt-get -y install fail2ban
 JAIL=/etc/fail2ban/jail.local
-sudo unlink JAIL
+sudo unlink $JAIL
 sudo touch $JAIL
 sudo cat > "$JAIL" <<EOF
 [DEFAULT]
