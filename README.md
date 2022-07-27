@@ -1,4 +1,4 @@
-<h1>Hi Folks! I'm a little late but I'm working on Cipi 4 and it will be released on 27th July 2022!</h1>
+<h1>Hi Folks! I'm really sorry to announce that Cipi v4 will be released in the next weeks! Great and stable things require much time and I can develop Cipi only in my free time! Sorry... Stay Tuned! I hope to release it very soon!</h1>
 <h2>It will be based on Laravel 9 and Livewire, it will support Ubuntu 22.04, authentication will be provider by Laravel Jetstream and Laravel Sanctum, and many other changes</h2>
 
 <img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
