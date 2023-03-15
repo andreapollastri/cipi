@@ -13,7 +13,6 @@
         "darkaonline/l5-swagger": "^8.0",
         "fideloper/proxy": "^4.4",
         "firebase/php-jwt": "^5.2",
-        "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/browser-kit-testing": "^6.2",
         "laravel/framework": "^8.12",
