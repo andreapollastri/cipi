@@ -14,7 +14,7 @@ class Site extends Model
         'password',
         'database',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     public function server()

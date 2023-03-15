@@ -13,8 +13,7 @@ use Illuminate\Routing\Controller as BaseController;
  *      title="Cipi API Documentation",
  *      description="API Documentation for Cipi Control Panel"
  * )
- *
-*/
+ */
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;

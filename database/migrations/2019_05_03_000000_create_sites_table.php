@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateSitesTable extends Migration
 {
@@ -30,7 +30,7 @@ class CreateSitesTable extends Migration
             $table->text('deploy')->nullable();
             $table->boolean('panel')->default(false);
             $table->timestamps();
-            $table->index(['server_id','domain']);
+            $table->index(['server_id', 'domain']);
         });
 
         Schema::table('sites', function (Blueprint $table) {

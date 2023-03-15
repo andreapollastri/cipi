@@ -2,13 +2,13 @@
 
 namespace App\Http\Middleware;
 
+use App\Models\Auth;
 use Closure;
 use Exception;
-use App\Models\Auth;
-use Firebase\JWT\JWT;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use Firebase\JWT\ExpiredException;
+use Firebase\JWT\JWT;
+use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class CipiAuth
 {
@@ -21,12 +21,12 @@ class CipiAuth
      */
     public function handle(Request $request, Closure $next)
     {
-        if($request->path() == 'api/login') {
+        if ($request->path() == 'api/login') {
             return $next($request);
         }
 
-        $auth   = $request->header('Authorization');
-        $token  = null;
+        $auth = $request->header('Authorization');
+        $token = null;
         $apikey = null;
 
         if (Str::startsWith($auth, 'Bearer ')) {
@@ -37,10 +37,10 @@ class CipiAuth
             $apikey = Str::substr($auth, 7);
         }
 
-        if (!$token && !$apikey) {
+        if (! $token && ! $apikey) {
             return response()->json([
                 'message' => 'Authorization header missed in payload.',
-                'errors' => 'Missing Authorization.'
+                'errors' => 'Missing Authorization.',
             ], 422);
         }
 
@@ -50,21 +50,21 @@ class CipiAuth
             } catch (ExpiredException $e) {
                 return response()->json([
                     'message' => 'Given token is expired.',
-                    'errors' => 'Expired token.'
+                    'errors' => 'Expired token.',
                 ], 401);
             } catch (Exception $e) {
                 return response()->json([
                     'message' => 'Given token is invalid.',
-                    'errors' => 'Invalid token.'
+                    'errors' => 'Invalid token.',
                 ], 401);
             }
         }
 
         if ($apikey) {
-            if (!Auth::where('apikey', $apikey)->first()) {
+            if (! Auth::where('apikey', $apikey)->first()) {
                 return response()->json([
                     'message' => 'Given API Key is invalid.',
-                    'errors' => 'Invalid API Key.'
+                    'errors' => 'Invalid API Key.',
                 ], 401);
             }
         }

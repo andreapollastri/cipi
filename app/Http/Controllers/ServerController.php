@@ -2,25 +2,24 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\Site;
 use App\Jobs\CronSSH;
-use App\Models\Server;
-use App\Jobs\PhpCliSSH;
-use phpseclib3\Net\SSH2;
-use App\Jobs\RootResetSSH;
-use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 use App\Jobs\PanelDomainAddSSH;
-use App\Jobs\PanelDomainSslSSH;
 use App\Jobs\PanelDomainRemoveSSH;
-use Illuminate\Support\Facades\URL;
+use App\Jobs\PanelDomainSslSSH;
+use App\Jobs\PhpCliSSH;
+use App\Jobs\RootResetSSH;
+use App\Models\Server;
+use App\Models\Site;
+use Carbon\Carbon;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
+use phpseclib3\Net\SSH2;
 
 class ServerController extends Controller
 {
-
     /**
      * List all servers
      *
@@ -104,7 +103,7 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function index()
     {
         $servers = Server::all();
@@ -113,20 +112,19 @@ class ServerController extends Controller
         foreach ($servers as $server) {
             $data = [
                 'server_id' => $server->server_id,
-                'name'      => $server->name,
-                'ip'        => $server->ip,
-                'provider'  => $server->provider,
-                'location'  => $server->location,
-                'default'   => $server->default,
-                'status'    => $server->status,
-                'sites'     => count($server->sites)
+                'name' => $server->name,
+                'ip' => $server->ip,
+                'provider' => $server->provider,
+                'location' => $server->location,
+                'default' => $server->default,
+                'status' => $server->status,
+                'sites' => count($server->sites),
             ];
             array_push($response, $data);
         }
 
         return response()->json($response);
     }
-
 
     /**
      * Add a new server
@@ -231,56 +229,55 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'ip'    => 'required|ip',
-            'name'  => 'required|min:3',
+            'ip' => 'required|ip',
+            'name' => 'required|min:3',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => __('cipi.bad_request'),
-                'errors' => $validator->errors()->getMessages()
+                'errors' => $validator->errors()->getMessages(),
             ], 400);
         }
 
         if ($request->ip == $request->server('SERVER_ADDR')) {
             return response()->json([
                 'message' => __('cipi.server_conflict_ip_current_message'),
-                'errors' => __('cipi.server_conflict')
+                'errors' => __('cipi.server_conflict'),
             ], 409);
         }
 
         if (Server::where('ip', $request->ip)->first()) {
             return response()->json([
                 'message' => __('cipi.server_conflict_ip_duplicate_message'),
-                'errors' => __('cipi.server_conflict')
+                'errors' => __('cipi.server_conflict'),
             ], 409);
         }
 
         $server = new Server();
-        $server->ip         = $request->ip;
-        $server->name       = $request->name;
-        $server->provider   = $request->provider;
-        $server->location   = $request->location;
-        $server->password   = Str::random(24);
-        $server->database   = Str::random(24);
-        $server->server_id  = Str::uuid();
-        $server->cron       = ' ';
+        $server->ip = $request->ip;
+        $server->name = $request->name;
+        $server->provider = $request->provider;
+        $server->location = $request->location;
+        $server->password = Str::random(24);
+        $server->database = Str::random(24);
+        $server->server_id = Str::uuid();
+        $server->cron = ' ';
         $server->save();
 
         return response()->json([
-            'server_id'     => $server->server_id,
-            'name'          => $request->name,
-            'provider'      => $request->provider,
-            'location'      => $request->location,
-            'ip'            => $request->ip,
-            'setup'         => URL::to('/sh/setup/'.$server->server_id)
+            'server_id' => $server->server_id,
+            'name' => $request->name,
+            'provider' => $request->provider,
+            'location' => $request->location,
+            'ip' => $request->ip,
+            'setup' => URL::to('/sh/setup/'.$server->server_id),
         ]);
     }
-
 
     /**
      * Delete a server
@@ -321,22 +318,22 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function destroy(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message_default'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
         if ($server->default) {
             return response()->json([
                 'message' => __('cipi.delete_default_server_message'),
-                'errors' => __('cipi.bad_request')
+                'errors' => __('cipi.bad_request'),
             ], 400);
         }
 
@@ -344,7 +341,6 @@ class ServerController extends Controller
 
         return response()->json([]);
     }
-
 
     /**
      * Server information
@@ -445,33 +441,32 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function show(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
         return response()->json([
-            'sever_id'  => $server->server_id,
-            'name'      => $server->name,
-            'ip'        => $server->ip,
-            'location'  => $server->location,
-            'provider'  => $server->provider,
-            'default'   => $server->default,
-            'php'       => $server->php,
-            'github_key'=> $server->github_key,
-            'build'     => $server->build,
-            'cron'      => $server->cron,
-            'sites'     => count($server->sites)
+            'sever_id' => $server->server_id,
+            'name' => $server->name,
+            'ip' => $server->ip,
+            'location' => $server->location,
+            'provider' => $server->provider,
+            'default' => $server->default,
+            'php' => $server->php,
+            'github_key' => $server->github_key,
+            'build' => $server->build,
+            'cron' => $server->cron,
+            'sites' => count($server->sites),
         ]);
     }
-
 
     /**
      * Panel server information
@@ -561,42 +556,40 @@ class ServerController extends Controller
      *          description="Server not found"
      *      ),
      * )
-    */
+     */
     public function panel()
     {
         $server = Server::where('default', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_native_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
         $site = Site::where('server_id', $server->id)->where('panel', 1)->first();
 
-        if (!$site) {
+        if (! $site) {
             $domain = '';
         } else {
             $domain = $site->domain;
         }
 
         return response()->json([
-            'sever_id'  => $server->server_id,
-            'name'      => $server->name,
-            'ip'        => $server->ip,
-            'location'  => $server->location,
-            'provider'  => $server->provider,
-            'domain'    => $domain,
-            'php'       => $server->php,
-            'github_key'=> $server->github_key,
-            'build'     => $server->build,
-            'cron'      => $server->cron,
-            'sites'     => count($server->sites)
+            'sever_id' => $server->server_id,
+            'name' => $server->name,
+            'ip' => $server->ip,
+            'location' => $server->location,
+            'provider' => $server->provider,
+            'domain' => $domain,
+            'php' => $server->php,
+            'github_key' => $server->github_key,
+            'build' => $server->build,
+            'cron' => $server->cron,
+            'sites' => count($server->sites),
         ]);
     }
-
-
 
     /**
      * Add a domain / subdomain to panel
@@ -643,15 +636,15 @@ class ServerController extends Controller
      *          description="Server not found"
      *      ),
      * )
-    */
+     */
     public function paneldomain(Request $request)
     {
         $server = Server::where('default', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_native_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -663,12 +656,12 @@ class ServerController extends Controller
 
         if ($request->domain && $request->domain != '') {
             $validator = Validator::make($request->all(), [
-                'domain'    => 'required'
+                'domain' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => $validator->errors()->getMessages()
+                    'errors' => $validator->errors()->getMessages(),
                 ], 400);
             }
             $newsite = new Site;
@@ -685,7 +678,6 @@ class ServerController extends Controller
 
         return response()->json([]);
     }
-
 
     /**
      * Require SSL for panel
@@ -719,15 +711,15 @@ class ServerController extends Controller
      *          description="Server not found"
      *      ),
      * )
-    */
+     */
     public function panelssl()
     {
         $server = Server::where('default', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_native_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -738,13 +730,12 @@ class ServerController extends Controller
         } else {
             return response()->json([
                 'message' => __('cipi.ssl_request_error_message'),
-                'errors' => __('cipi.bad_request')
+                'errors' => __('cipi.bad_request'),
             ], 400);
         }
 
         return response()->json([]);
     }
-
 
     /**
      * Server edit
@@ -892,38 +883,38 @@ class ServerController extends Controller
      *          description="Server conflict"
      *      ),
      * )
-    */
+     */
     public function edit(Request $request, string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
         if ($request->ip) {
             $validator = Validator::make($request->all(), [
-                'ip'    => 'required|ip'
+                'ip' => 'required|ip',
             ]);
             if ($validator->fails()) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => $validator->errors()->getMessages()
+                    'errors' => $validator->errors()->getMessages(),
                 ], 400);
             }
-            if (!$server->default && $request->ip == str_replace("\n", '', file_get_contents('https://checkip.amazonaws.com'))) {
+            if (! $server->default && $request->ip == str_replace("\n", '', file_get_contents('https://checkip.amazonaws.com'))) {
                 return response()->json([
                     'message' => __('cipi.edit_server_current_ip_error_message'),
-                    'errors' => __('cipi.server_conflict')
+                    'errors' => __('cipi.server_conflict'),
                 ], 409);
             }
             if (Server::where('ip', $request->ip)->where('server_id', '<>', $server_id)->first()) {
                 return response()->json([
                     'message' => __('cipi.server_conflict_ip_duplicate_message'),
-                    'errors' => __('cipi.server_conflict')
+                    'errors' => __('cipi.server_conflict'),
                 ], 409);
             }
             if ($server->default) {
@@ -935,12 +926,12 @@ class ServerController extends Controller
 
         if ($request->name) {
             $validator = Validator::make($request->all(), [
-                'name'   => 'required|min:3'
+                'name' => 'required|min:3',
             ]);
             if ($validator->fails()) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => $validator->errors()->getMessages()
+                    'errors' => $validator->errors()->getMessages(),
                 ], 400);
             }
             $server->name = $request->name;
@@ -961,10 +952,10 @@ class ServerController extends Controller
         }
 
         if ($request->php) {
-            if (!in_array($request->php, config('cipi.phpvers'))) {
+            if (! in_array($request->php, config('cipi.phpvers'))) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => 'Invalid PHP version.'
+                    'errors' => 'Invalid PHP version.',
                 ], 400);
             }
             PhpCliSSH::dispatch($server, $request->php)->delay(Carbon::now()->addSeconds(3));
@@ -974,21 +965,19 @@ class ServerController extends Controller
         $server->save();
 
         return response()->json([
-            'sever_id'  => $server->server_id,
-            'name'      => $server->name,
-            'ip'        => $server->ip,
-            'location'  => $server->location,
-            'provider'  => $server->provider,
-            'default'   => $server->default,
-            'status'    => $server->status,
-            'php'       => $server->php,
-            'github_key'=> $server->github_key,
-            'build'     => $server->build,
-            'cron'      => $server->cron
+            'sever_id' => $server->server_id,
+            'name' => $server->name,
+            'ip' => $server->ip,
+            'location' => $server->location,
+            'provider' => $server->provider,
+            'default' => $server->default,
+            'status' => $server->status,
+            'php' => $server->php,
+            'github_key' => $server->github_key,
+            'build' => $server->build,
+            'cron' => $server->cron,
         ]);
     }
-
-
 
     /**
      * Server ping
@@ -1029,15 +1018,15 @@ class ServerController extends Controller
      *          description="Server unavailable"
      *      ),
      * )
-    */
+     */
     public function ping(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -1048,17 +1037,16 @@ class ServerController extends Controller
             } else {
                 return response()->json([
                     'message' => __('cipi.server_unavailable_message'),
-                    'errors' => __('cipi.server_unavailable')
+                    'errors' => __('cipi.server_unavailable'),
                 ], 503);
             }
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => __('cipi.server_unavailable_message'),
-                'errors' => __('cipi.server_unavailable')
+                'errors' => __('cipi.server_unavailable'),
             ], 503);
         }
     }
-
 
     /**
      * Server healthy
@@ -1123,15 +1111,15 @@ class ServerController extends Controller
      *          description="SSH server connection issue"
      *      ),
      * )
-    */
+     */
     public function healthy(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -1141,23 +1129,23 @@ class ServerController extends Controller
                 return response()->json([
                     'cpu' => '0',
                     'ram' => '0',
-                    'hdd' => '0'
+                    'hdd' => '0',
                 ]);
             }
         } catch (\Throwable $th) {
             return response()->json([
                 'cpu' => '0',
                 'ram' => '0',
-                'hdd' => '0'
+                'hdd' => '0',
             ]);
         }
 
         try {
             $ssh = new SSH2($server->ip, 22);
-            if (!$ssh->login('cipi', $server->password)) {
+            if (! $ssh->login('cipi', $server->password)) {
                 return response()->json([
                     'message' => __('cipi.server_error_ssh_error_message').$server->server_id,
-                    'errors' => __('cipi.server_error')
+                    'errors' => __('cipi.server_error'),
                 ], 500);
             }
             $ssh->setTimeout(360);
@@ -1166,7 +1154,7 @@ class ServerController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => __('cipi.something_error_message'),
-                'errors' => __('cipi.error')
+                'errors' => __('cipi.error'),
             ], 500);
         }
 
@@ -1178,7 +1166,7 @@ class ServerController extends Controller
         return response()->json([
             'cpu' => $api[0],
             'ram' => $api[1],
-            'hdd' => $api[2]
+            'hdd' => $api[2],
         ]);
     }
 
@@ -1225,14 +1213,14 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      ),
      * )
-    */
+     */
     public function rootreset(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -1244,10 +1232,9 @@ class ServerController extends Controller
         RootResetSSH::dispatch($server, $new_password, $last_password)->delay(Carbon::now()->addSeconds(1));
 
         return response()->json([
-            'password' => $server->password
+            'password' => $server->password,
         ]);
     }
-
 
     /**
      * Server service restart
@@ -1299,30 +1286,30 @@ class ServerController extends Controller
      *          description="SSH server connection issue"
      *      ),
      * )
-    */
+     */
     public function servicerestart(string $server_id, string $service)
     {
-        if (!in_array($service, config('cipi.services'))) {
+        if (! in_array($service, config('cipi.services'))) {
             return response()->json([
                 'message' => __('cipi.invalid_service_error_message'),
-                'errors' => __('cipi.bad_request')
+                'errors' => __('cipi.bad_request'),
             ], 400);
         }
 
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
         try {
             $ssh = new SSH2($server->ip, 22);
-            if (!$ssh->login('cipi', $server->password)) {
+            if (! $ssh->login('cipi', $server->password)) {
                 return response()->json([
                     'message' => __('cipi.server_error_ssh_error_message').$server->server_id,
-                    'errors' => __('cipi.server_error')
+                    'errors' => __('cipi.server_error'),
                 ], 500);
             }
 
@@ -1356,11 +1343,10 @@ class ServerController extends Controller
         } catch (\Throwable $th) {
             return response()->json([
                 'message' => __('cipi.something_error_message'),
-                'errors' => __('cipi.error')
+                'errors' => __('cipi.error'),
             ], 500);
         }
     }
-
 
     /**
      * List all server sites
@@ -1438,14 +1424,14 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function sites(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -1454,19 +1440,18 @@ class ServerController extends Controller
 
         foreach ($sites as $site) {
             $data = [
-                'site_id'       => $site->site_id,
-                'domain'        => $site->domain,
-                'username'      => $site->username,
-                'php'           => $site->php,
-                'basepath'      => $site->basepath,
-                'aliases'       => count($site->aliases)
+                'site_id' => $site->site_id,
+                'domain' => $site->domain,
+                'username' => $site->username,
+                'php' => $site->php,
+                'basepath' => $site->basepath,
+                'aliases' => count($site->aliases),
             ];
             array_push($response, $data);
         }
 
         return response()->json($response);
     }
-
 
     /**
      * List all server domains
@@ -1503,14 +1488,14 @@ class ServerController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function domains(string $server_id)
     {
         $server = Server::where('server_id', $server_id)->where('status', 1)->first();
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 

@@ -3,9 +3,9 @@
 namespace App\Console\Commands;
 
 use App\Models\Server;
-use phpseclib3\Net\SSH2;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
+use phpseclib3\Net\SSH2;
 
 class ServerSetupCheck extends Command
 {
@@ -49,7 +49,7 @@ class ServerSetupCheck extends Command
                 if ($remote->status() == 200) {
                     try {
                         $server->github_key = file_get_contents('http://'.$server->ip.'/ghkey_'.$server->server_id.'.php');
-                        
+
                         $ssh = new SSH2($server->ip, 22);
                         $ssh->setTimeout(360);
                         $ssh->exec('echo '.$server->password.' | sudo -s sudo unlink /var/www/html/ghkey_'.$server->server_id.'.php');

@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Site;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Server extends Model
 {
@@ -15,7 +14,7 @@ class Server extends Model
         'password',
         'database',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
 
     public function sites()

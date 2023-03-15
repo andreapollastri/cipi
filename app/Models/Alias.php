@@ -2,9 +2,8 @@
 
 namespace App\Models;
 
-use App\Models\Site;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Model;
 
 class Alias extends Model
 {
@@ -13,9 +12,8 @@ class Alias extends Model
     protected $hidden = [
         'id',
         'created_at',
-        'updated_at'
+        'updated_at',
     ];
-
 
     public function site()
     {

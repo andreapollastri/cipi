@@ -3,8 +3,8 @@
 namespace App\Console\Commands;
 
 use App\Models\Server;
-use phpseclib3\Net\SSH2;
 use Illuminate\Console\Command;
+use phpseclib3\Net\SSH2;
 
 class LogRotate extends Command
 {

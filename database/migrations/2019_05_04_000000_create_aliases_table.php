@@ -1,8 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schema;
-use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
 class CreateAliasesTable extends Migration
 {
@@ -20,9 +20,8 @@ class CreateAliasesTable extends Migration
             $table->string('domain');
             $table->boolean('ssl')->default(false);
             $table->timestamps();
-            $table->index(['site_id','domain']);
+            $table->index(['site_id', 'domain']);
         });
-
 
         Schema::table('aliases', function (Blueprint $table) {
             $table->foreign('site_id', 'aliases_site_id_foreign')

@@ -2,28 +2,28 @@
 
 namespace App\Http\Controllers;
 
-use Carbon\Carbon;
-use App\Models\Site;
-use App\Models\Alias;
-use Firebase\JWT\JWT;
-use App\Models\Server;
-use App\Jobs\NewSiteSSH;
-use App\Jobs\SslSiteSSH;
-use App\Jobs\NewAliasSSH;
-use App\Jobs\SiteDbPwdSSH;
-use App\Jobs\DeleteSiteSSH;
-use Illuminate\Support\Str;
 use App\Jobs\DeleteAliasSSH;
-use App\Jobs\EditSitePhpSSH;
-use App\Jobs\SiteUserPwdSSH;
-use Illuminate\Http\Request;
+use App\Jobs\DeleteSiteSSH;
+use App\Jobs\EditSiteBasepathSSH;
 use App\Jobs\EditSiteDeploySSH;
 use App\Jobs\EditSiteDomainSSH;
-use App\Jobs\EditSiteBasepathSSH;
-use Barryvdh\DomPDF\Facade as PDF;
+use App\Jobs\EditSitePhpSSH;
 use App\Jobs\EditSiteSupervisorSSH;
+use App\Jobs\NewAliasSSH;
+use App\Jobs\NewSiteSSH;
+use App\Jobs\SiteDbPwdSSH;
+use App\Jobs\SiteUserPwdSSH;
+use App\Jobs\SslSiteSSH;
+use App\Models\Alias;
+use App\Models\Server;
+use App\Models\Site;
+use Barryvdh\DomPDF\Facade as PDF;
+use Carbon\Carbon;
+use Firebase\JWT\JWT;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\URL;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class SiteController extends Controller
 {
@@ -110,7 +110,7 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function index()
     {
         $sites = Site::where('panel', false)->get();
@@ -118,24 +118,21 @@ class SiteController extends Controller
 
         foreach ($sites as $site) {
             $data = [
-                'site_id'       => $site->site_id,
-                'domain'        => $site->domain,
-                'username'      => $site->username,
-                'server_id'     => $site->server->server_id,
-                'server_name'   => $site->server->name,
-                'server_ip'     => $site->server->ip,
-                'php'           => $site->php,
-                'basepath'      => $site->basepath,
-                'aliases'       => count($site->aliases)
+                'site_id' => $site->site_id,
+                'domain' => $site->domain,
+                'username' => $site->username,
+                'server_id' => $site->server->server_id,
+                'server_name' => $site->server->name,
+                'server_ip' => $site->server->ip,
+                'php' => $site->php,
+                'basepath' => $site->basepath,
+                'aliases' => count($site->aliases),
             ];
             array_push($response, $data);
         }
 
         return response()->json($response);
     }
-
-
-
 
     /**
      * Add a new site
@@ -289,26 +286,26 @@ class SiteController extends Controller
      *          description="SSH server connection issue"
      *      )
      * )
-    */
+     */
     public function create(Request $request)
     {
         $validator = Validator::make($request->all(), [
-            'domain'    => 'required',
-            'server_id' => 'required'
+            'domain' => 'required',
+            'server_id' => 'required',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => __('cipi.bad_request'),
-                'errors' => $validator->errors()->getMessages()
+                'errors' => $validator->errors()->getMessages(),
             ], 400);
         }
 
         if ($request->php) {
-            if (!in_array($request->php, config('cipi.phpvers'))) {
+            if (! in_array($request->php, config('cipi.phpvers'))) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => __('cipi.invalid_php_version')
+                    'errors' => __('cipi.invalid_php_version'),
                 ], 400);
             }
             $php = $request->php;
@@ -318,10 +315,10 @@ class SiteController extends Controller
 
         $server = Server::where('server_id', $request->server_id)->where('status', 1)->first();
 
-        if (!$server) {
+        if (! $server) {
             return response()->json([
                 'message' => __('cipi.server_not_found_message'),
-                'errors' => __('cipi.server_not_found')
+                'errors' => __('cipi.server_not_found'),
             ], 404);
         }
 
@@ -339,45 +336,44 @@ class SiteController extends Controller
         if ($conflict) {
             return response()->json([
                 'message' => __('cipi.site_domain_conflict_message'),
-                'errors' => __('cipi.site_domain_conflict')
+                'errors' => __('cipi.site_domain_conflict'),
             ], 409);
         }
 
-        $pdftoken = JWT::encode(['iat' => time(),'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
+        $pdftoken = JWT::encode(['iat' => time(), 'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
 
         $site_id = Str::uuid();
 
         $site = new Site();
-        $site->site_id    = $site_id;
-        $site->server_id  = $server->id;
-        $site->domain     = strtolower($request->domain);
-        $site->php        = $php;
-        $site->basepath   = $request->basepath;
-        $site->username   = config('cipi.users_prefix').hash('crc32', (Str::uuid()->toString())).rand(1, 9);
-        $site->password   = Str::random(24);
-        $site->database   = Str::random(24);
-        $site->deploy     = ' ';
+        $site->site_id = $site_id;
+        $site->server_id = $server->id;
+        $site->domain = strtolower($request->domain);
+        $site->php = $php;
+        $site->basepath = $request->basepath;
+        $site->username = config('cipi.users_prefix').hash('crc32', (Str::uuid()->toString())).rand(1, 9);
+        $site->password = Str::random(24);
+        $site->database = Str::random(24);
+        $site->deploy = ' ';
         $site->save();
 
         NewSiteSSH::dispatch($server, $site)->delay(Carbon::now()->addSeconds(3));
 
         return response()->json([
-            'site_id'           => $site->site_id,
-            'domain'            => $site->domain,
-            'username'          => $site->username,
-            'password'          => $site->password,
-            'database'          => $site->username,
+            'site_id' => $site->site_id,
+            'domain' => $site->domain,
+            'username' => $site->username,
+            'password' => $site->password,
+            'database' => $site->username,
             'database_username' => $site->username,
             'database_password' => $site->database,
-            'server_id'         => $server->server_id,
-            'server_name'       => $server->name,
-            'server_ip'         => $server->ip,
-            'php'               => $site->php,
-            'basepath'          => $site->basepath,
-            'pdf'               => URL::to('/pdf/'.$site_id.'/'. $pdftoken)
+            'server_id' => $server->server_id,
+            'server_name' => $server->name,
+            'server_ip' => $server->ip,
+            'php' => $site->php,
+            'basepath' => $site->basepath,
+            'pdf' => URL::to('/pdf/'.$site_id.'/'.$pdftoken),
         ]);
     }
-
 
     /**
      * Edit site information
@@ -565,26 +561,26 @@ class SiteController extends Controller
      *          description="Site domain conflict"
      *      ),
      * )
-    */
+     */
     public function edit(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
         if (strtolower($request->domain)) {
             $validator = Validator::make($request->all(), [
-                'domain' => 'required'
+                'domain' => 'required',
             ]);
             if ($validator->fails()) {
                 return response()->json([
                     'message' => __('cipi.bad_request'),
-                    'errors' => $validator->errors()->getMessages()
+                    'errors' => $validator->errors()->getMessages(),
                 ], 400);
             }
 
@@ -595,14 +591,14 @@ class SiteController extends Controller
                     if (strtolower($request->domain) == $checksite->domain) {
                         return response()->json([
                             'message' => __('cipi.server_conflict_domain_message'),
-                            'errors' => __('cipi.server_conflict')
+                            'errors' => __('cipi.server_conflict'),
                         ], 409);
                     }
                     foreach ($checksite->aliases as $alias) {
                         if (strtolower($request->domain) == $alias->domain) {
                             return response()->json([
                                 'message' => __('cipi.server_conflict_alias_message'),
-                                'errors' => __('cipi.server_conflict')
+                                'errors' => __('cipi.server_conflict'),
                             ], 409);
                         }
                     }
@@ -675,26 +671,24 @@ class SiteController extends Controller
         $site->save();
 
         return response()->json([
-            'site_id'           => $site->site_id,
-            'domain'            => $site->domain,
-            'username'          => $site->username,
-            'database'          => $site->username,
+            'site_id' => $site->site_id,
+            'domain' => $site->domain,
+            'username' => $site->username,
+            'database' => $site->username,
             'database_username' => $site->username,
-            'server_id'         => $site->server->server_id,
-            'server_name'       => $site->server->name,
-            'server_ip'         => $site->server->ip,
-            'php'               => $site->php,
-            'basepath'          => $site->basepath,
-            'repository'        => $site->repository,
-            'branch'            => $site->branch,
-            'deploy'            => $site->deploy,
-            'deploy_key'        => $site->server->github_key,
-            'supervisor'        => $site->supervisor,
-            'aliases'           => count($site->aliases)
+            'server_id' => $site->server->server_id,
+            'server_name' => $site->server->name,
+            'server_ip' => $site->server->ip,
+            'php' => $site->php,
+            'basepath' => $site->basepath,
+            'repository' => $site->repository,
+            'branch' => $site->branch,
+            'deploy' => $site->deploy,
+            'deploy_key' => $site->server->github_key,
+            'supervisor' => $site->supervisor,
+            'aliases' => count($site->aliases),
         ]);
     }
-
-
 
     /**
      * Show site information
@@ -838,40 +832,37 @@ class SiteController extends Controller
      *          description="SSH server connection issue"
      *      )
      * )
-    */
+     */
     public function show(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
         return response()->json([
-            'site_id'           => $site->site_id,
-            'domain'            => $site->domain,
-            'username'          => $site->username,
-            'database'          => $site->username,
+            'site_id' => $site->site_id,
+            'domain' => $site->domain,
+            'username' => $site->username,
+            'database' => $site->username,
             'database_username' => $site->username,
-            'server_id'         => $site->server->server_id,
-            'server_name'       => $site->server->name,
-            'server_ip'         => $site->server->ip,
-            'php'               => $site->php,
-            'basepath'          => $site->basepath,
-            'repository'        => $site->repository,
-            'branch'            => $site->branch,
-            'deploy'            => $site->deploy,
-            'deploy_key'        => $site->server->github_key,
-            'supervisor'        => $site->supervisor,
-            'aliases'           => count($site->aliases)
+            'server_id' => $site->server->server_id,
+            'server_name' => $site->server->name,
+            'server_ip' => $site->server->ip,
+            'php' => $site->php,
+            'basepath' => $site->basepath,
+            'repository' => $site->repository,
+            'branch' => $site->branch,
+            'deploy' => $site->deploy,
+            'deploy_key' => $site->server->github_key,
+            'supervisor' => $site->supervisor,
+            'aliases' => count($site->aliases),
         ]);
     }
-
-
-
 
     /**
      * Delete a Site
@@ -912,22 +903,22 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function destroy(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
         if ($site->panel) {
             return response()->json([
                 'message' => __('cipi.bad_request_default_site_delete'),
-                'errors' => __('cipi.bad_request')
+                'errors' => __('cipi.bad_request'),
             ], 400);
         }
 
@@ -935,7 +926,6 @@ class SiteController extends Controller
 
         return response()->json([]);
     }
-
 
     /**
      * SSL request for site (and its aliases)
@@ -972,15 +962,15 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function ssl(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
@@ -988,8 +978,6 @@ class SiteController extends Controller
 
         return response()->json([]);
     }
-
-
 
     /**
      * Reset site SSH password
@@ -1040,15 +1028,15 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function resetssh(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
@@ -1059,14 +1047,13 @@ class SiteController extends Controller
 
         SiteUserPwdSSH::dispatch($site, $newpassword)->delay(Carbon::now()->addSeconds(1));
 
-        $pdftoken = JWT::encode(['iat' => time(),'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
+        $pdftoken = JWT::encode(['iat' => time(), 'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
 
         return response()->json([
-            'password'  => $site->password,
-            'pdf'       => URL::to('/pdf/'.$site->site_id.'/'. $pdftoken)
+            'password' => $site->password,
+            'pdf' => URL::to('/pdf/'.$site->site_id.'/'.$pdftoken),
         ]);
     }
-
 
     /**
      * Reset site MySql password
@@ -1117,15 +1104,15 @@ class SiteController extends Controller
      *          description="Unauthorized access error"
      *      )
      * )
-    */
+     */
     public function resetdb(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
@@ -1136,14 +1123,13 @@ class SiteController extends Controller
 
         SiteDbPwdSSH::dispatch($site, $last_password)->delay(Carbon::now()->addSeconds(1));
 
-        $pdftoken = JWT::encode(['iat' => time(),'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
+        $pdftoken = JWT::encode(['iat' => time(), 'exp' => time() + 180], config('cipi.jwt_secret').'-Pdf');
 
         return response()->json([
-            'password'  => $site->database,
-            'pdf'       => URL::to('/pdf/'.$site->site_id.'/'. $pdftoken)
+            'password' => $site->database,
+            'pdf' => URL::to('/pdf/'.$site->site_id.'/'.$pdftoken),
         ]);
     }
-
 
     public function pdf(string $site_id, string $pdftoken)
     {
@@ -1156,13 +1142,13 @@ class SiteController extends Controller
         $site = Site::where('site_id', $site_id)->firstOrFail();
 
         $data = [
-            'username'      => $site->username,
-            'password'      => $site->password,
-            'path'          => $site->basepath,
-            'ip'            => $site->server->ip,
-            'domain'        => $site->domain,
-            'dbpass'        => $site->database,
-            'php'           => $site->php,
+            'username' => $site->username,
+            'password' => $site->password,
+            'path' => $site->basepath,
+            'ip' => $site->server->ip,
+            'domain' => $site->domain,
+            'dbpass' => $site->database,
+            'php' => $site->php,
         ];
 
         $pdf = PDF::loadView('pdf', $data);
@@ -1222,15 +1208,15 @@ class SiteController extends Controller
      *          description="Site not found"
      *      ),
      * )
-    */
+     */
     public function aliases(string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
@@ -1238,8 +1224,8 @@ class SiteController extends Controller
 
         foreach ($site->aliases as $alias) {
             $data = [
-                'alias_id'      => $alias->alias_id,
-                'domain'        => $alias->domain
+                'alias_id' => $alias->alias_id,
+                'domain' => $alias->domain,
             ];
             array_push($response, $data);
         }
@@ -1304,26 +1290,26 @@ class SiteController extends Controller
      *          description="Site not found"
      *      ),
      * )
-    */
+     */
     public function createalias(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
         $validator = Validator::make($request->all(), [
-            'domain'  => 'required'
+            'domain' => 'required',
         ]);
 
         if ($validator->fails()) {
             return response()->json([
                 'message' => __('cipi.bad_request'),
-                'errors' => $validator->errors()->getMessages()
+                'errors' => $validator->errors()->getMessages(),
             ], 400);
         }
 
@@ -1341,24 +1327,23 @@ class SiteController extends Controller
         if ($conflict) {
             return response()->json([
                 'message' => __('cipi.site_domain_conflict_message'),
-                'errors' => __('cipi.site_domain_conflict')
+                'errors' => __('cipi.site_domain_conflict'),
             ], 409);
         }
 
         $alias = new Alias();
-        $alias->alias_id  = Str::uuid();
-        $alias->site_id   = $site->id;
-        $alias->domain    = strtolower($request->domain);
+        $alias->alias_id = Str::uuid();
+        $alias->site_id = $site->id;
+        $alias->domain = strtolower($request->domain);
         $alias->save();
 
         NewAliasSSH::dispatch($site, $alias)->delay(Carbon::now()->addSeconds(3));
 
         return response()->json([
-            'alias_id'=> $alias->alias_id,
-            'domain'  => $alias->domain
+            'alias_id' => $alias->alias_id,
+            'domain' => $alias->domain,
         ]);
     }
-
 
     /**
      * Delete an alias
@@ -1402,24 +1387,24 @@ class SiteController extends Controller
      *          description="Resource not found"
      *      ),
      * )
-    */
+     */
     public function destroyalias(string $site_id, string $alias_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
-        if (!$site) {
+        if (! $site) {
             return response()->json([
                 'message' => __('cipi.site_not_found_message'),
-                'errors' => __('cipi.site_not_found')
+                'errors' => __('cipi.site_not_found'),
             ], 404);
         }
 
         $alias = Alias::where('alias_id', $alias_id)->first();
 
-        if (!$alias) {
+        if (! $alias) {
             return response()->json([
                 'message' => __('cipi.alias_not_found_message'),
-                'errors' => __('cipi.alias_not_found')
+                'errors' => __('cipi.alias_not_found'),
             ], 404);
         }
 

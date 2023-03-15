@@ -4,9 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Auth;
 use App\Models\Server;
-use Illuminate\Support\Str;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 class DatabaseSeeder extends Seeder
 {
@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         Auth::create([
             'username' => config('cipi.username'),
             'password' => Hash::make(config('cipi.password')),
-            'apikey' => Str::random(48)
+            'apikey' => Str::random(48),
         ]);
 
         Server::create([
@@ -32,7 +32,7 @@ class DatabaseSeeder extends Seeder
             'password' => strtolower('CIPIPASS'),
             'database' => strtolower('CIPIDB'),
             'default' => 1,
-            'cron' => ' '
+            'cron' => ' ',
         ]);
 
         return true;

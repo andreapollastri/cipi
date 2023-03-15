@@ -1,7 +1,7 @@
 <?php
 
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ConfController;
+use Illuminate\Support\Facades\Route;
 
 Route::get('/cron/{server_id}', [ConfController::class, 'cron']);
 Route::get('/panel', [ConfController::class, 'panel']);

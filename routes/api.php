@@ -1,10 +1,9 @@
 <?php
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\AuthController;
-use App\Http\Controllers\SiteController;
 use App\Http\Controllers\ServerController;
+use App\Http\Controllers\SiteController;
+use Illuminate\Support\Facades\Route;
 
 /*
 |--------------------------------------------------------------------------
@@ -47,4 +46,4 @@ Route::post('/sites/{site_id}/aliases', [SiteController::class, 'createalias']);
 Route::delete('/sites/{site_id}/aliases/{alias_id}', [SiteController::class, 'destroyalias']);
 
 // Get API Key From API login
-Route::post('/login',[AuthController::class, 'appLogin'])->middleware('throttle:10,3');
+Route::post('/login', [AuthController::class, 'appLogin'])->middleware('throttle:10,3');

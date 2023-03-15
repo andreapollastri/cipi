@@ -15,12 +15,12 @@
       ['quote' => 'If opportunity doesn\'t knock, build a door.', 'author' => 'Kurt Cobain'],
       ['quote' => 'Work hard in silence, let your success be the noise.', 'author' => 'Frank Ocean'],
       ['quote' => 'Work hard, be kind, and amazing things will happen.', 'author' => 'Conan O’Brien'],
-      ['quote' => 'In the middle of every difficulty lies opportunity.', 'author' => 'Albert Einstein']
+      ['quote' => 'In the middle of every difficulty lies opportunity.', 'author' => 'Albert Einstein'],
   ];
 
   $randquote = array_rand($quotes);
 
-?>
+  ?>
 
 <!DOCTYPE html>
 <html lang="en">

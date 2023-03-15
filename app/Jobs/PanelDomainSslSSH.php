@@ -2,19 +2,19 @@
 
 namespace App\Jobs;
 
-use phpseclib3\Net\SSH2;
 use Illuminate\Bus\Queueable;
-use Illuminate\Queue\SerializesModels;
-use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
+use Illuminate\Queue\InteractsWithQueue;
+use Illuminate\Queue\SerializesModels;
+use phpseclib3\Net\SSH2;
 
 class PanelDomainSslSSH implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
     protected $server;
+
     protected $site;
 
     /**
@@ -24,8 +24,8 @@ class PanelDomainSslSSH implements ShouldQueue
      */
     public function __construct($server, $site)
     {
-        $this->server   = $server;
-        $this->site     = $site;
+        $this->server = $server;
+        $this->site = $site;
     }
 
     /**
@@ -40,7 +40,7 @@ class PanelDomainSslSSH implements ShouldQueue
         $ssh->setTimeout(360);
         $ssh->exec('echo '.$this->server->password.' | sudo -S sudo certbot --nginx -d '.$this->site->domain.' --non-interactive --agree-tos --register-unsafely-without-email');
         $ssh->exec('echo '.$this->server->password.' | sudo -S sudo systemctl restart nginx.service');
-        $ssh->exec("echo ".$this->server->password." | sudo -S sed -i 's/443 ssl/443 ssl http2/g' /etc/nginx/sites-enabled/panel.conf");
+        $ssh->exec('echo '.$this->server->password." | sudo -S sed -i 's/443 ssl/443 ssl http2/g' /etc/nginx/sites-enabled/panel.conf");
         $ssh->exec('echo '.$this->server->password.' | sudo -S sudo systemctl restart nginx.service');
         $ssh->exec('exit');
     }
