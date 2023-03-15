@@ -8,25 +8,24 @@
     ],
     "license": "MIT",
     "require": {
-        "php": "^7.3|^8.0",
-        "barryvdh/laravel-dompdf": "^0.9.0",
+        "php": "^8.0",
+        "barryvdh/laravel-dompdf": "^1.0",
         "darkaonline/l5-swagger": "^8.0",
-        "fideloper/proxy": "^4.4",
         "firebase/php-jwt": "^5.2",
-        "guzzlehttp/guzzle": "^7.0.1",
-        "laravel/browser-kit-testing": "^6.2",
-        "laravel/framework": "^8.12",
-        "laravel/tinker": "^2.5",
+        "guzzlehttp/guzzle": "^7.2",
+        "laravel/browser-kit-testing": "^6.3",
+        "laravel/framework": "^9.52",
+        "laravel/tinker": "^2.7",
         "phpseclib/phpseclib": "^3.0",
         "league/flysystem-aws-s3-v3": "^3.0"
     },
     "require-dev": {
-        "facade/ignition": "^2.5",
         "fakerphp/faker": "^1.9.1",
-        "laravel/sail": "^1.0.1",
-        "mockery/mockery": "^1.4.2",
-        "nunomaduro/collision": "^5.0",
-        "phpunit/phpunit": "^9.3.3"
+        "laravel/sail": "^1.15",
+        "mockery/mockery": "^1.4.4",
+        "nunomaduro/collision": "^6.3",
+        "phpunit/phpunit": "^9.5.10",
+        "spatie/laravel-ignition": "^1.4"
     },
     "config": {
         "optimize-autoloader": true,
@@ -62,6 +61,9 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
+        ],
+        "post-update-cmd": [
+            "@php artisan vendor:publish --tag=laravel-assets --ansi --force"
         ]
     }
 }
