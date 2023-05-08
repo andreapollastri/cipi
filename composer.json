@@ -18,7 +18,8 @@
         "laravel/browser-kit-testing": "^6.2",
         "laravel/framework": "^8.12",
         "laravel/tinker": "^2.5",
-        "phpseclib/phpseclib": "^3.0"
+        "phpseclib/phpseclib": "^3.0",
+        "unisharp/laravel-filemanager": "^2.6"
     },
     "require-dev": {
         "facade/ignition": "^2.5",

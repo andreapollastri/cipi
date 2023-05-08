@@ -162,6 +162,48 @@ Manage Site
         </div>
     </div>
 </div>
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fab fa-github fs-fw mr-1"></i>
+              PhpMyAdmin
+            </div>
+            <div class="card-body">
+                <p>Import your database</p>
+                <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/pma') }}" class="btn btn-warning" style="min-width:200px">phpMyAdmin</a></button>
+                    <div class="space"></div>
+                </div>
+                {{-- <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
+                    <div class="space"></div>
+                </div> --}}
+            </div>
+        </div>
+    </div>  
+
+    <div class="col-xl-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fab fa-github fs-fw mr-1"></i>
+              MYSQL
+            </div>
+            <div class="card-body">
+                <p>Set up your database</p>
+                <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/database') }}" class="btn btn-warning" style="min-width:200px">DATABASE</a></button>
+                    <div class="space"></div>
+                </div>
+                {{-- <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
+                    <div class="space"></div>
+                </div> --}}
+            </div>
+        </div>
+    </div>  
+</div>
 @endsection
 
 

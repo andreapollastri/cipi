@@ -35,7 +35,7 @@
                                             </div>
                                             <div class="form-group">
                                                 <label class="small mb-1" for="username">Username</label>
-                                                <input class="form-control py-4" id="username" type="email" placeholder="john.doe" />
+                                                <input class="form-control py-4" id="username" type="text" placeholder="john.doe" />
                                             </div>
                                             <div class="form-group">
                                                 <label class="small mb-1" for="password">Password</label>

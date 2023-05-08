@@ -10,11 +10,13 @@ use App\Jobs\PhpCliSSH;
 use phpseclib3\Net\SSH2;
 use App\Jobs\RootResetSSH;
 use Illuminate\Support\Str;
+use App\Models\Userdatabase;
 use Illuminate\Http\Request;
 use App\Jobs\PanelDomainAddSSH;
 use App\Jobs\PanelDomainSslSSH;
 use App\Jobs\PanelDomainRemoveSSH;
 use Illuminate\Support\Facades\URL;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Validator;
 
@@ -1523,5 +1525,19 @@ class ServerController extends Controller
         }
 
         return response()->json($response);
+    }
+
+    public function createdatabase(Request $request)
+    {
+        $database = new Userdatabase();
+        $database->user_id = Auth::user()->id;
+        $database->database_name = $request->database_name;
+        
+        if($database->save()){
+            return redirect()->back()->with('success', 'You have successfully Created database!');
+
+        }else{
+            return redirect()->back()->with('failed', 'Unable to Create database!');
+        }
     }
 }

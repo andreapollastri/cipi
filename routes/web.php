@@ -24,6 +24,22 @@ Route::get('/dashboard', function () {
     return view('dashboard');
 });
 
+
+Route::get('/database', function () {
+    return view('database');
+});
+
+//phpmyadmin route
+Route::get('/pma', function () {
+    return redirect()->to('mysecureadmin/index.php');
+});
+//database
+Route::get('/data', [DatabaseController::class, 'viewdatabase'])->name('data');
+Route::post('/createdatab', [DatabaseController::class,'createdatabase'])->name('createdatab');
+Route::post('/createuser', [DatabaseController::class,'createuser'])->name('createuser');
+Route::post('/linkdatabuser', [DatabaseController::class,'linkdatabaseuser'])->name('linkdatabuser');
+
+
 Route::get('/servers', function () {
     return view('servers');
 });
@@ -45,3 +61,7 @@ Route::get('/settings', function () {
 });
 
 Route::get('/pdf/{site_id}/{token}', [SiteController::class, 'pdf']);
+
+// Route::group(['prefix' => 'laravel-filemanager', 'middleware' => ['web', 'auth']], function () {
+//  \UniSharp\LaravelFilemanager\Lfm::routes();
+// });
