@@ -10,6 +10,16 @@
 @section('content')
 
     <body>
+        @if (Session::has('success'))
+        <div class="alert alert-success">
+            <p>{{ Session::get('success') }}</p>
+        </div>
+
+        @elseif (Session::has('failed'))
+        <div class="alert alert-danger">
+            <p>{{ Session::get('failed') }}</p>
+        </div>
+    @endif
         <div class="container-fluid">
             <div class="row">
                 <div class="col-xl-4">
@@ -67,16 +77,16 @@
                                     @csrf
                                     <label for="" class="">User</label>
                                         <select name="username" class="form-control mb-4" id="username">
-                                            {{-- @foreach ($mysqluser as $user) --}}
-                                            <option value="">hello</option>
-                                            {{-- @endforeach --}}
+                                            @foreach ($mysqluser as $user)
+                                            <option value="{{ $user->id }}">{{ $user->username }}</option>
+                                            @endforeach
                                         </select>
                                   
                                     <label for="">Database</label>
                                     <select name="database" class="form-control mb-4" id="database_name">
-                                        {{-- @foreach($userdata as $database) --}}
-                                        <option value="">hi</option>
-                                        {{-- @endforeach --}}
+                                        @foreach($userdata as $database)
+                                        <option value="{{ $database->id }}">{{ $database->database_name }}</option>
+                                        @endforeach
                                     </select>
                                    
                                     <button class="btn btn-primary">Add</button>

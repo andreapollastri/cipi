@@ -193,7 +193,7 @@ Manage Site
             <div class="card-body">
                 <p>Set up your database</p>
                 <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/database') }}" class="btn btn-warning" style="min-width:200px">DATABASE</a></button>
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/data') }}" class="btn btn-warning" style="min-width:200px">DATABASE</a></button>
                     <div class="space"></div>
                 </div>
                 {{-- <div class="text-center">
