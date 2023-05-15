@@ -51,6 +51,7 @@ class DatabaseController extends Controller
         }
     }
 
+
     public function linkdatabaseuser(Request $request)
     {
         $mysqluserid = $request->username;
