@@ -866,6 +866,7 @@ class SiteController extends Controller
             'deploy'            => $site->deploy,
             'deploy_key'        => $site->server->github_key,
             'supervisor'        => $site->supervisor,
+            'rootpath'          => $site->rootpath,
             'aliases'           => count($site->aliases)
         ]);
     }

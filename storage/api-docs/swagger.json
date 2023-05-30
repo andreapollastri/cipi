@@ -6,6 +6,467 @@
         "version": "1.0"
     },
     "paths": {
+        "/files": {
+            "get": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "List all files and Directory contents",
+                "description": "List all all server contents.",
+                "operationId": "8d3e347d68cda5dd975eadf31429b9fc",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "properties": {
+                                            "pathContents": {
+                                                "description": "server content(files and directory)",
+                                                "type": "Files and Directories",
+                                                "example": "index.txt"
+                                            },
+                                            "params'": {
+                                                "description": "current directory name(s))",
+                                                "type": "Directory",
+                                                "example": "folder"
+                                            },
+                                            "path'": {
+                                                "description": "File manager root path)",
+                                                "type": "Directory",
+                                                "example": "folder"
+                                            },
+                                            " $queryPath'": {
+                                                "description": "Specific Server location)",
+                                                "type": "Directory",
+                                                "example": "folder"
+                                            }
+                                        },
+                                        "type": "object"
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/store": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "files and Directory contents",
+                "description": "update or store to a server file.",
+                "operationId": "ca392267139fd9ecf0265578e7841c0b",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created request"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/show": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "view files contents",
+                "description": "view file manager file in readonly mode.",
+                "operationId": "b5b3eac17ff6e9bede63b55b1e1edd35",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/edit": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "Edit file contents",
+                "description": "edit file manager file and update.",
+                "operationId": "a0dd96a84684befdf65ce547d850b52e",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful request"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/delete": {
+            "delete": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "Edit file contents",
+                "description": "delete file",
+                "operationId": "d8dd4fceb7bc31f20a3f4b5dacdfb2d0",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "204": {
+                        "description": "No content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/download": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "Download file contents",
+                "description": "download file",
+                "operationId": "33d806d65a11e36b74f1f82349b2a129",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/create-directory": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "create a new folder",
+                "description": "create a new folder",
+                "operationId": "0abdbd98c836c088caf35df52a729b4e",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/create-file": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "create a new file",
+                "description": "create a new file",
+                "operationId": "40faf0580389b962d5a7ee402c98dbc9",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/rename-file": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "Rename a new file",
+                "description": "Rename a file",
+                "operationId": "c854c1edb93bce3397c8184b4a7f0570",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/copy-file": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "copy a file to the same or different directory on the server",
+                "description": "copy a file to the same or different directory on the server",
+                "operationId": "43621587f19ab421e1802881d0af114a",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
+        "/files/move-file": {
+            "post": {
+                "tags": [
+                    "FileManager"
+                ],
+                "summary": "Move a file to a specific location on the server",
+                "description": "create a new file",
+                "operationId": "daa990fc2a86e51d98a99a02ebf517b4",
+                "parameters": [
+                    {
+                        "name": "application_id",
+                        "in": "header",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "site-uuid",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created content"
+                    },
+                    "422": {
+                        "description": "Invalid payload"
+                    },
+                    "401": {
+                        "description": "Unauthorized"
+                    }
+                }
+            }
+        },
         "/api/servers": {
             "get": {
                 "tags": [
@@ -13,7 +474,7 @@
                 ],
                 "summary": "List all servers",
                 "description": "List all servers managed by panel.",
-                "operationId": "App\\Http\\Controllers\\ServerController::index",
+                "operationId": "1fb33d5165498d77ed09062eb2c02499",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -97,7 +558,7 @@
                 ],
                 "summary": "Add a new Server",
                 "description": "Add a new server to manage with panel.",
-                "operationId": "App\\Http\\Controllers\\ServerController::create",
+                "operationId": "852254afdc61e3a9b74d22e3924bcfe0",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -209,7 +670,7 @@
                 ],
                 "summary": "Server information",
                 "description": "Get server information.",
-                "operationId": "App\\Http\\Controllers\\ServerController::show",
+                "operationId": "c3ed40d94bd27f857c36ced0ddc35f69",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -308,7 +769,7 @@
                 ],
                 "summary": "Delete a Server",
                 "description": "Delete a server from panel.",
-                "operationId": "App\\Http\\Controllers\\ServerController::destroy",
+                "operationId": "3f1d01b4ea47396ddc4aa2e72562a2a2",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -350,7 +811,7 @@
                 ],
                 "summary": "Server edit",
                 "description": "Edit server information.",
-                "operationId": "App\\Http\\Controllers\\ServerController::edit",
+                "operationId": "80e3d2dec9d0ab339a23960b3eee9b4e",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -497,7 +958,7 @@
                 ],
                 "summary": "Panel server information",
                 "description": "Get panel server information.",
-                "operationId": "App\\Http\\Controllers\\ServerController::panel",
+                "operationId": "d3d438b52ed5c4f56c4a8d19bc170ed7",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -586,7 +1047,7 @@
                 ],
                 "summary": "Add a domain / subdomain to panel",
                 "description": "Add a domain / subdomain to panel.",
-                "operationId": "App\\Http\\Controllers\\ServerController::paneldomain",
+                "operationId": "24e4770f18b1da5912b12b892562ceb2",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -639,7 +1100,7 @@
                 ],
                 "summary": "Require SSL for panel",
                 "description": "Require SSL for panel domain / subdomain.",
-                "operationId": "App\\Http\\Controllers\\ServerController::panelssl",
+                "operationId": "f4419bf180f09013f09b8fe3ada07046",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -674,7 +1135,7 @@
                 ],
                 "summary": "Server ping",
                 "description": "Check real time server ping.",
-                "operationId": "App\\Http\\Controllers\\ServerController::ping",
+                "operationId": "4a48390b8973422330237d013a33f702",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -718,7 +1179,7 @@
                 ],
                 "summary": "Server healthy",
                 "description": "Check real time server healthy.",
-                "operationId": "App\\Http\\Controllers\\ServerController::healthy",
+                "operationId": "c4ed43dc208a995b216fb666dd903b8b",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -748,17 +1209,20 @@
                                     "properties": {
                                         "cpu": {
                                             "description": "Current usage of CPU in %",
-                                            "type": "float",
+                                            "type": "number",
+                                            "format": "float",
                                             "example": "72.50"
                                         },
                                         "ram": {
                                             "description": "Current usage of RAM in %",
-                                            "type": "float",
+                                            "type": "number",
+                                            "format": "float",
                                             "example": "56.34"
                                         },
                                         "hdd": {
                                             "description": "Current usage of HDD in %",
-                                            "type": "float",
+                                            "type": "number",
+                                            "format": "float",
                                             "example": "32"
                                         }
                                     },
@@ -789,7 +1253,7 @@
                 ],
                 "summary": "Server root password reset",
                 "description": "Reset server root password (for cipi user).",
-                "operationId": "App\\Http\\Controllers\\ServerController::rootreset",
+                "operationId": "e07136bbf1b1d6c068e056e747905591",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -844,7 +1308,7 @@
                 ],
                 "summary": "Server service restart",
                 "description": "Restart a server server (nginx, php, mysql, redis or supervisor).",
-                "operationId": "App\\Http\\Controllers\\ServerController::servicerestart",
+                "operationId": "2e178a6fb83e51c555751c59c25b92a7",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -900,7 +1364,7 @@
                 ],
                 "summary": "List all server sites",
                 "description": "List all sites in required server.",
-                "operationId": "App\\Http\\Controllers\\ServerController::sites",
+                "operationId": "561691334156c2e2944809bca9884ad3",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -983,7 +1447,7 @@
                 ],
                 "summary": "List all server domains",
                 "description": "List all domains hosted in required server.",
-                "operationId": "App\\Http\\Controllers\\ServerController::domains",
+                "operationId": "54650673ce3fe1b0369a1831e069ab69",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1024,7 +1488,7 @@
                 ],
                 "summary": "List all sites",
                 "description": "List all sites managed by panel.",
-                "operationId": "App\\Http\\Controllers\\SiteController::index",
+                "operationId": "b2375423d59eedc5dcce02e3cb15173a",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1108,7 +1572,7 @@
                 ],
                 "summary": "Add a new site",
                 "description": "Add a new site in panel.",
-                "operationId": "App\\Http\\Controllers\\SiteController::create",
+                "operationId": "f4206264abeb2490eba918dd2dee0561",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1260,7 +1724,7 @@
                 ],
                 "summary": "Show site information",
                 "description": "Get site information by site_id.",
-                "operationId": "App\\Http\\Controllers\\SiteController::show",
+                "operationId": "868339b2d0937abf574b7ce0fbe43f12",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1394,7 +1858,7 @@
                 ],
                 "summary": "Delete a Site",
                 "description": "Delete a site from panel.",
-                "operationId": "App\\Http\\Controllers\\SiteController::destroy",
+                "operationId": "f3ad7b0ab215a7d4e43839cdb274c2f5",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1436,7 +1900,7 @@
                 ],
                 "summary": "Edit site information",
                 "description": "Edit site information by site_id.",
-                "operationId": "App\\Http\\Controllers\\SiteController::edit",
+                "operationId": "7f9e194bf833a115620072407bc90a3a",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1616,7 +2080,7 @@
                 ],
                 "summary": "SSL request for site (and its aliases)",
                 "description": "Require SSL certs for site and its aliases.",
-                "operationId": "App\\Http\\Controllers\\SiteController::ssl",
+                "operationId": "a958171be95738d01e9c72a3ce15b9b6",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1657,7 +2121,7 @@
                 ],
                 "summary": "Reset site SSH password",
                 "description": "Require a reset for site SSH password.",
-                "operationId": "App\\Http\\Controllers\\SiteController::resetssh",
+                "operationId": "29737ea47a04f955b28f931b81ee401f",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1717,7 +2181,7 @@
                 ],
                 "summary": "Reset site MySql password",
                 "description": "Require a reset for site MySql password.",
-                "operationId": "App\\Http\\Controllers\\SiteController::resetdb",
+                "operationId": "213d5db962a7281f3291463af261a97e",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1777,7 +2241,7 @@
                 ],
                 "summary": "List all site aliases",
                 "description": "List all aliases related to a site.",
-                "operationId": "App\\Http\\Controllers\\SiteController::aliases",
+                "operationId": "8cda9bf2bb8222658123616bb3d6cb55",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1838,7 +2302,7 @@
                 ],
                 "summary": "Add an alias to site",
                 "description": "Create an alias for required site.",
-                "operationId": "App\\Http\\Controllers\\SiteController::createalias",
+                "operationId": "78ba363f41541fd5be894e681c20e00f",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1904,7 +2368,7 @@
                 ],
                 "summary": "Delete an alias",
                 "description": "Delete an alias from a site.",
-                "operationId": "App\\Http\\Controllers\\SiteController::destroyalias",
+                "operationId": "4668e1c37aea458efba2b32bcc1c71b2",
                 "parameters": [
                     {
                         "name": "Authorization",
@@ -1947,8 +2411,5 @@
                 }
             }
         }
-    },
-    "security": [
-        []
-    ]
+    }
 }

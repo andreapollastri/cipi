@@ -306,11 +306,11 @@ Sites
     //New Site Submit
     $('#submit').click(function() {
         validation = true;
-        if(!$('#newsitedomain').val() || $('#newsitedomain').val().length < 5 || domainConflict($('#newsitedomain').val()) > 0) {
-            $('#newsitedomain').addClass('is-invalid');
-            $('#submit').addClass('disabled');
-            validation = false;
-        }
+        // if(!$('#newsitedomain').val() || $('#newsitedomain').val().length < 5 || domainConflict($('#newsitedomain').val()) > 0) {
+        //     $('#newsitedomain').addClass('is-invalid');
+        //     $('#submit').addClass('disabled');
+        //     validation = false;
+        // }
         if(validation) {
             $.ajax({
                 url: '/api/sites',
