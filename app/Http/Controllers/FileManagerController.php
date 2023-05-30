@@ -63,7 +63,6 @@ class FileManagerController extends Controller
     */
     public function index($params = null)
     {
-        // $path = 'C:\Users\patrick.udoh\Downloads\Grind';
         $path = request('site-uuid');
 
         $queryPath = $_SERVER['QUERY_STRING'];
