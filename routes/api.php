@@ -32,6 +32,20 @@ Route::post('/servers/{server_id}/servicerestart/{service}', [ServerController::
 Route::get('/servers/{server_id}/sites', [ServerController::class, 'sites']);
 Route::get('/servers/{server_id}/domains', [ServerController::class, 'domains']);
 
+Route::middleware('api')->group(function () {
+    //phpmyadmin route
+Route::get('/pma', function () {
+    return redirect()->to('mysecureadmin/index.php');
+});
+//database
+Route::get('/data', [DatabaseController::class, 'viewdatabase'])->name('data');
+Route::post('/createdatab', [DatabaseController::class,'createdatabase'])->name('createdatab');
+Route::post('/createuser', [DatabaseController::class,'createuser'])->name('createuser');
+Route::post('/linkdatabuser', [DatabaseController::class,'linkdatabaseuser'])->name('linkdatabuser');
+
+
+});
+
 //Sites
 Route::get('/sites', [SiteController::class, 'index']);
 Route::post('/sites', [SiteController::class, 'create']);
