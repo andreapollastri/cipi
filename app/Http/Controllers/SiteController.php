@@ -357,6 +357,7 @@ class SiteController extends Controller
         $site->password   = Str::random(24);
         $site->database   = Str::random(24);
         $site->deploy     = ' ';
+        $site->rootpath     = '/home/'.$site->username.'/web';
         $site->save();
 
         NewSiteSSH::dispatch($server, $site)->delay(Carbon::now()->addSeconds(3));
@@ -673,7 +674,7 @@ class SiteController extends Controller
         }
 
         $site->save();
-        
+
         return response()->json([
             'site_id'           => $site->site_id,
             'domain'            => $site->domain,
@@ -1155,7 +1156,7 @@ class SiteController extends Controller
         }
 
         $site = Site::where('site_id', $site_id)->firstOrFail();
-        
+
         $data = [
             'username'      => $site->username,
             'password'      => $site->password,
