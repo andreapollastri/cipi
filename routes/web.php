@@ -42,6 +42,7 @@ Route::post('/createuser', [DatabaseController::class,'createuser'])->name('crea
 Route::post('/linkdatabuser', [DatabaseController::class,'linkdatabaseuser'])->name('linkdatabuser');
 
 
+
 Route::get('/servers', function () {
     return view('servers');
 });

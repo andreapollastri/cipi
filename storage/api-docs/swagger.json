@@ -1481,6 +1481,160 @@
                 }
             }
         },
+
+        "/pma": {
+            "get": {
+              "summary": "Redirect to mysecureadmin",
+              "tags": ["Redirect"],
+              "responses": {
+                "302": {
+                  "description": "Temporary redirect",
+                  "headers": {
+                    "Location": {
+                      "schema": {
+                        "type": "string"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+        },
+        "/data":{
+            "get": {
+                "summary": "View database",
+                "tags": ["Database"],
+                "responses": {
+                  "200": {
+                    "description": "Successful operation",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/DatabaseViewResponse"
+                        }
+                      }
+                    }
+                  },
+                  "404": {
+                    "description": "Server not found or not installed"
+                    },
+                 "400": {
+                    "description": "Bad Request"
+                    },
+                "401": {
+                    "description": "Unauthorized access error"
+                    },
+                "409": {
+                    "description": "Site domain conflict"
+                    },
+                "500": {
+                    "description": "SSH server connection issue"
+                    }
+                }
+          }
+        },
+        "/createdatab":{
+            "post": {
+                "summary": "Create database",
+                "tags": ["Database"],
+
+                "responses": {
+                  "200": {
+                    "description": "Successful operation",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/DatabaseCreateResponse"
+                        }
+                      }
+                    }
+                  },
+                  "404": {
+                    "description": "Server not found or not installed"
+                    },
+                 "400": {
+                    "description": "Bad Request"
+                    },
+                "401": {
+                    "description": "Unauthorized access error"
+                    },
+                "409": {
+                    "description": "Site domain conflict"
+                    },
+                "500": {
+                    "description": "SSH server connection issue"
+                    }
+                }
+              }
+        },
+        "/createuser": {
+            "post": {
+                "summary": "Create user",
+                "tags": ["Database"],
+                "responses": {
+                  "200": {
+                    "description": "Successful operation",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/UserCreateResponse"
+                        }
+                      }
+                    }
+                  },
+                  "404": {
+                    "description": "Server not found or not installed"
+                    },
+                 "400": {
+                    "description": "Bad Request"
+                    },
+                "401": {
+                    "description": "Unauthorized access error"
+                    },
+                "409": {
+                    "description": "Site domain conflict"
+                    },
+                "500": {
+                    "description": "SSH server connection issue"
+                    }
+                }
+              }
+        },
+        "/linkdatabuser": {
+            "post": {
+                "summary": "Link database to user",
+                "tags": ["Database"],
+                "responses": {
+                  "200": {
+                    "description": "Successful operation",
+                    "content": {
+                      "application/json": {
+                        "schema": {
+                          "$ref": "#/components/schemas/LinkDatabaseUserResponse"
+                        }
+                      }
+                    }
+                  },
+
+                  "404": {
+                    "description": "Server not found or not installed"
+                    },
+                 "400": {
+                    "description": "Bad Request"
+                    },
+                "401": {
+                    "description": "Unauthorized access error"
+                    },
+                "409": {
+                    "description": "Site domain conflict"
+                    },
+                "500": {
+                    "description": "SSH server connection issue"
+                    }
+                }
+              }
+        },
+
         "/api/sites": {
             "get": {
                 "tags": [

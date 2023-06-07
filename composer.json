@@ -10,7 +10,7 @@
     "require": {
         "php": "^7.3|^8.0",
         "barryvdh/laravel-dompdf": "^0.9.0",
-        "darkaonline/l5-swagger": "^8.0",
+        "darkaonline/l5-swagger": "^8.5",
         "fideloper/proxy": "^4.4",
         "firebase/php-jwt": "^5.2",
         "fruitcake/laravel-cors": "^2.0",
