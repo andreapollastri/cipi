@@ -118,14 +118,30 @@ use App\Models\Mysqluser;
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($userdata as $databases)
-                                        <tr>
-                                            <td>{{ $databases->database_name }}</td>
-                                            <td>{{ $databases->mysqluser->username }}</td>
-                                            {{-- <td>@mdo</td> --}}
-                                        </tr>
-                                        {{-- <option value="{{ $user->id }}">{{ $user->username }}</option> --}}
-                                    @endforeach
+                                    @if ($userdata->count() > 0)
+                                        @foreach ($userdata as $databases)
+                                            <tr>
+                                                <td>
+                                                    @if (!$databases->database_name == "")
+                                                        {{ $databases->database_name }}
+                                                    @else
+                                                        <span class="text-muted">No Database</span>
+                                                    @endif
+                                                </td>
+                                                <td>
+                                                    @if (!$databases->mysqluser == "")
+                                                        {{ $databases->mysqluser->username }}
+                                                    @else
+                                                        <span class="text-muted">No Mysqluser</span>
+                                                    @endif
+
+                                                </td>
+                                                {{-- <td>@mdo</td> --}}
+                                            </tr>
+                                            {{-- <option value="{{ $user->id }}">{{ $user->username }}</option> --}}
+                                        @endforeach
+                                    @endif
+
                                 </tbody>
                             </table>
                         </div>

@@ -24,7 +24,7 @@ class DatabaseController extends Controller
         $database = new Userdatabase();
             $database->user_id = 1;
             $database->database_name = $request->data_name;
-
+            $database->save();
             if ($database->save()) {
                 return redirect()->back()->with('success', 'You have successfully Created database!');
 
