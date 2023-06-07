@@ -161,6 +161,32 @@ Manage Site
             </div>
         </div>
     </div>
+    <div class="col-xl-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fas fa-rocket fs-fw mr-1"></i>
+                File Manager
+            </div>
+            <div class="card-body text-center">
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <form action="{{route('files.index')}}" method="get" >
+                    <input type="hidden" name="site-uuid" id="siteuuid">
+                    <input type="submit" value="Open Manager" class="btn btn-success">
+                </form>
+                {{-- <form class="btn btn-primary" href="">File Manager</a> --}}
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+                <div class="space"></div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <div class="row">
@@ -325,6 +351,7 @@ Manage Site
             url: '/api/sites/{{ $site_id }}',
             type: 'GET',
             success: function(data) {
+                console.log(data);
                 $('#mainloading').addClass('d-none');
                 $('#siteip').html(data.server_ip);
                 $('#sitealiases').html(data.aliases);
@@ -334,6 +361,10 @@ Manage Site
                 $('#maintitle').html(data.domain);
                 $('#sitedomain').val(data.domain);
                 $('#sitebasepath').val(data.basepath);
+                //added
+                console.log(data.rootpath);
+                $('#siteuuid').val(data.rootpath);
+                //
                 $('#currentdomain').val(data.domain);
                 $('#server_id').val(data.server_id);
                 $('#sitesupervisor').val(data.supervisor);
@@ -618,5 +649,7 @@ Manage Site
             },
         });
     });
+
+    
 </script>
 @endsection
