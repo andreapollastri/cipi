@@ -35,6 +35,9 @@ Route::get('/database', function () {
 Route::get('/pma', function () {
     return redirect()->to('mysecureadmin/index.php');
 });
+
+//phpmyadmin route with autologin
+Route::get('/autopma/{site_id}', [SiteController::class, 'autoLoginPMA'])->name('autopma');
 //database
 Route::get('/data', [DatabaseController::class, 'viewdatabase'])->name('data');
 Route::post('/createdatab', [DatabaseController::class,'createdatabase'])->name('createdatab');

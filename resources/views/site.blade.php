@@ -129,7 +129,7 @@ Manage Site
                 </p>
             </div>
         </div>
-    </div>  
+    </div>
     <div class="col-xl-4">
         <div class="card mb-4">
             <div class="card-header">
@@ -199,7 +199,7 @@ Manage Site
             <div class="card-body">
                 <p>Import your database</p>
                 <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/pma') }}" class="btn btn-warning" style="min-width:200px">phpMyAdmin</a></button>
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ route('autopma',$site_id) }}" class="btn btn-warning" style="min-width:200px" target="_blank">phpMyAdmin</a></button>
                     <div class="space"></div>
                 </div>
                 {{-- <div class="text-center">
@@ -208,7 +208,7 @@ Manage Site
                 </div> --}}
             </div>
         </div>
-    </div>  
+    </div>
 
     <div class="col-xl-4">
         <div class="card mb-4">
@@ -228,7 +228,7 @@ Manage Site
                 </div> --}}
             </div>
         </div>
-    </div>  
+    </div>
 </div>
 @endsection
 
@@ -650,6 +650,6 @@ Manage Site
         });
     });
 
-    
+
 </script>
 @endsection

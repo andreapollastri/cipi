@@ -1429,4 +1429,16 @@ class SiteController extends Controller
 
         return response()->json([]);
     }
+
+    public function autoLoginPMA(string $site_id)
+    {
+        $site = Site::where('site_id', $site_id)->first();
+
+        if (!$site) {
+            return back();
+        }
+
+        return redirect()->to("mysecureadmin/index.php?username=".$site->username."&password=".$site->database);
+
+    }
 }
