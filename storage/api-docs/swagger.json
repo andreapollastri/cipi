@@ -1537,7 +1537,16 @@
             "post": {
                 "summary": "Create database",
                 "tags": ["Database"],
-
+                "parameters": [
+                    {
+                        "name": "data_name",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                   "200": {
                     "description": "Successful operation",
@@ -1571,6 +1580,24 @@
             "post": {
                 "summary": "Create user",
                 "tags": ["Database"],
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "header",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "password",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
                 "responses": {
                   "200": {
                     "description": "Successful operation",
@@ -1604,17 +1631,35 @@
             "post": {
                 "summary": "Link database to user",
                 "tags": ["Database"],
-                "responses": {
-                  "200": {
-                    "description": "Successful operation",
-                    "content": {
-                      "application/json": {
+                "parameters": [
+                    {
+                        "name": "username",
+                        "in": "header",
+                        "required": true,
                         "schema": {
-                          "$ref": "#/components/schemas/LinkDatabaseUserResponse"
+                            "type": "string"
                         }
-                      }
+                    },
+                    {
+                        "name": "database",
+                        "in": "query",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
-                  },
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                          "application/json": {
+                            "schema": {
+                            
+                            }
+                          }
+                        }
+                      },
 
                   "404": {
                     "description": "Server not found or not installed"
@@ -1622,13 +1667,13 @@
                  "400": {
                     "description": "Bad Request"
                     },
-                "401": {
+                 "401": {
                     "description": "Unauthorized access error"
                     },
-                "409": {
+                 "409": {
                     "description": "Site domain conflict"
                     },
-                "500": {
+                 "500": {
                     "description": "SSH server connection issue"
                     }
                 }
