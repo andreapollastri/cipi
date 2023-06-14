@@ -11,8 +11,9 @@ Manage Site
 <ol class="breadcrumb mb-4">
     <li class="ml-1 breadcrumb-item active">IP:<b><span class="ml-1" id="siteip"></span></b></li>
     <li class="ml-1 breadcrumb-item active">ALIASES:<b><span class="ml-1" id="sitealiases"></span></b></li>
-    <li class="ml-1 breadcrumb-item active">PHP:<b><span class="ml-1" id="sitephp"></span></b></li>
+    <li id="breadcrumbPHP" class="ml-1 breadcrumb-item active">PHP:<b><span class="ml-1" id="sitephp"></span></b></li>
     <li class="ml-1 breadcrumb-item active">DIR:<b><span class="ml-1">/home/</span><span id="siteuserinfo"></span>/web/<span id="sitebasepathinfo"></span></b></li>
+    <li class="ml-1 breadcrumb-item active">LANGUAGE:<b><span class="ml-1" id="sitelang"></span></b></li>
 </ol>
 <div class="row">
     <div class="col-xl-4">
@@ -137,18 +138,21 @@ Manage Site
                 Tools
             </div>
             <div class="card-body">
-                <p>PHP-FPM version:</p>
-                <div class="input-group">
-                    <select class="form-control" id="sitephpver">
-                        <option value="8.0" id="php80">8.0</option>
-                        <option value="7.4" id="php74">7.4</option>
-                        <option value="7.3" id="php73">7.3</option>
-                    </select>
-                    <div class="input-group-append">
-                        <button class="btn btn-primary" type="button" id="sitephpversubmit"><i class="fas fa-edit"></i></button>
+                <div id="sitephpverField">
+                    <p>PHP-FPM version:</p>
+                    <div class="input-group">
+                        <select class="form-control" id="sitephpver">
+                            <option value="8.0" id="php80">8.0</option>
+                            <option value="7.4" id="php74">7.4</option>
+                            <option value="7.3" id="php73">7.3</option>
+                        </select>
+                        <div class="input-group-append">
+                            <button class="btn btn-primary" type="button" id="sitephpversubmit"><i class="fas fa-edit"></i></button>
+                        </div>
                     </div>
+                    <div class="space"></div>
                 </div>
-                <div class="space"></div>
+
                 <p>Supervisor script:</p>
                 <div class="input-group">
                     <input class="form-control" type="text" id="sitesupervisor" autocomplete="off" />
@@ -187,14 +191,12 @@ Manage Site
             </div>
         </div>
     </div>
-</div>
 
-<div class="row">
     <div class="col-xl-4">
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fab fa-github fs-fw mr-1"></i>
-              PhpMyAdmin
+                PhpMyAdmin
             </div>
             <div class="card-body">
                 <p>Import your database</p>
@@ -214,7 +216,7 @@ Manage Site
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fab fa-github fs-fw mr-1"></i>
-              MYSQL
+                MYSQL
             </div>
             <div class="card-body">
                 <p>Set up your database</p>
@@ -226,6 +228,36 @@ Manage Site
                     <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
                     <div class="space"></div>
                 </div> --}}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+
+    <div class="col-xl-4">
+        <div class="card mb-4">
+            <div class="card-header">
+                <i class="fab fa-github fs-fw mr-1"></i>
+                Nodejs Manager
+            </div>
+            <div class="card-body">
+                <p>Manage your project</p>
+                <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo">Restart App</button>
+                    <div class="space"></div>
+                </div>
+                <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Stop App</button>
+                    <div class="space"></div>
+                </div>
+                <p>
+                    To run deploy:
+                <ul style="font-size:14px;">
+                    <li>ssh <span id="repodeployinfouser1"></span>@<span id="repodeployinfoip"></span></li>
+                    <li>sh /home/<span id="repodeployinfouser2"></span>/git/deploy.sh</li>
+                </ul>
+                </p>
             </div>
         </div>
     </div>
@@ -361,6 +393,11 @@ Manage Site
                 $('#maintitle').html(data.domain);
                 $('#sitedomain').val(data.domain);
                 $('#sitebasepath').val(data.basepath);
+                $('#sitelang').html(data.language);
+                if(data.language != "PHP"){
+                    $('#sitephpverField').addClass('d-none');
+                    $('#breadcrumbPHP').addClass('d-none');
+                }
                 //added
                 console.log(data.rootpath);
                 $('#siteuuid').val(data.rootpath);

@@ -351,6 +351,70 @@ max_input_time = 180
 EOF
 sudo service php8.0-fpm restart
 
+sudo apt-get -y install php8.1-fpm
+sudo apt-get -y install php8.1-common
+sudo apt-get -y install php8.1-curl
+sudo apt-get -y install php8.1-openssl
+sudo apt-get -y install php8.1-bcmath
+sudo apt-get -y install php8.1-mbstring
+sudo apt-get -y install php8.1-tokenizer
+sudo apt-get -y install php8.1-mysql
+sudo apt-get -y install php8.1-sqlite3
+sudo apt-get -y install php8.1-pgsql
+sudo apt-get -y install php8.1-redis
+sudo apt-get -y install php8.1-memcached
+sudo apt-get -y install php8.1-json
+sudo apt-get -y install php8.1-zip
+sudo apt-get -y install php8.1-xml
+sudo apt-get -y install php8.1-soap
+sudo apt-get -y install php8.1-gd
+sudo apt-get -y install php8.1-imagick
+sudo apt-get -y install php8.1-fileinfo
+sudo apt-get -y install php8.1-imap
+sudo apt-get -y install php8.1-cli
+PHPINI=/etc/php/8.1/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.1-fpm restart
+
+sudo apt-get -y install php8.2-fpm
+sudo apt-get -y install php8.2-common
+sudo apt-get -y install php8.2-curl
+sudo apt-get -y install php8.2-openssl
+sudo apt-get -y install php8.2-bcmath
+sudo apt-get -y install php8.2-mbstring
+sudo apt-get -y install php8.2-tokenizer
+sudo apt-get -y install php8.2-mysql
+sudo apt-get -y install php8.2-sqlite3
+sudo apt-get -y install php8.2-pgsql
+sudo apt-get -y install php8.2-redis
+sudo apt-get -y install php8.2-memcached
+sudo apt-get -y install php8.2-json
+sudo apt-get -y install php8.2-zip
+sudo apt-get -y install php8.2-xml
+sudo apt-get -y install php8.2-soap
+sudo apt-get -y install php8.2-gd
+sudo apt-get -y install php8.2-imagick
+sudo apt-get -y install php8.2-fileinfo
+sudo apt-get -y install php8.2-imap
+sudo apt-get -y install php8.2-cli
+PHPINI=/etc/php/8.2/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.2-fpm restart
+
 
 # PHP EXTRA
 sudo apt-get -y install php-dev php-pear
@@ -517,7 +581,7 @@ sudo snap install --beta --classic certbot
 
 
 
-# NODE
+# NODE v18
 clear
 echo "${bggreen}${black}${bold}"
 echo "Node/npm setup..."
@@ -525,19 +589,20 @@ echo "${reset}"
 sleep 1s
 
 curl -s https://deb.nodesource.com/gpgkey/nodesource.gpg.key | sudo apt-key add -
-curl -sL https://deb.nodesource.com/setup_15.x | sudo -E bash -
+curl -sL https://deb.nodesource.com/setup_18.x | sudo -E bash -
 NODE=/etc/apt/sources.list.d/nodesource.list
 sudo unlink NODE
 sudo touch $NODE
 sudo cat > "$NODE" <<EOF
-deb https://deb.nodesource.com/node_15.x focal main
-deb-src https://deb.nodesource.com/node_15.x focal main
+deb https://deb.nodesource.com/node_18.x focal main
+deb-src https://deb.nodesource.com/node_18.x focal main
 EOF
 sudo apt-get update
 sudo apt -y install nodejs
 sudo apt -y install npm
 
-
+#PM2 INSTALLATION
+sudo npm install pm2@latest -g
 
 
 #PANEL INSTALLATION

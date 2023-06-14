@@ -25,6 +25,7 @@ class CreateSitesTable extends Migration
             $table->string('rootpath')->nullable();
             $table->string('repository')->nullable();
             $table->string('branch')->nullable();
+            $table->string('language')->default('PHP');
             $table->string('php')->default('8.0');
             $table->text('supervisor')->nullable();
             $table->text('nginx')->nullable();

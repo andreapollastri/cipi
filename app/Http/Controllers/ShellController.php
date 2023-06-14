@@ -43,7 +43,7 @@ class ShellController extends Controller
         $script = str_replace('???REPO???', $site->repository, $script);
         $script = str_replace('???BRANCH???', $site->branch, $script);
         $script = str_replace('???SCRIPT???', $site->deploy, $script);
-        
+
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
@@ -71,7 +71,19 @@ class ShellController extends Controller
         return response($script)
                 ->withHeaders(['Content-Type' =>'application/x-sh']);
     }
-    
+
+    /**
+     * New Nodejs Site script
+     *
+    */
+    public function newsite_nodejs()
+    {
+        $script = Storage::get('cipi/newsite_nodejs.sh');
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
+
 
     /**
      * Delete Site script

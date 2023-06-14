@@ -124,6 +124,7 @@ class SiteController extends Controller
                 'server_id'     => $site->server->server_id,
                 'server_name'   => $site->server->name,
                 'server_ip'     => $site->server->ip,
+                'language'      => $site->language,
                 'php'           => $site->php,
                 'basepath'      => $site->basepath,
                 'aliases'       => count($site->aliases)
@@ -294,7 +295,8 @@ class SiteController extends Controller
     {
         $validator = Validator::make($request->all(), [
             'domain'    => 'required',
-            'server_id' => 'required'
+            'server_id' => 'required',
+            'language' => 'required'
         ]);
 
         if ($validator->fails()) {
@@ -351,6 +353,7 @@ class SiteController extends Controller
         $site->site_id    = $site_id;
         $site->server_id  = $server->id;
         $site->domain     = $request->domain;
+        $site->language     = $request->language;
         $site->php        = $php;
         $site->basepath   = $request->basepath;
         $site->username   = 'cp'.hash('crc32', (Str::uuid()->toString())).rand(1, 9);
@@ -860,6 +863,7 @@ class SiteController extends Controller
             'server_id'         => $site->server->server_id,
             'server_name'       => $site->server->name,
             'server_ip'         => $site->server->ip,
+            'language'          => $site->language,
             'php'               => $site->php,
             'basepath'          => $site->basepath,
             'repository'        => $site->repository,

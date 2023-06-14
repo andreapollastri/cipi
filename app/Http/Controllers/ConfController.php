@@ -61,7 +61,7 @@ class ConfController extends Controller
     public function host($site_id)
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
-        
+
         if ($site->basepath) {
             $basepath = '/home/'.$site->username.'/web/'.$site->basepath;
         } else {
@@ -77,7 +77,23 @@ class ConfController extends Controller
     }
 
 
-    
+    /**
+     * Nodejs Site host configuration
+     *
+     */
+    public function host_nodejs($site_id)
+    {
+        $site = Site::where('site_id', $site_id)->firstOrFail();
+
+        $script = Storage::get('cipi/host_nodejs.conf');
+        $script = str_replace('???USER???', $site->username, $script);
+        $script = str_replace('???PORT???', str_pad($site->id,4,0,STR_PAD_RIGHT), $script);
+        $script = str_replace('???DOMAIN???', $site->domain, $script);
+        return response($script)->withHeaders(['Content-Type' =>'text/plain']);
+    }
+
+
+
     /**
      * Site alias configuration
      *
@@ -85,7 +101,7 @@ class ConfController extends Controller
     public function alias($alias_id)
     {
         $alias = Alias::where('alias_id', $alias_id)->firstOrFail();
-        
+
         if ($alias->site->basepath) {
             $basepath = '/home/'.$alias->site->username.'/web/'.$alias->site->basepath;
         } else {
@@ -101,7 +117,7 @@ class ConfController extends Controller
     }
 
 
-    
+
     /**
      * Site PHP configuration
      *
@@ -109,14 +125,14 @@ class ConfController extends Controller
     public function php($site_id)
     {
         $site = Site::where('site_id', $site_id)->firstOrFail();
-        
+
         $script = Storage::get('cipi/php.conf');
         $script = str_replace('???USER???', $site->username, $script);
         $script = str_replace('???PHP???', $site->php, $script);
         return response($script)->withHeaders(['Content-Type' =>'text/plain']);
     }
 
-    
+
     /**
      * Site nginx configuration
      *

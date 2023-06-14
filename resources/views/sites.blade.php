@@ -25,6 +25,7 @@ Sites
                                 <th class="text-center text-center d-none d-md-table-cell">Aliases</th>
                                 <th class="text-center d-none d-lg-table-cell">Server</th>
                                 <th class="text-center d-none d-xl-table-cell">IP</th>
+                                <th class="text-center d-none d-xl-table-cell">Language</th>
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
@@ -60,9 +61,20 @@ Sites
                         <select class="form-control" id="newsiteserver"></select>
                     </div>
                     <div class="space"></div>
+                    <label for="newsitelanguage">Language</label>
+                    <div class="input-group">
+                        <select class="form-control" id="newsitelang">
+                            <option value="PHP" selected>PHP</option>
+                            <option value="NODEJS">NODEJS</option>
+                            <option value="WEB">Static Web</option>
+                        </select>
+                    </div>
+                    <div class="space"></div>
                     <label for="newsiteprovider">PHP Version</label>
                     <div class="input-group">
                         <select class="form-control" id="newsitephp">
+                            <option value="8.2">8.2</option>
+                            <option value="8.1">8.1</option>
                             <option value="8.0" selected>8.0</option>
                             <option value="7.4">7.4</option>
                             <option value="7.3">7.3</option>
@@ -134,7 +146,7 @@ Sites
                 <div class="space"></div>
             </div>
         </div>
-        
+
     </div>
 </div>
 @endsection
@@ -149,7 +161,7 @@ Sites
 
 @section('js')
 <script>
-    //Get DT Data 
+    //Get DT Data
     getData('/api/sites');
 
     //Datatable
@@ -162,6 +174,7 @@ Sites
                 { data: 'aliases' },
                 { data: 'server_name' },
                 { data: 'server_ip' },
+                { data: 'language' },
                 { data: {
                     'site_id': 'site_id',
                     'domain': 'domain',
@@ -182,6 +195,10 @@ Sites
                 },
                 {
                     'targets': 4,
+                    'className': 'text-center d-none d-xl-table-cell',
+                },
+                {
+                    'targets': 5,
                     'className': 'text-center',
                     'render': function ( data, type, row, meta ) {
                         return '<button data-id="'+data['site_id']+'" class="btmanage btn btn-sm btn-primary mr-3"><i class="fas fa-cog fa-fw"></i> <b class="d-none d-sm-inline">Manage</b></button><button data-id="'+data['site_id']+'" data-name="'+data['domain']+'" class="btdelete btn btn-sm btn-danger"><i class="fas fa-times fa-fw"></i> <b class="d-none d-sm-inline">Delete</b></button>';
@@ -321,6 +338,7 @@ Sites
                 data: JSON.stringify({
                     'domain':   $('#newsitedomain').val(),
                     'server_id':$('#newsiteserver').val(),
+                    'language': $('#newsitelang').val(),
                     'php':      $('#newsitephp').val(),
                     'basepath': $('#newsitebasepath').val()
                 }),
