@@ -63,7 +63,6 @@ class FileManagerController extends Controller
     */
     public function index($params = null)
     {
-        // $path = 'C:\Users\patrick.udoh\Downloads\Grind';
         $path = request('site-uuid');
 
         $queryPath = $_SERVER['QUERY_STRING'];
@@ -74,9 +73,12 @@ class FileManagerController extends Controller
            array_shift($headers);
         }
 
+
+        $slash = $this->getSlashByOS();
+
         // Get an array of files in the directory
-        $directories = File::directories($path . "\\" . $params);
-        $files =  File::files($path . "\\" . $params);
+        $directories = File::directories($path .  $slash . $params);
+        $files =  File::files($path .  $slash . $params);
         // $files = File::allFiles($path . "\\" . $params);
 
 
@@ -84,7 +86,7 @@ class FileManagerController extends Controller
         foreach ($directories as $directory) {
             $directoryContent->push([
                 'full_path' => $directory,
-                'folder_name' => Str::afterLast($directory, '\\'),
+                'folder_name' => Str::afterLast($directory,  $slash),
                 'type' => 'folder'
             ]);
         }
@@ -118,7 +120,7 @@ class FileManagerController extends Controller
     }
 
     /**
-     * List all Server files and Directory contents.
+     * store/save file Content
      *
      * @OA\Post(
      *      path="/files/store",
@@ -448,5 +450,13 @@ class FileManagerController extends Controller
         }
         
         return redirect()->back()->with('success','File moved successfully');
+    }
+
+    public function getSlashByOS(){
+        if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
+            return "\\";
+        } 
+
+        return "/";
     }
 }
