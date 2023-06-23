@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\FileManager;
 use Carbon\Carbon;
 use Exception;
 use Illuminate\Support\Str;
@@ -61,51 +62,13 @@ class FileManagerController extends Controller
      * 
      * )
     */
-    public function index($params = null)
+    public function index(FileManager $fileManager, $params = null)
     {
         $path = request('site-uuid');
-
         $queryPath = $_SERVER['QUERY_STRING'];
 
-        $headers = explode('/',Str::after($queryPath,'/'));
-
-        if(in_array($queryPath, $headers)){
-           array_shift($headers);
-        }
-
-
-        $slash = $this->getSlashByOS();
-
-        // Get an array of files in the directory
-        $directories = File::directories($path .  $slash . $params);
-        $files =  File::files($path .  $slash . $params);
-        // $files = File::allFiles($path . "\\" . $params);
-
-
-        $directoryContent = collect();
-        foreach ($directories as $directory) {
-            $directoryContent->push([
-                'full_path' => $directory,
-                'folder_name' => Str::afterLast($directory,  $slash),
-                'type' => 'folder'
-            ]);
-        }
-
-        $fileContents = collect();
-        foreach ($files as $file) {
-            // dd($file->getPathInfo());
-            $fileContents->push([
-                'filename' => $file->getFilename(),
-                'size' => $file->getSize(),
-                'pathName' => $file->getPathname(),
-                'last_modified' => Carbon::parse($file->getMTime())->format('M d, Y , H:m:s'),
-                'type' => 'file'
-            ]);
-        }
-
-        $pathContents = collect($directoryContent)->merge($fileContents);
-        // dd($pathContents);
-
+        extract($fileManager->fetchServerContents($params, $path, $queryPath));
+       
         return view('file_manager.index', compact('pathContents', 'params', 'path','queryPath', 'headers'));
     }
 
@@ -135,13 +98,18 @@ class FileManagerController extends Controller
      * 
      * )
     */
-    public function store(Request $request)
+    public function store(Request $request, FileManager $fileManager)
     {
-        $content = json_decode($request->content,true);
-        $pathName = $content['pathName'];
-        $data = $request->data;
-        
-        File::put($pathName, $data);
+      $isStored =   $fileManager->storeFile(
+                $request->validate([
+                    'content' => 'required|json',
+                    'data' => 'required'
+                ])
+    );
+       
+        if(!$isStored){
+            return redirect()->back()->with('success','Failed to fail file Content.'); 
+        }
 
         return redirect()->back()->with('success','File saved Successfully');
     }
@@ -164,7 +132,11 @@ class FileManagerController extends Controller
     */
     public function show()
     {
-        $pathName = request('pathName');
+        $validated = request()->validate([
+            'pathName' => 'required|string'
+        ]);
+
+        $pathName = $validated['pathName'];
         $ext = Str::afterLast($pathName, '.');
 
         if(! in_array($ext, ['jpg','png', 'jpeg', 'webm', 'flv', 'mp3','svg', 'WebP', 'mkv','gif','amv','3gp','flv','f4v','f4p','svi','f4a','f4b'])){
@@ -201,7 +173,11 @@ class FileManagerController extends Controller
     */
     public function edit()
     {
-        $pathName = request('pathName');
+         $validated = request()->validate([
+            'pathName' => 'required|string'
+        ]);
+        
+        $pathName = $validated['pathName'];
         $ext = Str::afterLast($pathName, '.');
 
         if(! in_array($ext, ['jpg','png', 'jpeg', 'webm', 'flv', 'mp3','svg', 'WebP', 'mkv','gif','amv','3gp','flv','f4v','f4p','svi','f4a','f4b'])){
@@ -239,8 +215,12 @@ class FileManagerController extends Controller
     */
     public function destroy()
     {
-        $path = request('pathName');
-        return unlink($path);
+        $validated = request()->validate([
+            'pathName' => 'required|string'
+        ]);
+        
+        $pathName = $validated['pathName'];
+        return unlink($pathName);
     }
 
      /**
@@ -261,7 +241,11 @@ class FileManagerController extends Controller
     */
     public function download()
     {
-        $path = request('pathName');
+        $validated = request()->validate([
+            'pathName' => 'required|string'
+        ]);
+        
+        $path = $validated['pathName'];
         return 'download_file_object/'. encrypt($path);
     }
 
@@ -292,12 +276,17 @@ class FileManagerController extends Controller
      * )
     */
 
-    public function createDirectory()
+    public function createDirectory(FileManager $fileManager)
     {
-        $path = str_replace('~', '\\', request('path'));
-        $directoryName =  request('new-directory-name');
+        $validated = request()->validate([
+            'path' => 'required',
+            'new-directory-name' => 'required'
+        ]);
+       
+        if(!$fileManager->createDirectory($validated)){
+            return redirect()->back()->with('success','Failed to create Directory!');    
+        };
 
-        mkdir($path . '\\' . $directoryName);
         return redirect()->back()->with('success','Directory created successfully');
 
     }
@@ -317,17 +306,18 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * )
     */
-    public function createFile()
+    public function createFile(FileManager $fileManager)
     {
-        $path = str_replace('~', '\\', request('path'));
-        $fileName =  request('new-file-name');
+        $validated = request()->validate([
+            'path' => 'required',
+            'new-file-name' => 'required'
+        ]);
 
-        // dd(request()->all(), $path . '\\' . $fileName );
- 
-        // dd(request()->all(), $path);
-
-        fopen('' . $path . '\\' . $fileName . '', "w");
+        if(!$fileManager->createFile($validated)){
+            return redirect()->back()->with('success','Failed to create File'); 
+        }
         return redirect()->back()->with('success','File created successfully');
+        
     }
 
 
@@ -348,20 +338,17 @@ class FileManagerController extends Controller
      * 
      * )
     */
-    public function renameFile()
+    public function renameFile(FileManager $fileManager)
     {
-        $fullPath = str_replace('/','\\', json_decode(request('content'))->pathName);
-        $path = Str::beforeLast($fullPath, '\\');
-        $newName =  request('rename-file-name');
+        $validated = request()->validate([
+            'content' => 'required|json',
+            'rename-file-name' => 'required'
+        ]);
         
-        try{
-            rename($fullPath, $path.'\\'.$newName);
-        }   catch(exception $e){
-            abort(404, $e->getMessage());
+        if(!$fileManager->renameFile($validated)){
+            return redirect()->back()->with('success','Failed to rename file ');
         }
-
-        
-        return redirect()->back()->with('success','File renamed Successfully');
+            return redirect()->back()->with('success','File renamed Successfully');
     }
 
        /**
@@ -381,36 +368,20 @@ class FileManagerController extends Controller
      * )
     */
 
-    public function copy(){
+    public function copy(FileManager  $fileManager){
      
-        $decodedData = json_decode(request('content'));
-        $fullPath =  $decodedData->pathName;
-        $fileName = $decodedData->filename;
-        $ext = Str::afterLast($fileName, '.');
-        $copyPath = request('copy-file-path');
-       
-        $copyFullPath = $copyPath .'\\'. $fileName;
-        $renameFile = Str::beforeLast($fileName, '.') .'-1.' . $ext;
-       
+        $validated = request()->validate([
+            'content' => 'required|json',
+            'copy-file-path' => 'required'
+        ]);
 
-        if($fullPath == $copyFullPath){
-            try{
-                copy($fullPath, $copyPath.'\\'. $renameFile); 
-            }
-            catch(exception $e){
-                abort(404, $e->getMessage());
-            }
-
-        }else{
-            try{
-                copy($fullPath, $copyFullPath);
-            }
-            catch(exception $e){
-                abort(404, $e->getMessage());
-            }
+        if(!$fileManager->copyFile($validated)){
+            return redirect()->back()->with('success','Failed to copy File copied');
         }
-       
+
         return redirect()->back()->with('success','File copied successfully');
+       
+       
     }
 
 
@@ -430,28 +401,22 @@ class FileManagerController extends Controller
      * 
      * )
     */
-    public function move(){
-        
-        $decodedData = json_decode(request('content'));
-        $fullPath = str_replace('/','\\',$decodedData->pathName);
-        $fileName = $decodedData->filename;
-        $movePath = str_replace('/','\\',request('move-file-path'));
+    public function move(FileManager $fileManager){
 
-        // dd($fullPath, $movePath.'\\'.$fileName);
+        $validated = request()->validate([
+            'content' => 'required|json',
+            'move-file-path' => 'required'
+        ]);
 
-        if($fullPath != $movePath){
-            try{
-                rename($fullPath, $movePath.'\\'.$fileName);
-               
-            }
-            catch(exception $e){
-                abort(404, $e->getMessage());
-            } 
-        }
+       if(!$fileManager->moveFile($validated)){
+            return redirect()->back()->with('success','failed to move file successfully');
+       }
         
         return redirect()->back()->with('success','File moved successfully');
     }
 
+
+    
     public function getSlashByOS(){
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             return "\\";
