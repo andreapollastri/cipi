@@ -179,6 +179,7 @@
 	402.496,312.42 419.44,312.42 419.44,355.59 " />
                     </svg>
                     {{-- <input type="button" value="+ new folder" id="new-folder"> --}}
+                    <input type="file" name="upload">
                 </div>
 
                 <table class="table table-hover table-border table-condensed">

@@ -244,7 +244,7 @@ Manage Site
             <div class="card-body">
                 <p>Manage your project</p>
                 <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo">Restart App</button>
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="startNodejsButton">Setup App</button>
                     <div class="space"></div>
                 </div>
                 <div class="text-center">
@@ -358,6 +358,28 @@ Manage Site
                     <button class="btn btn-danger" type="button" id="mysqlresetsubmit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="mysqlresetloading"></i></button>
                 </div>
                 <div class="space"></div>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="modal fade" id="startNodejsModal" tabindex="-1" role="dialog" aria-labelledby="startNodejsModalLabel" aria-hidden="true">
+    <div class="modal-dialog" role="document" id="repositorydialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="repositoryModalLabel">Setup Your Nodejs</h5>
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <div class="modal-body">
+                <label for="repositoryproject">Path</label>
+                <div class="input-group">
+                    <input class="form-control" type="text" id="repositoryproject" placeholder="e.g. ./bin/www" autocomplete="off" />
+                </div>
+                <div class="space"></div>
+                <div class="text-center">
+                    <button class="btn btn-primary" type="button" id="repositorysubmit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="repositoryloading"></i></button>
+                </div>
             </div>
         </div>
     </div>
@@ -504,6 +526,11 @@ Manage Site
     // Repository
     $('#sitesetrepo').click(function() {
         $('#repositoryModal').modal();
+    });
+
+    // Repository
+    $('#startNodejsButton').click(function() {
+        $('#startNodejsModal').modal();
     });
 
     // Repository Submit

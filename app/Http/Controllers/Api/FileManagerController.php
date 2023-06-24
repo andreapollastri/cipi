@@ -1,14 +1,16 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Http\Controllers\Api;
 
-use App\Services\FileManager;
-use Carbon\Carbon;
 use Exception;
+use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
+use App\Services\FileManager;
+use App\Http\Controllers\Controller;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Storage;
+use SebastianBergmann\Type\TrueType;
 
 class FileManagerController extends Controller
 {
@@ -61,15 +63,21 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function index(FileManager $fileManager, $params = null)
     {
         $path = request('site-uuid');
         $queryPath = $_SERVER['QUERY_STRING'];
 
         extract($fileManager->fetchServerContents($params, $path, $queryPath));
-       
-        return view('file_manager.index', compact('pathContents', 'params', 'path','queryPath', 'headers'));
+
+        return response()->json(
+            [
+                'status' => true,
+                'data' =>  compact('pathContents', 'params', 'path', 'queryPath', 'headers'),
+            ],
+            200
+        );
     }
 
     /**
@@ -97,24 +105,36 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function store(Request $request, FileManager $fileManager)
     {
-      $isStored =   $fileManager->storeFile(
-                $request->validate([
-                    'content' => 'required|json',
-                    'data' => 'required'
-                ])
-    );
-       
-        if(!$isStored){
-            return redirect()->back()->with('success','Failed to fail file Content.'); 
+        $isStored =   $fileManager->storeFile(
+            $request->validate([
+                'content' => 'required|json',
+                'data' => 'required'
+            ])
+        );
+
+        if (!$isStored) {
+            return response()->json(
+                [
+                    'status' => false,
+                    'message' => 'success', 'Failed to fail file Content!'
+                ],
+                200
+            );
         }
 
-        return redirect()->back()->with('success','File saved Successfully');
+        return response()->json(
+            [
+                'status' => true,
+                'message' => 'success', 'File content saved successfully!'
+            ],
+            200
+        );
     }
 
-      /**
+    /**
      * View specific file content.
      *
      * @OA\Post(
@@ -129,7 +149,7 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function show()
     {
         $validated = request()->validate([
@@ -139,23 +159,35 @@ class FileManagerController extends Controller
         $pathName = $validated['pathName'];
         $ext = Str::afterLast($pathName, '.');
 
-        if(! in_array($ext, ['jpg','png', 'jpeg', 'webm', 'flv', 'mp3','svg', 'WebP', 'mkv','gif','amv','3gp','flv','f4v','f4p','svi','f4a','f4b'])){
-            return response()->json(['nonmedia'=> File::get($pathName)]);
-        }else{
-            return 'download_file_object/'. encrypt($pathName);
+        if (!in_array($ext, ['jpg', 'png', 'jpeg', 'webm', 'flv', 'mp3', 'svg', 'WebP', 'mkv', 'gif', 'amv', '3gp', 'flv', 'f4v', 'f4p', 'svi', 'f4a', 'f4b'])) {
+            return response()->json(
+                [
+                    'status' => true,
+                    'data' =>  File::get($pathName)
+                ],
+                200
+            );
+        } else {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'data' => 'file is a media type and cannot be read'
+                ],
+                200
+            );
         }
-       
     }
 
-    public function showMediaFile($path){
-        try{
+    public function showMediaFile($path)
+    {
+        try {
             return  decrypt($path);
-          }catch(Exception $ex){
-              abort(404);
-          }
+        } catch (Exception $ex) {
+            abort(404);
+        }
     }
 
-        /**
+    /**
      * Edit View specific file content.
      *
      * @OA\Post(
@@ -170,18 +202,24 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function edit()
     {
-         $validated = request()->validate([
+        $validated = request()->validate([
             'pathName' => 'required|string'
         ]);
-        
+
         $pathName = $validated['pathName'];
         $ext = Str::afterLast($pathName, '.');
 
-        if(! in_array($ext, ['jpg','png', 'jpeg', 'webm', 'flv', 'mp3','svg', 'WebP', 'mkv','gif','amv','3gp','flv','f4v','f4p','svi','f4a','f4b'])){
-            return File::get($pathName);
+        if (!in_array($ext, ['jpg', 'png', 'jpeg', 'webm', 'flv', 'mp3', 'svg', 'WebP', 'mkv', 'gif', 'amv', '3gp', 'flv', 'f4v', 'f4p', 'svi', 'f4a', 'f4b'])) {
+            response()->json(
+                [
+                    'status' => true,
+                    'data' =>  File::get($pathName)
+                ],
+                200
+            );
         }
     }
 
@@ -212,18 +250,36 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function destroy()
     {
         $validated = request()->validate([
             'pathName' => 'required|string'
         ]);
-        
+
         $pathName = $validated['pathName'];
-        return unlink($pathName);
+
+        try {
+            unlink($pathName);
+            response()->json(
+                [
+                    'status' => true,
+                    'message' => 'file deleted successfully!'
+                ],
+                200
+            );
+        } catch (Exception $ex) {
+            response()->json(
+                [
+                    'status' => false,
+                    'message' => 'failed to  delete file!'
+                ],
+                200
+            );
+        }
     }
 
-     /**
+    /**
      * Download specific file content.
      *
      * @OA\Post(
@@ -238,28 +294,41 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function download()
     {
         $validated = request()->validate([
             'pathName' => 'required|string'
         ]);
-        
+
         $path = $validated['pathName'];
-        return 'download_file_object/'. encrypt($path);
+        return 'download_file_object/' . encrypt($path);
     }
 
 
     public function downloadObject($id)
     {
-        try{
-          return  response()->download(decrypt($id));
-        }catch(Exception $ex){
-            abort(404);
+        try {
+            response()->download(decrypt($id));
+            return   response()->json(
+                [
+                    'status' => true,
+                    'message' => 'file downloaded successfully!'
+                ],
+                200
+            );
+        } catch (Exception $ex) {
+            return   response()->json(
+                [
+                    'status' => false,
+                    'message' => 'failed to download file!'
+                ],
+                200
+            );
         }
     }
 
-         /**
+    /**
      * Create a directory on the Server
      *
      * @OA\Post(
@@ -274,7 +343,7 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
 
     public function createDirectory(FileManager $fileManager)
     {
@@ -282,13 +351,24 @@ class FileManagerController extends Controller
             'path' => 'required',
             'new-directory-name' => 'required'
         ]);
-       
-        if(!$fileManager->createDirectory($validated)){
-            return redirect()->back()->with('success','Failed to create Directory!');    
+
+        if (!$fileManager->createDirectory($validated)) {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Failed to create Directory!'
+                ],
+                200
+            );
         };
 
-        return redirect()->back()->with('success','Directory created successfully');
-
+        return  response()->json(
+            [
+                'status' => True,
+                'message' => 'Directory created successfully'
+            ],
+            200
+        );
     }
 
     /**
@@ -305,7 +385,7 @@ class FileManagerController extends Controller
      *      @OA\Response(response=422, description="Invalid payload"),
      *      @OA\Response(response=401, description="Unauthorized")
      * )
-    */
+     */
     public function createFile(FileManager $fileManager)
     {
         $validated = request()->validate([
@@ -313,16 +393,28 @@ class FileManagerController extends Controller
             'new-file-name' => 'required'
         ]);
 
-        if(!$fileManager->createFile($validated)){
-            return redirect()->back()->with('success','Failed to create File'); 
-        }
-        return redirect()->back()->with('success','File created successfully');
-        
+        if (!$fileManager->createFile($validated)) {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Failed to create File!'
+                ],
+                200
+            );
+        };
+
+        return  response()->json(
+            [
+                'status' => True,
+                'message' => 'File created successfully'
+            ],
+            200
+        );
     }
 
 
 
-       /**
+    /**
      * Rename a file on the Server
      *
      * @OA\Post(
@@ -337,21 +429,34 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
     public function renameFile(FileManager $fileManager)
     {
         $validated = request()->validate([
             'content' => 'required|json',
             'rename-file-name' => 'required'
         ]);
-        
-        if(!$fileManager->renameFile($validated)){
-            return redirect()->back()->with('success','Failed to rename file ');
-        }
-            return redirect()->back()->with('success','File renamed Successfully');
+
+        if (!$fileManager->renameFile($validated)) {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Failed to rename file!'
+                ],
+                200
+            );
+        };
+
+        return  response()->json(
+            [
+                'status' => True,
+                'message' => 'File renamed successfully'
+            ],
+            200
+        );
     }
 
-       /**
+    /**
      * Copy a file in the Server
      *
      * @OA\Post(
@@ -366,26 +471,37 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
+     */
 
-    public function copy(FileManager  $fileManager){
-     
+    public function copy(FileManager  $fileManager)
+    {
+
         $validated = request()->validate([
             'content' => 'required|json',
             'copy-file-path' => 'required'
         ]);
 
-        if(!$fileManager->copyFile($validated)){
-            return redirect()->back()->with('success','Failed to copy File copied');
-        }
+        if (!$fileManager->copyFile($validated)) {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Failed to copy file!'
+                ],
+                200
+            );
+        };
 
-        return redirect()->back()->with('success','File copied successfully');
-       
-       
+        return  response()->json(
+            [
+                'status' => True,
+                'message' => 'File copied successfully'
+            ],
+            200
+        );
     }
 
 
-       /**
+    /**
      * Move a file from one directory to another the Server
      *
      * @OA\Post(
@@ -400,27 +516,41 @@ class FileManagerController extends Controller
      *      @OA\Response(response=401, description="Unauthorized")
      * 
      * )
-    */
-    public function move(FileManager $fileManager){
+     */
+    public function move(FileManager $fileManager)
+    {
 
         $validated = request()->validate([
             'content' => 'required|json',
             'move-file-path' => 'required'
         ]);
 
-       if(!$fileManager->moveFile($validated)){
-            return redirect()->back()->with('success','failed to move file successfully');
-       }
-        
-        return redirect()->back()->with('success','File moved successfully');
+        if (!$fileManager->moveFile($validated)) {
+            return  response()->json(
+                [
+                    'status' => false,
+                    'message' => 'Failed to move file!'
+                ],
+                200
+            );
+        };
+
+        return  response()->json(
+            [
+                'status' => True,
+                'message' => 'File moved successfully'
+            ],
+            200
+        );
     }
 
 
-    
-    public function getSlashByOS(){
+
+    public function getSlashByOS()
+    {
         if (strtoupper(substr(PHP_OS, 0, 3)) === 'WIN') {
             return "\\";
-        } 
+        }
 
         return "/";
     }
