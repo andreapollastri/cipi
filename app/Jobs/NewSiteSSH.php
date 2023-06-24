@@ -40,7 +40,7 @@ class NewSiteSSH implements ShouldQueue
         $ssh->setTimeout(360);
         $ssh->exec('echo '.$this->server->password.' | sudo -S sudo unlink newsite');
 
-        if($this->server->language == "NODEJS"){
+        if($this->site->language == "NODEJS"){
             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget -O newsite  '.config('app.url').'/sh/newsite_nodejs');
         }else{
             $ssh->exec('echo '.$this->server->password.' | sudo -S sudo wget '.config('app.url').'/sh/newsite');
