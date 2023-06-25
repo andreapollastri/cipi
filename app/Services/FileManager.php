@@ -6,7 +6,6 @@ use Carbon\Carbon;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\File;
 
-
 class FileManager
 {
     public function fetchServerContents($params, $path, $queryPath)
