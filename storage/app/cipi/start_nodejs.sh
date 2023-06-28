@@ -26,7 +26,7 @@ while [ -n "$1" ] ; do
 done
 
 
-cd /home/$USER_NAME
+cd /home/$USER_NAME/web
 npm install
 sudo cat > ecosystem.config.js <<EOF
 module.exports = {
