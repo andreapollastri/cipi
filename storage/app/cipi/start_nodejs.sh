@@ -10,9 +10,9 @@ while [ -n "$1" ] ; do
         shift
         PORT=$1
         ;;
-    -ph | --path )
+    -r | --path )
         shift
-        PATH=$1
+        ROUTE=$1
         ;;
     * )
         echo "ERROR: Unknown option: $1"
@@ -29,14 +29,14 @@ sudo cat > ecosystem.config.js <<EOF
 module.exports = {
   apps : [{
     name   : "$USER_NAME",
-    script : "$PATH",
+    script : "$ROUTE",
     instances : "1",
     exec_mode : "fork",
     env: {
       NODE_ENV: "production",
       PORT: $PORT,
     },
-    log_file: "/home/$USER_NAME/log",
+    log_file: "/home/$USER_NAME/log/node.log",
     max_restarts: 3
   }]
 }

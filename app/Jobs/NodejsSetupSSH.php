@@ -40,8 +40,8 @@ class NodejsSetupSSH implements ShouldQueue
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo unlink newnodejs');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo wget -O newnodejs  '.config('app.url').'/sh/start_nodejs');
         $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo dos2unix newnodejs');
-        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo bash newnodejs -u '.$this->site->username.' -p '.str_pad($this->site->id,4,0,STR_PAD_RIGHT).' -ph '.$this->site->node_script);
-//        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo unlink newsite');
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo bash newnodejs -u '.$this->site->username.' -p '.str_pad($this->site->id,4,0,STR_PAD_RIGHT).' -r '.$this->site->node_script);
+        $ssh->exec('echo '.$this->site->server->password.' | sudo -S sudo unlink newsite');
         $ssh->exec('exit');
     }
 }
