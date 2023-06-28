@@ -1,7 +1,4 @@
-#!/usr/bin/env bash
-
-PHP=
-USER_NAME=
+#!/bin/bash
 
 while [ -n "$1" ] ; do
     case $1 in
