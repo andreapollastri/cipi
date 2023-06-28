@@ -63,6 +63,7 @@ Route::delete('/sites/{site_id}/aliases/{alias_id}', [SiteController::class, 'de
 
 //Sites
 Route::post('/nodejs/{site_id}', [NodejsController::class, 'setup']);
+Route::patch('/nodejs/{site_id}', [NodejsController::class, 'stop']);
 
 
 

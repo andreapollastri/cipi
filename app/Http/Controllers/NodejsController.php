@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Jobs\NodejsSetupSSH;
+use App\Jobs\NodejsStopSSH;
 use Carbon\Carbon;
 use App\Models\Site;
 use App\Models\Alias;
@@ -215,21 +216,20 @@ class NodejsController extends Controller
             'deploy'            => $site->deploy,
             'deploy_key'        => $site->server->github_key,
             'supervisor'        => $site->supervisor,
-            'node_script'        => $site->node_script,
+            'node_script'       => $site->node_script,
             'aliases'           => count($site->aliases)
         ]);
     }
 
 
-
     /**
-     * Show site information
+     * Stop Nodejs information
      *
-     * @OA\Get(
-     *      path="/api/sites/{site_id}",
-     *      summary="Show site information",
-     *      tags={"Sites"},
-     *      description="Get site information by site_id.",
+     * @OA\Patch(
+     *      path="/api/nodejs/{site_id}",
+     *      summary="Setup Nodejs information",
+     *      tags={"Nodejs", "Sites"},
+     *      description="Stop Nodejs information by site_id.",
      *      @OA\Parameter(
      *          name="Authorization",
      *          description="Use Apikey prefix (e.g. Authorization: Apikey XYZ)",
@@ -239,11 +239,24 @@ class NodejsController extends Controller
      *     ),
      *     @OA\Parameter(
      *          name="site_id",
-     *          description="The id of the site to show.",
+     *          description="The id of the site to setup nodejs for.",
      *          required=true,
      *          in="path",
      *          @OA\Schema(type="string")
      *      ),
+     *     @OA\RequestBody(
+     *        required = true,
+     *        description = "Site nodejs payload",
+     *        @OA\JsonContent(
+     *             type="object",
+     *             @OA\Property(
+     *                  property="path",
+     *                  description="Js script to start",
+     *                  type="string",
+     *                  example="./bin/www",
+     *             )
+     *          )
+     *     ),
      *     @OA\Response(
      *          response=200,
      *          description="Successful request",
@@ -359,13 +372,9 @@ class NodejsController extends Controller
      *          response=409,
      *          description="Site domain conflict"
      *      ),
-     *      @OA\Response(
-     *          response=500,
-     *          description="SSH server connection issue"
-     *      )
      * )
     */
-    public function show(string $site_id)
+    public function stop(Request $request, string $site_id)
     {
         $site = Site::where('site_id', $site_id)->first();
 
@@ -376,6 +385,12 @@ class NodejsController extends Controller
             ], 404);
         }
 
+
+        $site->node_status = 0;
+        $site->save();
+
+        NodejsStopSSH::dispatch($site)->delay(Carbon::now()->addSeconds(1));
+
         return response()->json([
             'site_id'           => $site->site_id,
             'domain'            => $site->domain,
@@ -385,8 +400,6 @@ class NodejsController extends Controller
             'server_id'         => $site->server->server_id,
             'server_name'       => $site->server->name,
             'server_ip'         => $site->server->ip,
-            'language'          => $site->language,
-            'node_script'       => $site->node_script,
             'php'               => $site->php,
             'basepath'          => $site->basepath,
             'repository'        => $site->repository,
@@ -394,24 +407,10 @@ class NodejsController extends Controller
             'deploy'            => $site->deploy,
             'deploy_key'        => $site->server->github_key,
             'supervisor'        => $site->supervisor,
-            'rootpath'          => $site->rootpath,
+            'node_script'       => $site->node_script,
             'aliases'           => count($site->aliases)
         ]);
     }
 
 
-
-
-
-    public function autoLoginPMA(string $site_id)
-    {
-        $site = Site::where('site_id', $site_id)->first();
-
-        if (!$site) {
-            return back();
-        }
-
-        return redirect()->to("mysecureadmin/index.php?username=".$site->username."&password=".$site->database);
-
-    }
 }

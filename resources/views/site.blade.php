@@ -196,26 +196,6 @@ Manage Site
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fab fa-github fs-fw mr-1"></i>
-                PhpMyAdmin
-            </div>
-            <div class="card-body">
-                <p>Import your database</p>
-                <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ route('autopma',$site_id) }}" class="btn btn-warning" style="min-width:200px" target="_blank">phpMyAdmin</a></button>
-                    <div class="space"></div>
-                </div>
-                {{-- <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
-                    <div class="space"></div>
-                </div> --}}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-xl-4">
-        <div class="card mb-4">
-            <div class="card-header">
-                <i class="fab fa-github fs-fw mr-1"></i>
                 MYSQL
             </div>
             <div class="card-body">
@@ -224,18 +204,20 @@ Manage Site
                     <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ url('/data') }}" class="btn btn-warning" style="min-width:200px">DATABASE</a></button>
                     <div class="space"></div>
                 </div>
-                {{-- <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Edit deploy scripts</button>
+
+                <div class="space"></div>
+
+                <p>Manage your database</p>
+                <div class="text-center">
+                    <button class="btn btn-warning" type="button" style="min-width:200px" id="sitesetrepo"> <a href="{{ route('autopma',$site_id) }}" class="btn btn-warning" style="min-width:200px" target="_blank">phpMyAdmin</a></button>
                     <div class="space"></div>
-                </div> --}}
+                </div>
+
             </div>
         </div>
     </div>
-</div>
 
-<div class="row">
-
-    <div class="col-xl-4">
+    <div id="nodejsManager" class="col-xl-4 d-none">
         <div class="card mb-4">
             <div class="card-header">
                 <i class="fab fa-github fs-fw mr-1"></i>
@@ -248,21 +230,15 @@ Manage Site
                     <div class="space"></div>
                 </div>
                 <div class="text-center">
-                    <button class="btn btn-success" type="button" style="min-width:200px" id="startNode">Start App</button>
-                    <button class="btn btn-danger" type="button" style="min-width:200px" id="stopNode">Stop App</button>
+                    <button class="btn btn-danger" type="button" style="min-width:200px" id="stopNodeButton">Stop App</button>
                     <div class="space"></div>
                 </div>
-                <p>
-                    To run deploy:
-                <ul style="font-size:14px;">
-                    <li>ssh <span id="repodeployinfouser1"></span>@<span id="repodeployinfoip"></span></li>
-                    <li>sh /home/<span id="repodeployinfouser2"></span>/git/deploy.sh</li>
-                </ul>
-                </p>
+
             </div>
         </div>
     </div>
 </div>
+
 @endsection
 
 
@@ -424,10 +400,13 @@ Manage Site
                     $('#sitephpverField').addClass('d-none');
                     $('#breadcrumbPHP').addClass('d-none');
                 }
-                if(data.node_status){
-                    $('#startNode').addClass('d-none');
-                }else{
-                    $('#stopNode').addClass('d-none');
+
+                if(data.language == "NODEJS"){
+                    $('#nodejsManager').removeClass('d-none');
+                }
+
+                if(!data.node_status){
+                    $('#stopNodeButton').addClass('d-none');
                 }
                 //added
                 console.log(data.rootpath);
@@ -580,6 +559,26 @@ Manage Site
             success: function(data) {
                 $('#startNodejsloading').addClass('d-none');
                 $('#startNodejsModal').modal('toggle');
+                siteInit();
+            },
+        });
+    });
+
+    // Stop App
+    $('#stopNodeButton').click(function() {
+        $.ajax({
+            url: '/api/nodejs/{{ $site_id }}',
+            type: 'PATCH',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
+                'path': $('#node_path').val()
+            }),
+            beforeSend: function() {
+                $('#mainloading').removeClass('d-none');
+            },
+            success: function(data) {
+                $('#mainloading').addClass('d-none');
                 siteInit();
             },
         });

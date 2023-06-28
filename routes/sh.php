@@ -9,5 +9,6 @@ Route::get('/servers/rootreset', [ShellController::class, 'serversrootreset']);
 Route::get('/newsite', [ShellController::class, 'newsite']);
 Route::get('/newsite_nodejs', [ShellController::class, 'newsite_nodejs']);
 Route::get('/start_nodejs', [ShellController::class, 'start_nodejs']);
+Route::get('/stop_nodejs', [ShellController::class, 'stop_nodejs']);
 Route::get('/delsite', [ShellController::class, 'delsite']);
 Route::get('/sitepass', [ShellController::class, 'sitepass']);
