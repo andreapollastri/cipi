@@ -2,7 +2,7 @@
 
 use App\Http\Controllers\FileManagerController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\SiteController;
+use App\Http\Controllers\NodejsController;
 use App\Http\Controllers\DatabaseController;
 
 /*
@@ -37,7 +37,7 @@ Route::get('/pma', function () {
 });
 
 //phpmyadmin route with autologin
-Route::get('/autopma/{site_id}', [SiteController::class, 'autoLoginPMA'])->name('autopma');
+Route::get('/autopma/{site_id}', [NodejsController::class, 'autoLoginPMA'])->name('autopma');
 //database
 Route::get('/data', [DatabaseController::class, 'viewdatabase'])->name('data');
 Route::post('/createdatab', [DatabaseController::class,'createdatabase'])->name('createdatab');
@@ -66,7 +66,7 @@ Route::get('/settings', function () {
     return view('settings');
 });
 
-Route::get('/pdf/{site_id}/{token}', [SiteController::class, 'pdf']);
+Route::get('/pdf/{site_id}/{token}', [NodejsController::class, 'pdf']);
 
 Route::get('files/{folder_name?}', [FileManagerController::class,'index'])->where('folder_name', '(.*)')->name('files.index');
 Route::post('files/view', [FileManagerController::class, 'show'])->name('files.show');

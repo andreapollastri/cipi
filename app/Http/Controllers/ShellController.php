@@ -86,6 +86,19 @@ class ShellController extends Controller
 
 
     /**
+     * New Nodejs Site script
+     *
+    */
+    public function start_nodejs()
+    {
+        $script = Storage::get('cipi/start_nodejs.sh');
+
+        return response($script)
+                ->withHeaders(['Content-Type' =>'application/x-sh']);
+    }
+
+
+    /**
      * Delete Site script
      *
     */

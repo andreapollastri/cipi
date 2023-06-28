@@ -32,7 +32,7 @@ sudo cat > ecosystem.config.js <<EOF
 module.exports = {
   apps : [{
     name   : "$USER_NAME",
-    script : "./$PATH",
+    script : "$PATH",
     instances : "1",
     exec_mode : "fork",
     env: {

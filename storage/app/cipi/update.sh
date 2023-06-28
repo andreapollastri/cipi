@@ -12,12 +12,8 @@ ssh-add $SSH_KEY
 REPO="git@github.com:$GITHUB"
 if [ -d "$GIT_DIR" ]; then
     cd $WORK_TREE
-    git clone $REPO $WORK_TREE --branch $BRANCH
-    echo "Clone successfully"
-    #git --work-tree=$WORK_TREE --git-dir=$GIT_DIR fetch
-    #git --work-tree=$WORK_TREE --git-dir=$GIT_DIR fetch origin --tags --force
-    #git --work-tree=$WORK_TREE --git-dir=$GIT_DIR checkout -f $BRANCH
-    #git --work-tree=$WORK_TREE --git-dir=$GIT_DIR merge origin/$BRANCH
+    git pull origin $BRANCH
+    echo "Updated successfully"
 else
     git init --bare $GIT_DIR
     rm -rf $WORK_TREE

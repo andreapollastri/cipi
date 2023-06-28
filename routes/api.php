@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\SiteController;
+use App\Http\Controllers\NodejsController;
 use App\Http\Controllers\ServerController;
 
 /*
@@ -59,6 +60,9 @@ Route::get('/sites/{site_id}/aliases', [SiteController::class, 'aliases']);
 Route::post('/sites/{site_id}/aliases', [SiteController::class, 'createalias']);
 Route::delete('/sites/{site_id}/aliases/{alias_id}', [SiteController::class, 'destroyalias']);
 
+
+//Sites
+Route::post('/nodejs/{site_id}', [NodejsController::class, 'setup']);
 
 
 

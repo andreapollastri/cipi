@@ -248,7 +248,8 @@ Manage Site
                     <div class="space"></div>
                 </div>
                 <div class="text-center">
-                    <button class="btn btn-warning" type="button" style="min-width:200px" id="editdeploy">Stop App</button>
+                    <button class="btn btn-success" type="button" style="min-width:200px" id="startNode">Start App</button>
+                    <button class="btn btn-danger" type="button" style="min-width:200px" id="stopNode">Stop App</button>
                     <div class="space"></div>
                 </div>
                 <p>
@@ -363,22 +364,23 @@ Manage Site
     </div>
 </div>
 <div class="modal fade" id="startNodejsModal" tabindex="-1" role="dialog" aria-labelledby="startNodejsModalLabel" aria-hidden="true">
-    <div class="modal-dialog" role="document" id="repositorydialog">
+    <div class="modal-dialog" role="document" id="startNodejsModaldialog">
         <div class="modal-content">
             <div class="modal-header">
-                <h5 class="modal-title" id="repositoryModalLabel">Setup Your Nodejs</h5>
+                <h5 class="modal-title" id="startNodejsModalLabel">Setup Your Nodejs</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true">&times;</span>
                 </button>
             </div>
             <div class="modal-body">
-                <label for="repositoryproject">Path</label>
+                <label for="node_path">Path</label>
                 <div class="input-group">
-                    <input class="form-control" type="text" id="repositoryproject" placeholder="e.g. ./bin/www" autocomplete="off" />
+                    <input class="form-control" type="text" id="node_path" placeholder="e.g ./bin/www" autocomplete="off" />
                 </div>
+                <span class="small">You can get it from the Start Script in package.json</span>
                 <div class="space"></div>
                 <div class="text-center">
-                    <button class="btn btn-primary" type="button" id="repositorysubmit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="repositoryloading"></i></button>
+                    <button class="btn btn-primary" type="button" id="startNodejsModalSubmit">Confirm <i class="fas fa-circle-notch fa-spin d-none" id="startNodejsloading"></i></button>
                 </div>
             </div>
         </div>
@@ -415,10 +417,17 @@ Manage Site
                 $('#maintitle').html(data.domain);
                 $('#sitedomain').val(data.domain);
                 $('#sitebasepath').val(data.basepath);
+                $('#node_path').val(data.node_script);
+                // $('#node_status').val(data.node_status);
                 $('#sitelang').html(data.language);
                 if(data.language != "PHP"){
                     $('#sitephpverField').addClass('d-none');
                     $('#breadcrumbPHP').addClass('d-none');
+                }
+                if(data.node_status){
+                    $('#startNode').addClass('d-none');
+                }else{
+                    $('#stopNode').addClass('d-none');
                 }
                 //added
                 console.log(data.rootpath);
@@ -550,6 +559,27 @@ Manage Site
             success: function(data) {
                 $('#repositoryloading').addClass('d-none');
                 $('#repositoryModal').modal('toggle');
+                siteInit();
+            },
+        });
+    });
+
+    // Setup App
+    $('#startNodejsModalSubmit').click(function() {
+        $.ajax({
+            url: '/api/nodejs/{{ $site_id }}',
+            type: 'POST',
+            contentType: 'application/json',
+            dataType: 'json',
+            data: JSON.stringify({
+                'path': $('#node_path').val()
+            }),
+            beforeSend: function() {
+                $('#startNodejsloading').removeClass('d-none');
+            },
+            success: function(data) {
+                $('#startNodejsloading').addClass('d-none');
+                $('#startNodejsModal').modal('toggle');
                 siteInit();
             },
         });

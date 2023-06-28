@@ -28,6 +28,8 @@ class CreateSitesTable extends Migration
             $table->string('language')->default('PHP');
             $table->string('php')->default('8.0');
             $table->text('supervisor')->nullable();
+            $table->text('node_script')->nullable();
+            $table->boolean('node_status')->default(false);
             $table->text('nginx')->nullable();
             $table->text('deploy')->nullable();
             $table->boolean('panel')->default(false);
