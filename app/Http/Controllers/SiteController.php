@@ -127,6 +127,7 @@ class SiteController extends Controller
                 'language'      => $site->language,
                 'php'           => $site->php,
                 'basepath'      => $site->basepath,
+                'rootpath'      => $site->rootpath,
                 'aliases'       => count($site->aliases)
             ];
             array_push($response, $data);
@@ -378,6 +379,7 @@ class SiteController extends Controller
             'server_ip'         => $server->ip,
             'php'               => $site->php,
             'basepath'          => $site->basepath,
+            'rootpath'          => $site->rootpath,
             'pdf'               => URL::to('/pdf/'.$site_id.'/'. $pdftoken)
         ]);
     }
