@@ -383,7 +383,7 @@ server {
     error_page 404 /index.php;
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php$DEFAULTPHPVERSION-fpm.sock;
     }
     location ~ /\.(?!well-known).* {
         deny all;
@@ -427,7 +427,7 @@ server {
     error_page 404 /index.php;
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php8.2-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php$DEFAULTPHPVERSION-fpm.sock;
     }
     location ~ /\.(?!well-known).* {
         deny all;
