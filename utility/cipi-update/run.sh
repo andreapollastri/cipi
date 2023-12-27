@@ -1,4 +1,5 @@
 cd /var/www/html && git stash
+cd /var/www/html && git checkout 3.x
 cd /var/www/html && git fetch
 cd /var/www/html && git pull
 sudo chmod -R o+w /var/www/html/storage
