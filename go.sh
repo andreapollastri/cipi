@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #################################################### CONFIGURATION ###
-USERPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 32;
-DATABASEPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 24;
+USERPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 24;
+DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 UBUNTUVERSION=22.04
 PHPVERSION=8.3
 NODEVERSION=20.x
