@@ -1,19 +1,19 @@
 #!/bin/bash
 
 #################################################### CONFIGURATION ###
-USERPASSWORD=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
-DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
+USERPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 32;
+DATABASEPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 24;
+UBUNTUVERSION=22.04
+PHPVERSION=8.3
+NODEVERSION=20.x
+WEBIPDOMAIN=sslip.io
+CHECKIPAPI=https://checkip.amazonaws.com
 GITREPOSITORY=andreapollastri/cipi
 if [ -z "$1" ];
     GITBRANCH=4.x
 then
     GITBRANCH=$1
 fi
-DEFAULTPHPVERSION=8.3
-NODEVERSION=20.x
-WEBIPDOMAIN=sslip.io
-UBUNTUVERSION=22.04
-CHECKIPAPI=https://checkip.amazonaws.com
 
 
 ####################################################   CLI TOOLS   ###
@@ -264,28 +264,28 @@ sleep 1s
 sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:ondrej/php
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-fpm
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-common
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-curl
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-bcmath
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-mbstring
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-tokenizer
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-mysql
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-sqlite3
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-pgsql
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-redis
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-memcached
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-json
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-zip
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-xml
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-soap
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-gd
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-imagick
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-fileinfo
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-imap
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-cli
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$DEFAULTPHPVERSION-openssl
-PHPINI=/etc/php/$DEFAULTPHPVERSION/fpm/conf.d/cipi.ini
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-fpm
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-common
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-bcmath
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-mbstring
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-tokenizer
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-mysql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-sqlite3
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-pgsql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-redis
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-memcached
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-json
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-zip
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-xml
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-soap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-gd
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-imagick
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-fileinfo
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-imap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-cli
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-openssl
+PHPINI=/etc/php/$PHPVERSION/fpm/conf.d/cipi.ini
 sudo touch $PHPINI
 sudo cat > "$PHPINI" <<EOF
 memory_limit = 256M
@@ -294,7 +294,7 @@ post_max_size = 256M
 max_execution_time = 180
 max_input_time = 180
 EOF
-sudo service php$DEFAULTPHPVERSION-fpm restart
+sudo service php$PHPVERSION-fpm restart
 
 
 
@@ -305,7 +305,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php$DEFAULTPHPVERSION
+sudo update-alternatives --set php /usr/bin/php$PHPVERSION
 
 
 
@@ -383,7 +383,7 @@ server {
     error_page 404 /index.php;
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php$DEFAULTPHPVERSION-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php$PHPVERSION-fpm.sock;
     }
     location ~ /\.(?!well-known).* {
         deny all;
@@ -427,7 +427,7 @@ server {
     error_page 404 /index.php;
     location ~ \.php$ {
         include snippets/fastcgi-php.conf;
-        fastcgi_pass unix:/var/run/php/php$DEFAULTPHPVERSION-fpm.sock;
+        fastcgi_pass unix:/var/run/php/php$PHPVERSION-fpm.sock;
     }
     location ~ /\.(?!well-known).* {
         deny all;
