@@ -5,7 +5,7 @@ USERPASSWORD=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:
 DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 GITREPOSITORY=andreapollastri/cipi
 if [ -z "$1" ];
-    GITBRANCH=latest
+    GITBRANCH=4.x
 then
     GITBRANCH=$1
 fi
@@ -609,7 +609,6 @@ cat > "$TASK" <<EOF
 20 5 * * 7 apt-get clean && apt-get autoclean
 50 5 * * * echo 3 > /proc/sys/vm/drop_caches && swapoff -a && swapon -a
 * * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
-5 2 * * * cd /var/www/html && sh update.sh >> /dev/null 2>&1
 EOF
 crontab $TASK
 sudo systemctl restart nginx.service

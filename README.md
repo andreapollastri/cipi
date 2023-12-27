@@ -1,109 +1,66 @@
-<img src="https://github.com/andreapollastri/cipi/blob/master/utility/design/banner.png?raw=true">
+<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
 
-![GitHub stars](https://img.shields.io/github/stars/andreapollastri/cipi?style=social)
-![GitHub watchers](https://img.shields.io/github/watchers/andreapollastri/cipi?style=social)
-![GitHub issues](https://img.shields.io/github/issues/andreapollastri/cipi)
-![GitHub](https://img.shields.io/github/license/andreapollastri/cipi)
-![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/andreapollastri/cipi?label=version)
+<p align="center">
+<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
+<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
+</p>
 
-## About
-Cipi is a Laravel based cloud server control panel that supports Digital Ocean, AWS, Vultr, Google Cloud, Linode, Azure and other VPS. It comes with nginx, Mysql, multi PHP-FPM versions, multi users, Supervisor, Composer, npm, free Let's Encrypt certificates, Git deployment, backups, ffmpeg, fail2ban, Redis, API and with a simple graphical interface useful to manage Laravel, Codeigniter, Symfony, WordPress or other PHP applications. With Cipi you don’t need to be a Sys Admin to deploy and manage websites and PHP applications powered by cloud VPS.
+## About Laravel
 
-## Features
-- Easy install: setup one or more servers with a click in few minutes without be a Linux expert.
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
 
-- Server Management: manage one or more servers in as easy as a few clicks without be a LEMP Guru.
+- [Simple, fast routing engine](https://laravel.com/docs/routing).
+- [Powerful dependency injection container](https://laravel.com/docs/container).
+- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
+- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
+- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
+- [Robust background job processing](https://laravel.com/docs/queues).
+- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
 
-- Perfect stack for PHP devs: Cipi comes with nginx, PHP, MySql, Composer, npm and Supervisor.
+Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
-- Multi-PHP: Run simultaneous PHP versions at your ease & convenience.
+## Learning Laravel
 
-- Secure: no unsed open ports, unprivileged PHP, isolated system users and filesystem, only SFTP (no insecure FTP), Free SSL certificates everywhere.
+Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
 
-- Always update: Cipi takes care about your business and automatically keeps your server's software up to date so you always have the latest security patches.
+You may also try the [Laravel Bootcamp](https://bootcamp.laravel.com), where you will be guided through building a modern Laravel application from scratch.
 
-- Integrate Cipi with your own software via Rest API and Swagger.
+If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 2000 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
 
-- Real-time servers stats: Keep an eye on everything through an awesome dashboard.
+## Laravel Sponsors
 
-- Always up to date: Cipi installs last versions of LTS dists and supports Ubuntu 20.04 LTS :)
+We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
 
-## Discover Cipi
-Visit website: https://cipi.sh
+### Premium Partners
 
-## Documentation
-Cipi Documentation is available at: https://cipi.sh/docs.html.
-
-## Installation
-```bash
-wget -O - https://cipi.sh/go.sh | bash
-```
-#### Installation on AWS
-AWS by default disables root login. To login as root inside AWS, login as default user and then use command sudo -s.
-
-```
-$ ssh ubuntu@<your server IP address>
-$ ubuntu@aws:~$ sudo -s
-$ root@aws:~# wget -O - https://cipi.sh/go.sh | bash
-```
-Remember to open ports: 22, 80 and 443!
-
-#### Installation Note
-Before you can use Cipi, please make sure your server fulfils these requirements:
-
-- Ubuntu 20.04 x86_64 LTS (Fresh installation)
-- If the server is virtual (VPS), OpenVZ may not be supported
-- We are checking Cipi compatibility within Oracle / ARM (not full supported yet)
-
-Hardware Requirement: More than 1GB of HD / At least 1 core processor / 512MB minimum RAM / At least 1 public IP  Address (IPv6 and NAT VPS are not supported) / For VPS providers such as AWS, those providers already include an external firewall for your VPS. Please open port 22, 80 and 443 to install Cipi.
-
-Installation may take up to about 30 minutes which may also depend on your server's internet speed. After the installation is completed, you are ready to use Cipi to manage your servers.
-
-To correctly manage remote servers Cipi has to be on a public IP address (IPv4). Do not use it in localhost!
-
-## Cipi LEMP environment
-- nginx: 1.18
-- PHP-FPM: 8.1, 8.0, 7.4
-- MySql: 8
-- node: 16
-- npm: 8
-- Composer: 2
-
-## Screenshots
-
-<img src="https://cipi.sh/assets/images/docs/dashboard.png"> 
-
-<img src="https://cipi.sh/assets/images/docs/server.png"> 
-
-<img src="https://cipi.sh/assets/images/docs/site.png"> 
-
-## Why use Cipi?
-Cipi is easy, stable, powerful and free for any personal and commercial use and it's a perfect alternative to Runcloud, Ploi.io, Serverpilot, Forge, Moss.sh and similar software...
-
-## Mobile App
-Christian Giupponi (https://zerouno.io) has developed the Cipi Mobile App.<br>
-Android: https://play.google.com/store/apps/details?id=it.christiangiupponi.cipi<br>
-iOS: Coming soon!<br><br>
-
-## Cipi Roadmap... what's next? 
-- Cipi Version 4 (half 2022)
-- Laravel 9 support
-- Backup on s3
-- Apps installer
-- ...
+- **[Vehikl](https://vehikl.com/)**
+- **[Tighten Co.](https://tighten.co)**
+- **[WebReinvent](https://webreinvent.com/)**
+- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
+- **[64 Robots](https://64robots.com)**
+- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
+- **[Cyber-Duck](https://cyber-duck.co.uk)**
+- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
+- **[Jump24](https://jump24.co.uk)**
+- **[Redberry](https://redberry.international/laravel/)**
+- **[Active Logic](https://activelogic.com)**
+- **[byte5](https://byte5.de)**
+- **[OP.GG](https://op.gg)**
 
 ## Contributing
-Thank you for considering contributing to the Cipi Project (code, issues, feedbacks, stars, promo, beers) :)
 
-#### ...anyway star this project on Github, Thankyou ;)
+Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
 
-## Licence
-Cipi is an open-source software licensed under the MIT license.
+## Code of Conduct
 
-## Need support with Cipi?
-Please open an issue here: https://github.com/andreapollastri/cipi/issues.
+In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
 
-## Write to Cipi
-Write an email to: hello@cipi.sh
+## Security Vulnerabilities
 
-### ...enjoy Cipi :)
+If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+
+## License
+
+The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).

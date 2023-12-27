@@ -8,39 +8,20 @@ use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 class Kernel extends ConsoleKernel
 {
     /**
-     * The Artisan commands provided by your application.
-     *
-     * @var array
-     */
-    protected $commands = [
-        \App\Console\Commands\ActiveSetupCount::class,
-        \App\Console\Commands\LogRotate::class,
-        \App\Console\Commands\ServerSetupCheck::class,
-        \App\Console\Commands\CipiUpdate::class,
-    ];
-
-    /**
      * Define the application's command schedule.
-     *
-     * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
-     * @return void
      */
-    protected function schedule(Schedule $schedule)
+    protected function schedule(Schedule $schedule): void
     {
-        $schedule->command('servers:setupcheck')->everyMinute();
-        $schedule->command('cipi:update')->dailyAt('12:05');
-        $schedule->command('cipi:logrotate')->dailyAt('00:00');
-        $schedule->command('cipi:activesetupcount')->dailyAt('03:03');
+        // $schedule->command('inspire')->hourly();
     }
 
     /**
      * Register the commands for the application.
-     *
-     * @return void
      */
-    protected function commands()
+    protected function commands(): void
     {
         $this->load(__DIR__.'/Commands');
+
         require base_path('routes/console.php');
     }
 }
