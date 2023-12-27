@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #################################################### CONFIGURATION ###
-USERPASSWORD=C tr -dc 'A-Za-z0-9!"#$%&'\''()*+,-./:;<=>?@[\]^_`{|}~' </dev/urandom | head -c 24;
+USERPASSWORD=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 UBUNTUVERSION=22.04
 PHPVERSION=8.3
@@ -56,7 +56,6 @@ sleep 3s
 
 # OS CHECK
 clear
-clear
 echo "${bggreen}${black}${bold}"
 echo "OS check..."
 echo "${reset}"
@@ -88,7 +87,6 @@ fi
 
 # ROOT CHECK
 clear
-clear
 echo "${bggreen}${black}${bold}"
 echo "Permission check..."
 echo "${reset}"
@@ -108,19 +106,17 @@ fi
 
 # BASIC SETUP
 clear
-clear
 echo "${bggreen}${black}${bold}"
 echo "Base setup..."
 echo "${reset}"
 sleep 1s
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common curl wget nano vim rpl sed zip unzip expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix htop
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y upgrade
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common curl wget nano rpl sed zip unzip expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix htop
 
 
 
 # GET IP
-clear
 clear
 echo "${bggreen}${black}${bold}"
 echo "Getting IP..."
