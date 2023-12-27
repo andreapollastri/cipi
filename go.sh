@@ -4,7 +4,7 @@
 USERPASSWORD=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 UBUNTUVERSION=22.04
-PHPVERSION=8.3
+PHPVERSION=8.2
 NODEVERSION=20.x
 WEBIPDOMAIN=sslip.io
 CHECKIPAPI=https://checkip.amazonaws.com
@@ -260,28 +260,29 @@ sleep 1s
 sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:ondrej/php
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
 
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-fpm
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-common
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-curl
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-bcmath
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-mbstring
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-tokenizer
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-mysql
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-sqlite3
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-pgsql
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-redis
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-memcached
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-json
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-zip
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-xml
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-soap
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-gd
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-imagick
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-fileinfo
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-imap
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-cli
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php$PHPVERSION-openssl
-PHPINI=/etc/php/$PHPVERSION/fpm/conf.d/cipi.ini
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-fpm
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-common
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-bcmath
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-mbstring
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-tokenizer
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-mysql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-sqlite3
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-pgsql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-redis
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-memcached
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-json
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-zip
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-xml
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-soap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-gd
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-imagick
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-fileinfo
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-imap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-cli
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.1-openssl
+PHPINI=/etc/php/8.1/fpm/conf.d/cipi.ini
 sudo touch $PHPINI
 sudo cat > "$PHPINI" <<EOF
 memory_limit = 256M
@@ -290,8 +291,71 @@ post_max_size = 256M
 max_execution_time = 180
 max_input_time = 180
 EOF
-sudo service php$PHPVERSION-fpm restart
+sudo service php8.1-fpm restart
 
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-fpm
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-common
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-bcmath
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-mbstring
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-tokenizer
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-mysql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-sqlite3
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-pgsql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-redis
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-memcached
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-json
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-zip
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-xml
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-soap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-gd
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-imagick
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-fileinfo
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-imap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-cli
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.2-openssl
+PHPINI=/etc/php/8.2/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.2-fpm restart
+
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-fpm
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-common
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-bcmath
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-mbstring
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-tokenizer
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-mysql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-sqlite3
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-pgsql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-redis
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-memcached
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-json
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-zip
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-xml
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-soap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-gd
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-imagick
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-fileinfo
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-imap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-cli
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-openssl
+PHPINI=/etc/php/8.3/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.3-fpm restart
 
 
 # PHP CLI
