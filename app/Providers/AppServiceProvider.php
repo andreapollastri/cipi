@@ -19,6 +19,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        \App\Helpers\Schema::force();
+        \App\Helpers\Password::defaults();
     }
 }

@@ -14,9 +14,11 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         User::factory()->create([
-            'name' => 'Cipi Panel',
-            'email' => 'admin@cipi.sh',
-            'password' => Hash::make('Cipi_Control_Panel#4'),
+            'name' => config('panel.admin.name'),
+            'email' => config('panel.admin.email'),
+            'password' => Hash::make(
+                config('panel.admin.password')
+            ),
         ]);
     }
 }
