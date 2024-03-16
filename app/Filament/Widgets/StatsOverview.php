@@ -33,11 +33,11 @@ class StatsOverview extends BaseWidget
             Stat::make('CPU', $stats->cpu.'%')
                 ->description('CPU usage')
                 ->descriptionIcon('heroicon-m-cpu-chip')
-                ->chart($chart->pluck('cpu')->toArray()),
+                ->chart($chart->pluck('cpu')->reverse()->toArray()),
             Stat::make('RAM', $stats->ram.'%')
                 ->description('RAM usage')
                 ->descriptionIcon('heroicon-m-rectangle-stack')
-                ->chart($chart->pluck('ram')->toArray()),
+                ->chart($chart->pluck('ram')->reverse()->toArray()),
             Stat::make('HDD', $stats->hdd)
                 ->description('HDD usage')
                 ->descriptionIcon('heroicon-m-server'),
