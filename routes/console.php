@@ -1,7 +1,5 @@
 <?php
 
-use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 
-Artisan::command('panel:check-server-status', function () {
-    // Check server status
-})->everyMinute();
+Schedule::command(\App\Console\Commands\CheckServerStatus::class)->everyMinute();

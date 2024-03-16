@@ -55,10 +55,10 @@ class CipiPanelProvider extends PanelProvider
                     )
                     ->enableTwoFactorAuthentication(
                         force: config('panel.force_2fa'),
-                    )
-                    ->enableSanctumTokens(
-                        permissions: ['manage-sites', 'manage-server']
                     ),
+                // ->enableSanctumTokens(
+                //     permissions: ['manage-sites', 'manage-server']
+                // ),
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->middleware([
@@ -74,6 +74,11 @@ class CipiPanelProvider extends PanelProvider
             ])
             ->authMiddleware([
                 Authenticate::class,
-            ]);
+            ])
+            ->renderHook(
+                'panels::body.end',
+                fn () => view('footer'),
+            );
+
     }
 }

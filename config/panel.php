@@ -2,7 +2,7 @@
 
 return [
     'brand' => env('PANEL_BRAND', 'Cipi Control Panel'),
-    'website' => env('PANEL_WEBSITE', 'https://panel.sh'),
+    'website' => env('PANEL_WEBSITE', 'https://cipi.sh'),
     'favicon' => env('PANEL_FAVICON', '/favicon.ico'),
     'path' => env('PANEL_PATH', 'panel'),
     'logo' => [
