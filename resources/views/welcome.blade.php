@@ -23,7 +23,7 @@
                 <div class="flex items-center pt-8 sm:justify-start sm:pt-0">
                     <div class="px-4 text-lg text-gray-500 border-r border-gray-400 tracking-wider">
                         <a href="{{ config('panel.website') }}" target="_blank">
-                            <img src="{{ config('panel.logo') }}" alt="{{ config('panel.brand') }}" class="w-8 h-8">
+                            <img src="{{ config('panel.logo.url') }}" alt="{{ config('panel.brand') }}" class="w-8 h-8">
                         </a>
                     </div>
                     <div class="ml-4 text-lg text-gray-500 tracking-wider">
