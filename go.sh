@@ -111,7 +111,7 @@ echo "${reset}"
 sleep 1s
 
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
-sudo DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common curl wget nano vim rpl sed zip unzip expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix htop
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install software-properties-common curl wget nano vim rpl sed zip unzip expect dirmngr apt-transport-https lsb-release ca-certificates dnsutils dos2unix htop nodejs
 
 
 
@@ -281,6 +281,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-fileinfo
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-imap
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-cli
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-openssl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.3-intl
 PHPINI=/etc/php/8.3/fpm/conf.d/cipi.ini
 sudo touch $PHPINI
 sudo cat > "$PHPINI" <<EOF
@@ -499,17 +500,6 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y install python3-certbot-nginx
 
 
 
-# NODE
-clear
-echo "${bggreen}${black}${bold}"
-echo "Node/npm setup..."
-echo "${reset}"
-sleep 1s
-
-curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash - &&\
-sudo DEBIAN_FRONTEND=noninteractive apt-get install -y nodejs
-
-
 
 #PANEL INSTALLATION
 clear
@@ -647,7 +637,7 @@ echo " MySQL root user: cipi"
 echo " MySQL root pass: $DATABASEPASSWORD"
 echo ""
 echo " To manage your server visit: "
-echo " https://cipi-$SERVERIPWITHDASH$IPDOMAIN/login"
+echo " https://cipi-$SERVERIPWITHDASH$IPDOMAIN/panel"
 echo " Default credentials are: john.doe@cipi.sh / C1p1P4n3!#4.sh"
 echo ""
 echo " If panel is not available via HTTPS, try to run:"
