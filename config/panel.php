@@ -15,5 +15,5 @@ return [
         'password' => env('PANEL_ADMIN_PASSWORD', 'C1p1P4n3!#4.sh'),
     ],
     'force_2fa' => env('PANEL_FORCE_2FA', false),
-    'ip_dns_mapping' => env('PANEL_IP_DNS_MAPPING', '.nip.io'),
+    'ip_dns_mapping' => env('PANEL_IP_DNS_MAPPING', '.sslip.io'),
 ];

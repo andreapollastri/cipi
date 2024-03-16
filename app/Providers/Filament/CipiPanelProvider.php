@@ -75,10 +75,6 @@ class CipiPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ])
-            ->renderHook(
-                'panels::body.end',
-                fn () => view('footer'),
-            );
-
+            ->renderHook('panels::body.end', fn () => view('footer'));
     }
 }
