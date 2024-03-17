@@ -19,7 +19,8 @@ class SiteResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $username = Str::lower(Str::random(12));
+        $username = 'cp'.Str::lower(Str::random(10));
+        $password = Str::random(16);
 
         return $form
             ->schema([
@@ -28,6 +29,8 @@ class SiteResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Hidden::make('username')
                     ->default($username),
+                Forms\Components\Hidden::make('password')
+                    ->default($password),
                 Forms\Components\Select::make('basepath')
                     ->required()
                     ->prefix('/home/'.$username.'/www')
