@@ -19,8 +19,8 @@ class SiteResource extends Resource
 
     public static function form(Form $form): Form
     {
-        $username = 'cp'.Str::lower(Str::random(10));
-        $password = Str::random(16);
+        $username = 'cp'.uniqid();
+        $password = Str::random(20);
 
         return $form
             ->schema([
