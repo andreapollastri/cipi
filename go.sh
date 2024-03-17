@@ -534,6 +534,7 @@ rpl -i -w "APP_DEBUG=true" "APP_DEBUG=false" /var/www/html/.env
 rpl -i -w "APP_URL=http://localhost" "APP_URL=https://cipi-$SERVERIPWITHDASH$IPDOMAIN" /var/www/html/.env
 rpl -i -w "DB_PASSWORD=changeme" "DB_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
 rpl -i -w "PANEL_SERVER_IP=changeme" "PANEL_SERVER_IP=$SERVERIP" /var/www/html/.env
+rpl -i -w "PANEL_SERVER_NAME=changeme" "PANEL_SERVER_NAME=cipi-$SERVERIPWITHDASH" /var/www/html/.env
 rpl -i -w "PANEL_CIPI_PASSWORD=changeme" "PANEL_CIPI_PASSWORD=$USERPASSWORD" /var/www/html/.env
 rpl -i -w "PANEL_MYSQL_PASSWORD=changeme" "PANEL_MYSQL_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
 sudo su -l www-data -s /bin/bash -c "cd /var/www/html && composer install --no-interaction"
