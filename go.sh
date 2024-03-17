@@ -548,6 +548,7 @@ cd /var/www/html && php artisan view:cache
 cd /var/www/html && php artisan optimize
 sudo chown -R www-data:www-data /var/www/html
 sudo chmod -R 775 /var/www/html
+git config --global --add safe.directory /var/www/html
 
 
 # FINE TUNING
