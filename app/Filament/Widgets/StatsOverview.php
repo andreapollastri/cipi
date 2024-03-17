@@ -9,33 +9,28 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends BaseWidget
 {
-    protected static ?string $pollingInterval = '60s';
+    protected static ?string $pollingInterval = '45s';
 
     protected function getStats(): array
     {
-        $ip = config('panel.serverIp');
-        $name = config('panel.serverName');
-        $sites = Site::count();
         $stats = StatModel::latest()->first();
-        $chart = StatModel::limit(120)
-            ->orderBy('created_at', 'desc')
-            ->get();
+        $chart = StatModel::limit(120)->orderBy('created_at', 'desc')->get();
 
         return [
-            Stat::make('IP', $ip)
+            Stat::make('IP', config('panel.serverIp'))
                 ->description('Server IP')
                 ->descriptionIcon('heroicon-m-globe-alt'),
-            Stat::make('Name', $name)
+            Stat::make('Name', config('panel.serverName'))
                 ->description('Server name')
                 ->descriptionIcon('heroicon-m-rocket-launch'),
-            Stat::make('Sites', $sites)
+            Stat::make('Sites', Site::count())
                 ->description('Hosted sites')
                 ->descriptionIcon('heroicon-m-computer-desktop'),
-            Stat::make('CPU', (isset($stats->cpu)) ? $stats->cpu : '0'.'%')
+            Stat::make('CPU', (isset($stats->cpu)) ? $stats->cpu.'%' : '0'.'%')
                 ->description('CPU usage')
                 ->descriptionIcon('heroicon-m-cpu-chip')
                 ->chart($chart->pluck('cpu')->reverse()->toArray()),
-            Stat::make('RAM', (isset($stats->ram)) ? $stats->ram : '0'.'%')
+            Stat::make('RAM', (isset($stats->ram)) ? $stats->ram.'%' : '0'.'%')
                 ->description('RAM usage')
                 ->descriptionIcon('heroicon-m-rectangle-stack')
                 ->chart($chart->pluck('ram')->reverse()->toArray()),
