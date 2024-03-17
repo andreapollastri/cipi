@@ -26,8 +26,8 @@ class StatsOverview extends BaseWidget
                 ->description('Server IP')
                 ->descriptionIcon('heroicon-m-globe-alt'),
             Stat::make('Name', config('panel.serverName'))
-                ->description('Server Name')
-                ->descriptionIcon('heroicon-m-rocket-launch'),
+                ->description('Server name')
+                ->descriptionIcon('heroicon-m-server'),
             Stat::make('CPU', (isset($stats->cpu)) ? $stats->cpu.'%' : '0'.'%')
                 ->description('CPU usage')
                 ->descriptionIcon('heroicon-m-cpu-chip')
@@ -38,10 +38,10 @@ class StatsOverview extends BaseWidget
                 ->chart($chart->pluck('ram')->reverse()->toArray()),
             Stat::make('HDD', (isset($stats->hdd)) ? $stats->hdd : '0%')
                 ->description('HDD usage')
-                ->descriptionIcon('heroicon-m-server'),
+                ->descriptionIcon('heroicon-m-cloud'),
             Stat::make('Sites', Site::count())
                 ->description('Hosted sites')
-                ->descriptionIcon('heroicon-m-computer-desktop'),
+                ->descriptionIcon('heroicon-m-rocket-launch'),
         ];
     }
 }
