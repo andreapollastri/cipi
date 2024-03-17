@@ -16,4 +16,6 @@ return [
     ],
     'force_2fa' => env('PANEL_FORCE_2FA', false),
     'ip_dns_mapping' => env('PANEL_IP_DNS_MAPPING', '.sslip.io'),
+    'serverIp' => env('PANEL_SERVER_IP'),
+    'serverName' => env('PANEL_SERVER_NAME'),
 ];
