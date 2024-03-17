@@ -11,6 +11,11 @@ class StatsOverview extends BaseWidget
 {
     protected static ?string $pollingInterval = '45s';
 
+    protected function getColumns(): int
+    {
+        return 2;
+    }
+
     protected function getStats(): array
     {
         $stats = StatModel::latest()->first();
@@ -23,9 +28,6 @@ class StatsOverview extends BaseWidget
             Stat::make('Name', config('panel.serverName'))
                 ->description('Server name')
                 ->descriptionIcon('heroicon-m-rocket-launch'),
-            Stat::make('Sites', Site::count())
-                ->description('Hosted sites')
-                ->descriptionIcon('heroicon-m-computer-desktop'),
             Stat::make('CPU', (isset($stats->cpu)) ? $stats->cpu.'%' : '0'.'%')
                 ->description('CPU usage')
                 ->descriptionIcon('heroicon-m-cpu-chip')
@@ -34,6 +36,9 @@ class StatsOverview extends BaseWidget
                 ->description('RAM usage')
                 ->descriptionIcon('heroicon-m-rectangle-stack')
                 ->chart($chart->pluck('ram')->reverse()->toArray()),
+            Stat::make('Sites', Site::count())
+                ->description('Hosted sites')
+                ->descriptionIcon('heroicon-m-computer-desktop'),
             Stat::make('HDD', (isset($stats->hdd)) ? $stats->hdd : '0%')
                 ->description('HDD usage')
                 ->descriptionIcon('heroicon-m-server'),
