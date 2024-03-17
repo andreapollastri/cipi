@@ -521,7 +521,7 @@ sudo chmod -R o+w /var/www/html/storage
 sudo chmod -R 775 /var/www/html/storage
 sudo chmod -R o+w /var/www/html/bootstrap/cache
 sudo chmod -R 775 /var/www/html/bootstrap/cache
-sudo chown -R www-data:cipi /var/www/html
+sudo chown -R www-data:www-data /var/www/html
 sudo chmod -R 775 /var/www/html
 PANELSETUP=/var/www/panel.sh
 sudo touch $PANELSETUP
@@ -529,25 +529,27 @@ sudo cat > $PANELSETUP <<EOF
 cd /var/www/html && unlink .env
 cd /var/www/html && cp .env.example .env
 cd /var/www/html && composer install --no-interaction
-cd /var/www/html && php artisan key:generate
+sudo chown -R www-data:www-data /var/www/html
+sudo su -l www-data -s /bin/bash -c "cd /var/www/html && composer install --no-interaction"
+sudo su -l www-data -s /bin/bash -c "cd /var/www/html && php artisan key:generate"
 rpl -i -w "APP_ENV=local" "APP_ENV=production" /var/www/html/.env
 rpl -i -w "APP_DEBUG=true" "APP_DEBUG=false" /var/www/html/.env
 rpl -i -w "APP_URL=http://localhost" "APP_URL=https://cipi-$SERVERIPWITHDASH$IPDOMAIN" /var/www/html/.env
 rpl -i -w "DB_PASSWORD=changeme" "DB_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
-rpl -i -w "PANEL_SSH_SERVER_HOST=changeme" "PANEL_SSH_SERVER_HOST=$SERVERIP" /var/www/html/.env
-rpl -i -w "PANEL_SSH_SERVER_PASS=changeme" "PANEL_SSH_SERVER_PASS=$USERPASSWORD" /var/www/html/.env
-rpl -i -w "PANEL_SQL_DBROOT_PASS=changeme" "PANEL_SQL_DBROOT_PASS=$DATABASEPASSWORD" /var/www/html/.env
+rpl -i -w "PANEL_SERVER_IP=changeme" "PANEL_SERVER_IP=$SERVERIP" /var/www/html/.env
+rpl -i -w "PANEL_CIPI_PASSWORD=changeme" "PANEL_CIPI_PASSWORD=$USERPASSWORD" /var/www/html/.env
+rpl -i -w "PANEL_MYSQL_PASSWORD=changeme" "PANEL_MYSQL_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
 cd /var/www/html && php artisan config:clear
 cd /var/www/html && php artisan migrate --seed --force
 cd /var/www/html && php artisan storage:link
 cd /var/www/html && php artisan config:cache
 cd /var/www/html && php artisan route:cache
 cd /var/www/html && php artisan view:cache
+cd /var/www/html && php artisan optimize
+sudo chown -R www-data:www-data /var/www/html
 EOF
 su -c "sh $PANELSETUP" cipi
 sudo unlink $PANELSETUP
-sudo chown -R www-data:cipi /var/www/html
-sudo chmod -R 775 /var/www/html
 
 
 
@@ -558,8 +560,8 @@ echo "Fine tuning..."
 echo "${reset}"
 sleep 1s
 
-sudo chown www-data:cipi -R /var/www/html
-sudo chmod -R 750 /var/www/html
+sudo chown www-data:www-data -R /var/www/html
+sudo chmod -R 775 /var/www/html
 sudo echo 'DefaultStartLimitIntervalSec=1s' >> /usr/lib/systemd/system/user@.service
 sudo echo 'DefaultStartLimitBurst=50' >> /usr/lib/systemd/system/user@.service
 sudo echo 'StartLimitBurst=0' >> /usr/lib/systemd/system/user@.service
@@ -603,7 +605,7 @@ autostart=true
 autorestart=true
 stopasgroup=true
 killasgroup=true
-user=cipi
+user=www-data
 numprocs=8
 redirect_stderr=true
 stdout_logfile=/var/www/worker.log
