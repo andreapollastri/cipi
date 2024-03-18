@@ -2,10 +2,11 @@
 
 namespace App\Filament\Pages;
 
+use App\Helpers\Scripts;
 use Filament\Actions\Action;
 use Filament\Notifications\Actions\ActionGroup;
+use Filament\Notifications\Notification;
 use Filament\Pages\Dashboard as BaseDashboard;
-use Illuminate\Support\Facades\Log;
 
 class Dashboard extends BaseDashboard
 {
@@ -41,7 +42,12 @@ class Dashboard extends BaseDashboard
                             ->required(),
                     ])
                     ->action(function (array $data): void {
-                        Log::info('Server Name: '.$data['serverName']); // TODO: Replace with Business Logic
+                        Scripts::updateServerName($data['serverName']);
+
+                        Notification::make('')
+                            ->title('Server name updated successfully.')
+                            ->success()
+                            ->send();
                     }),
                 Action::make('reset-server-password')
                     ->label('Reset Server Password')

@@ -2,6 +2,7 @@
 
 namespace App\Helpers;
 
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -31,5 +32,16 @@ class Scripts
         return Str::of(
             Process::run('sh '.self::shFile('getHddStatus'))->output()
         )->trim();
+    }
+
+    public static function updateServerName($name)
+    {
+        Str::replace(
+            'PANEL_SERVER_NAME="'.config('panel.serverName').'"',
+            'PANEL_SERVER_NAME="'.$name.'"',
+            file_get_contents(base_path('.env'))
+        );
+
+        Artisan::call('optimize');
     }
 }
