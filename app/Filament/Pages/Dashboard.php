@@ -33,8 +33,6 @@ class Dashboard extends BaseDashboard
                 Action::make('restart-supervisor')
                     ->label('Reset Server Password')
                     ->icon('heroicon-o-key'),
-                    Action::make('restart-supervisor'),
-
             ]),
         ];
     }
