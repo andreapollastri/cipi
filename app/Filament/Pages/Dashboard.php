@@ -5,6 +5,7 @@ namespace App\Filament\Pages;
 use Filament\Actions\Action;
 use Filament\Notifications\Actions\ActionGroup;
 use Filament\Pages\Dashboard as BaseDashboard;
+use Illuminate\Support\Facades\Log;
 
 class Dashboard extends BaseDashboard
 {
@@ -27,10 +28,22 @@ class Dashboard extends BaseDashboard
                 Action::make('restart-supervisor')
                     ->label('Restart Supervisor')
                     ->icon('heroicon-o-arrow-path'),
-                Action::make('restart-supervisor')
+                Action::make('edit-server-name')
                     ->label('Edit Server Name')
-                    ->icon('heroicon-o-pencil-square'),
-                Action::make('restart-supervisor')
+                    ->icon('heroicon-o-pencil-square')
+                    ->fillForm(fn (): array => [
+                        'serverName' => config('panel.serverName'),
+                    ])
+                    ->form([
+                        \Filament\Forms\Components\TextInput::make('serverName')
+                            ->label('Name')
+                            ->hint('The name of the server, e.g. "Production Server", "Staging Server", etc.')
+                            ->required(),
+                    ])
+                    ->action(function (array $data): void {
+                        Log::info('Server Name: '.$data['serverName']); // TODO: Replace with Business Logic
+                    }),
+                Action::make('reset-server-password')
                     ->label('Reset Server Password')
                     ->icon('heroicon-o-key'),
             ]),
