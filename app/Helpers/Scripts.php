@@ -2,7 +2,6 @@
 
 namespace App\Helpers;
 
-use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
 
@@ -36,12 +35,15 @@ class Scripts
 
     public static function updateServerName($name)
     {
-        Str::replace(
+        $env = Str::replace(
             'PANEL_SERVER_NAME="'.config('panel.serverName').'"',
             'PANEL_SERVER_NAME="'.$name.'"',
             file_get_contents(base_path('.env'))
         );
 
-        Artisan::call('optimize');
+        unlink(base_path('.env'));
+        file_put_contents(base_path('.env'), $env);
+
+        $processi = Process::run('php artisan cache:clear');
     }
 }

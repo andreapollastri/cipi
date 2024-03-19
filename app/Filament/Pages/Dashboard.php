@@ -44,7 +44,7 @@ class Dashboard extends BaseDashboard
                     ->action(function (array $data): void {
                         Scripts::updateServerName($data['serverName']);
 
-                        Notification::make('')
+                        Notification::make()
                             ->title('Server name updated successfully.')
                             ->success()
                             ->send();
