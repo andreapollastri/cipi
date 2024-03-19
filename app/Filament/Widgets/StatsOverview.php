@@ -9,7 +9,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class StatsOverview extends BaseWidget
 {
-    protected static ?string $pollingInterval = '45s';
+    protected static ?string $pollingInterval = '5s';
 
     protected function getColumns(): int
     {

@@ -32,4 +32,19 @@ class Scripts
             Process::run('sh '.self::shFile('getHddStatus'))->output()
         )->trim();
     }
+
+    public static function updateServerName($name)
+    {
+        // TODO - Make a Job with this logic
+        $env = Str::replace(
+            'PANEL_SERVER_NAME="'.config('panel.serverName').'"',
+            'PANEL_SERVER_NAME="'.$name.'"',
+            file_get_contents(base_path('.env'))
+        );
+
+        unlink(base_path('.env'));
+        file_put_contents(base_path('.env'), $env);
+
+        Process::run('php artisan cache:clear');
+    }
 }
