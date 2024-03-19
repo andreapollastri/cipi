@@ -35,6 +35,7 @@ class Scripts
 
     public static function updateServerName($name)
     {
+        // TODO - Make a Job with this logic
         $env = Str::replace(
             'PANEL_SERVER_NAME="'.config('panel.serverName').'"',
             'PANEL_SERVER_NAME="'.$name.'"',
@@ -44,6 +45,6 @@ class Scripts
         unlink(base_path('.env'));
         file_put_contents(base_path('.env'), $env);
 
-        $processi = Process::run('php artisan cache:clear');
+        Process::run('php artisan cache:clear');
     }
 }
