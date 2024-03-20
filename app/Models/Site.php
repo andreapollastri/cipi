@@ -2,28 +2,25 @@
 
 namespace App\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Site extends Model
 {
     use HasFactory;
+    use HasUuids;
 
-    protected $hidden = [
-        'id',
+    protected $fillable = [
+        'domain',
+        'username',
         'password',
-        'database',
-        'created_at',
-        'updated_at'
+        'basepath',
+        'repository',
+        'branch',
+        'php',
+        'supervisor',
+        'nginx',
+        'deploy',
     ];
-
-    public function server()
-    {
-        return $this->belongsTo(Server::class);
-    }
-
-    public function aliases()
-    {
-        return $this->hasMany(Alias::class);
-    }
 }

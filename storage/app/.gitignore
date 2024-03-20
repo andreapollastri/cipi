@@ -1,5 +1,5 @@
 *
-!cipi/
-!cipi/*
 !public/
 !.gitignore
+!scripts/
+!scripts/*
