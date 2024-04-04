@@ -42,6 +42,8 @@ class Scripts
             file_get_contents(base_path('.env'))
         );
 
+        Process::run('touch '.base_path('.env'));
+
         unlink(base_path('.env'));
         file_put_contents(base_path('.env'), $env);
 
