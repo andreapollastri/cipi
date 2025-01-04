@@ -4,6 +4,7 @@
 USERPASSWORD=$(openssl rand -base64 32|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:upper:]' '[:lower:]')
 GITREPOSITORY=andreapollastri/cipi
+UBUNTUVERSION=24.04
 IPDOMAIN=.sslip.io
 if [ -z "$1" ];
     GITBRANCH=4.x
@@ -62,12 +63,12 @@ ID=$(grep -oP '(?<=^ID=).+' /etc/os-release | tr -d '"')
 VERSION=$(grep -oP '(?<=^VERSION_ID=).+' /etc/os-release | tr -d '"')
 if [ "$ID" = "ubuntu" ]; then
     case $VERSION in
-        22.04)
+        $UBUNTUVERSION)
             break
             ;;
         *)
             echo "${bgred}${white}${bold}"
-            echo "Cipi requires Linux Ubuntu 22.04 LTS"
+            echo "Cipi requires Linux Ubuntu $UBUNTUVERSION LTS"
             echo "${reset}"
             exit 1;
             break
@@ -75,7 +76,7 @@ if [ "$ID" = "ubuntu" ]; then
     esac
 else
     echo "${bgred}${white}${bold}"
-    echo "Cipi requires Linux Ubuntu 22.04 LTS"
+    echo "Cipi requires Linux Ubuntu $UBUNTUVERSION LTS"
     echo "${reset}"
     exit 1
 fi
