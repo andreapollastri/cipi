@@ -2,7 +2,7 @@
 
 namespace App\Filament\Pages;
 
-use App\Cipi\Scripts;
+use App\Cipi\Configuration;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
@@ -43,7 +43,7 @@ class Dashboard extends BaseDashboard
                     Action::make('edit-server-name')
                         ->label('Edit Server Name')
                         ->icon('heroicon-o-pencil-square')
-                        ->fillForm(fn(): array => [
+                        ->fillForm(fn (): array => [
                             'serverName' => config('panel.serverName'),
                         ])
                         ->form([
@@ -53,7 +53,7 @@ class Dashboard extends BaseDashboard
                                 ->required(),
                         ])
                         ->action(function (array $data): void {
-                            Scripts::updateServerName($data['serverName']);
+                            Configuration::updateServerName($data['serverName']);
 
                             Notification::make()
                                 ->title('Server name updated successfully.')
