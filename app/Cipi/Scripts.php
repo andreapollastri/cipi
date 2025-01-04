@@ -2,8 +2,9 @@
 
 namespace App\Cipi;
 
-use Illuminate\Support\Facades\Process;
 use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Process;
 
 class Scripts
 {
@@ -36,14 +37,15 @@ class Scripts
     public static function updateServerName($name)
     {
         $env = Str::replace(
-            'PANEL_SERVER_NAME="' . config('panel.serverName') . '"',
-            'PANEL_SERVER_NAME="' . $name . '"',
+            'PANEL_SERVER_NAME=' . config('panel.serverName'),
+            'PANEL_SERVER_NAME=' . $name,
             file_get_contents(base_path('.env'))
         );
 
         unlink(base_path('.env'));
         file_put_contents(base_path('.env'), $env);
 
-        Process::run('php artisan cache:clear');
+        Artisan::call('config:clear');
+        Artisan::call('cache:clear');
     }
 }

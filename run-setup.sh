@@ -7,7 +7,7 @@ GITREPOSITORY=andreapollastri/cipi
 UBUNTUVERSION=24.04
 IPDOMAIN=.sslip.io
 if [ -z "$1" ];
-    GITBRANCH=4.x
+    GITBRANCH="4.x"
 then
     GITBRANCH=$1
 fi
@@ -217,7 +217,7 @@ sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install nginx
 sudo DEBIAN_FRONTEND=noninteractive apt-get -y install nginx-extras
 sudo systemctl start nginx.service
-sudo rpl "http {" "http { \\n   limit_req_zone \$binary_remote_addr zone=one:10m rate=1r/s; fastcgi_read_timeout 300; \\n   more_set_headers 'Server: Managed by cipi.sh';" /etc/nginx/nginx.conf
+sudo rpl "http {" "http { \\n   limit_req_zone \$binary_remote_addr zone=one:10m rate=1r/s; fastcgi_read_timeout 300; \\n   more_set_headers 'Server: Cipi';" /etc/nginx/nginx.conf
 sudo systemctl enable nginx.service
 sudo systemctl restart nginx.service
 
@@ -572,11 +572,12 @@ rpl -i -w "APP_URL=http://localhost" "APP_URL=https://cipi-$SERVERIPWITHDASH$IPD
 rpl -i -w "DB_PASSWORD=changeme" "DB_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
 rpl -i -w "PANEL_SERVER_DOMAIN=changeme" "PANEL_SERVER_DOMAIN=cipi-$SERVERIPWITHDASH$IPDOMAIN" /var/www/html/.env
 rpl -i -w "PANEL_SERVER_IP=changeme" "PANEL_SERVER_IP=$SERVERIP" /var/www/html/.env
-rpl -i -w "PANEL_SERVER_NAME=changeme" "PANEL_SERVER_NAME=cipi-$SERVERIPWITHDASH" /var/www/html/.env
+rpl -i -w "PANEL_SERVER_NAME=changeme" "PANEL_SERVER_NAME=vps-$SERVERIPWITHDASH" /var/www/html/.env
 rpl -i -w "PANEL_CIPI_PASSWORD=changeme" "PANEL_CIPI_PASSWORD=$USERPASSWORD" /var/www/html/.env
 rpl -i -w "PANEL_MYSQL_PASSWORD=changeme" "PANEL_MYSQL_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
 sudo su -l www-data -s /bin/bash -c "cd /var/www/html && composer install --no-interaction"
-sudo su -l www-data -s /bin/bash -c "cd /var/www/html && php artisan key:generate"
+sudo chown -R www-data:www-data /var/www/html
+cd /var/www/html && php artisan key:generate
 cd /var/www/html && php artisan config:clear
 cd /var/www/html && php artisan migrate --seed --force
 cd /var/www/html && php artisan storage:link
