@@ -2,16 +2,16 @@
 
 namespace App\Helpers;
 
-class Password
+class PasswordHelper
 {
-    public static function defaults()
+    public static function default()
     {
         return \Illuminate\Validation\Rules\Password::defaults(function () {
-            return self::validation();
+            return self::rules();
         });
     }
 
-    public static function validation()
+    public static function rules()
     {
         return \Illuminate\Validation\Rules\Password::min(8)
             ->mixedCase()

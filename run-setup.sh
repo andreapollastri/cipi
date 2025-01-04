@@ -6,7 +6,7 @@ DATABASEPASSWORD=$(openssl rand -base64 24|sha256sum|base64|head -c 32| tr '[:up
 GITREPOSITORY=andreapollastri/cipi
 IPDOMAIN=.sslip.io
 if [ -z "$1" ];
-    GITBRANCH=master
+    GITBRANCH=4.x
 then
     GITBRANCH=$1
 fi
@@ -295,6 +295,42 @@ sudo service php8.3-fpm restart
 
 
 
+sudo DEBIAN_FRONTEND=noninteractive add-apt-repository -y ppa:ondrej/php
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y update
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-fpm
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-common
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-curl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-bcmath
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-mbstring
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-tokenizer
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-mysql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-sqlite3
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-pgsql
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-redis
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-memcached
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-json
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-zip
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-xml
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-soap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-gd
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-imagick
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-fileinfo
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-imap
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-cli
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-openssl
+sudo DEBIAN_FRONTEND=noninteractive apt-get -y install php8.4-intl
+PHPINI=/etc/php/8.4/fpm/conf.d/cipi.ini
+sudo touch $PHPINI
+sudo cat > "$PHPINI" <<EOF
+memory_limit = 256M
+upload_max_filesize = 256M
+post_max_size = 256M
+max_execution_time = 180
+max_input_time = 180
+EOF
+sudo service php8.4-fpm restart
+
+
 
 # PHP CLI
 clear
@@ -303,7 +339,7 @@ echo "PHP CLI configuration..."
 echo "${reset}"
 sleep 1s
 
-sudo update-alternatives --set php /usr/bin/php8.3
+sudo update-alternatives --set php /usr/bin/php8.4
 
 
 
@@ -533,6 +569,7 @@ rpl -i -w "APP_ENV=local" "APP_ENV=production" /var/www/html/.env
 rpl -i -w "APP_DEBUG=true" "APP_DEBUG=false" /var/www/html/.env
 rpl -i -w "APP_URL=http://localhost" "APP_URL=https://cipi-$SERVERIPWITHDASH$IPDOMAIN" /var/www/html/.env
 rpl -i -w "DB_PASSWORD=changeme" "DB_PASSWORD=$DATABASEPASSWORD" /var/www/html/.env
+rpl -i -w "PANEL_SERVER_DOMAIN=changeme" "PANEL_SERVER_DOMAIN=cipi-$SERVERIPWITHDASH$IPDOMAIN" /var/www/html/.env
 rpl -i -w "PANEL_SERVER_IP=changeme" "PANEL_SERVER_IP=$SERVERIP" /var/www/html/.env
 rpl -i -w "PANEL_SERVER_NAME=changeme" "PANEL_SERVER_NAME=cipi-$SERVERIPWITHDASH" /var/www/html/.env
 rpl -i -w "PANEL_CIPI_PASSWORD=changeme" "PANEL_CIPI_PASSWORD=$USERPASSWORD" /var/www/html/.env
@@ -582,7 +619,7 @@ cat > "$TASK" <<EOF
 20 5 * * 7 apt-get clean && apt-get autoclean
 50 5 * * * echo 3 > /proc/sys/vm/drop_caches && swapoff -a && swapon -a
 * * * * * cd /var/www/html && php artisan schedule:run >> /dev/null 2>&1
-5 2 * * * cd /var/www/html && sh update.sh >> /dev/null 2>&1
+5 2 * * * cd /var/www/html && sh run-update.sh >> /dev/null 2>&1
 EOF
 crontab $TASK
 sudo systemctl restart nginx.service
@@ -636,10 +673,10 @@ echo " MySQL root pass: $DATABASEPASSWORD"
 echo ""
 echo " To manage your server visit: "
 echo " https://cipi-$SERVERIPWITHDASH$IPDOMAIN/panel"
-echo " Default credentials are: john.doe@cipi.sh / C1p1P4n3!#4.sh"
+echo " Default credentials are: admin@cipi.sh / C1p1P4n3!#4.sh"
 echo ""
 echo " If panel is not available via HTTPS, try to run:"
-echo " certbot --nginx -d cipi-$SERVERIPWITHDASH$IPDOMAIN "
+echo " certbot --nginx -d cipi-$SERVERIPWITHDASH$IPDOMAIN --non-interactive --agree-tos --register-unsafely-without-email"
 echo ""
 echo "***********************************************************"
 echo "          DO NOT LOSE AND KEEP SAFE THIS DATA"

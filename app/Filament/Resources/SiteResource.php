@@ -3,6 +3,7 @@
 namespace App\Filament\Resources;
 
 use App\Filament\Resources\SiteResource\Pages;
+use App\Helpers\PhpHelper;
 use App\Models\Site;
 use Filament\Forms;
 use Filament\Forms\Form;
@@ -48,8 +49,8 @@ class SiteResource extends Resource
                     ->maxLength(255),
                 Forms\Components\Select::make('php')
                     ->required()
-                    ->options(\App\Helpers\Php::availableVersions())
-                    ->default(\App\Helpers\Php::defaultVersion())
+                    ->options(PhpHelper::availableVersions())
+                    ->default(PhpHelper::defaultVersion())
                     ->native(false),
                 Forms\Components\TextInput::make('supervisor'),
                 Forms\Components\TextInput::make('nginx'),

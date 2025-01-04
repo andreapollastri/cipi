@@ -2,5 +2,5 @@
 
 return [
     App\Providers\AppServiceProvider::class,
-    App\Providers\Filament\CipiPanelProvider::class,
+    App\Filament\CipiPanelProvider::class,
 ];

@@ -1,5 +1,8 @@
 <?php
 
-use Illuminate\Support\Facades\Schedule;
+use Illuminate\Foundation\Inspiring;
+use Illuminate\Support\Facades\Artisan;
 
-Schedule::command(\App\Console\Commands\CheckServerStatus::class)->everyMinute();
+Artisan::command('inspire', function () {
+    $this->comment(Inspiring::quote());
+})->purpose('Display an inspiring quote')->hourly();
