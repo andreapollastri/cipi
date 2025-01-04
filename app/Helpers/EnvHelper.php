@@ -1,13 +1,13 @@
 <?php
 
-namespace App\Cipi;
+namespace App\Helpers;
 
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Str;
 
-class EnvUpdate
+class EnvHelper
 {
-    public static function run($envKey, $configKey, $newValue)
+    public static function update($envKey, $configKey, $newValue)
     {
         if (! $envKey || ! $configKey || ! $newValue) {
             return false;
