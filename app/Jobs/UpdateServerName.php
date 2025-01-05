@@ -10,14 +10,13 @@ class UpdateServerName implements ShouldQueue
 {
     use Queueable;
 
-    public string $name;
-
     /**
      * Create a new job instance.
      */
-    public function __construct($name)
-    {
-        $this->name = $name;
+    public function __construct(
+        public string $name
+    ) {
+        //
     }
 
     /**
@@ -25,6 +24,6 @@ class UpdateServerName implements ShouldQueue
      */
     public function handle(): void
     {
-        EnvHelper::update('CIPI_SERVER_NAME', 'panel.serverName', $this->name);
+        EnvHelper::update('PANEL_SERVER_NAME', 'panel.serverName', $this->name);
     }
 }

@@ -14,8 +14,8 @@ class EnvHelper
         }
 
         $env = Str::replace(
-            $envKey.'='.config($configKey),
-            $envKey.'='.$newValue,
+            $envKey.'="'.config($configKey).'"',
+            $envKey.'="'.$newValue.'"',
             file_get_contents(base_path('.env'))
         );
 
