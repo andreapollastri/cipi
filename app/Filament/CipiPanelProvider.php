@@ -19,52 +19,71 @@ use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 class CipiPanelProvider extends PanelProvider
 {
+    protected string $id = 'cipi';
+
+    protected string $path = 'cipi';
+
+    protected string $favicon = '/logo.png';
+
+    protected string $brandLogo = '/logo.png';
+
+    protected string $brandLogoHeight = '2.8rem';
+
+    protected string $brandName = 'Cipi Control Panel';
+
+    protected string $font = 'Quicksand';
+
+    protected bool $breadcrumbs = false;
+
+    protected bool $topNavigation = false;
+
+    protected bool $unsavedChangesAlerts = true;
+
+    protected array $colors = [
+        'primary' => Color::Indigo,
+    ];
+
+    protected array $authMiddleware = [
+        Authenticate::class,
+    ];
+
+    protected array $middleware = [
+        EncryptCookies::class,
+        AddQueuedCookiesToResponse::class,
+        StartSession::class,
+        AuthenticateSession::class,
+        ShareErrorsFromSession::class,
+        VerifyCsrfToken::class,
+        SubstituteBindings::class,
+        DisableBladeIconComponents::class,
+        DispatchServingFilamentEvent::class,
+    ];
+
+    protected function getPlugins()
+    {
+        return [
+            BreezyCorePlugin::boot(),
+        ];
+    }
+
     public function panel(Panel $panel): Panel
     {
         return $panel
             ->default()
-            ->unsavedChangesAlerts()
-            ->id('cipi')
-            ->path('cipi')
             ->login()
-            ->font('Quicksand')
-            ->topNavigation()
-            ->favicon('/logo.png')
-            ->brandLogo('/logo.png')
-            ->brandLogoHeight('2.8rem')
-            ->brandName('Cipi Control Panel')
-            ->colors([
-                'primary' => Color::Indigo,
-            ])
-            ->discoverResources(
-                in: app_path('Filament/Resources'),
-                for: 'App\\Filament\\Resources'
-            )
-            ->discoverPages(
-                in: app_path('Filament/Pages'),
-                for: 'App\\Filament\\Pages'
-            )
-            ->discoverWidgets(
-                in: app_path('Filament/Widgets'),
-                for: 'App\\Filament\\Widgets'
-            )
-            ->middleware([
-                EncryptCookies::class,
-                AddQueuedCookiesToResponse::class,
-                StartSession::class,
-                AuthenticateSession::class,
-                ShareErrorsFromSession::class,
-                VerifyCsrfToken::class,
-                SubstituteBindings::class,
-                DisableBladeIconComponents::class,
-                DispatchServingFilamentEvent::class,
-            ])
-            ->authMiddleware([
-                Authenticate::class,
-            ])
-            ->plugin(
-                BreezyCorePlugin::boot()
-            )
-            ->renderHook('panels::body.end', fn () => view('footer'));
+            ->id($this->id)
+            ->path($this->path)
+            ->font($this->font)
+            ->breadcrumbs($this->breadcrumbs)
+            ->unsavedChangesAlerts($this->unsavedChangesAlerts)
+            ->topNavigation($this->topNavigation)
+            ->favicon($this->favicon)
+            ->brandLogo($this->brandLogo)
+            ->brandLogoHeight($this->brandLogoHeight)
+            ->brandName($this->brandName)
+            ->colors($this->colors)
+            ->middleware($this->middleware)
+            ->authMiddleware($this->authMiddleware)
+            ->plugins($this->getPlugins());
     }
 }

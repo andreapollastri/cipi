@@ -25,24 +25,9 @@ class Dashboard extends BaseDashboard
         return [
             ActionGroup::make(
                 [
-                    Action::make('restart-nginx')
-                        ->label('Restart nginx')
-                        ->icon('heroicon-o-arrow-path'),
-                    Action::make('restart-php')
-                        ->label('Restart PHP-FPM')
-                        ->icon('heroicon-o-arrow-path'),
-                    Action::make('restart-mysql')
-                        ->label('Restart MySql')
-                        ->icon('heroicon-o-arrow-path'),
-                    Action::make('restart-redis')
-                        ->label('Restart Redis')
-                        ->icon('heroicon-o-arrow-path'),
-                    Action::make('restart-supervisor')
-                        ->label('Restart Supervisor')
-                        ->icon('heroicon-o-arrow-path'),
                     Action::make('edit-server-name')
-                        ->label('Edit Server Name')
-                        ->icon('heroicon-o-pencil-square')
+                        ->label('Server Name')
+                        ->icon('heroicon-o-server-stack')
                         ->fillForm(fn (): array => [
                             'serverName' => config('panel.serverName'),
                         ])
@@ -60,9 +45,15 @@ class Dashboard extends BaseDashboard
                                 ->success()
                                 ->send();
                         }),
-                    Action::make('reset-server-password')
-                        ->label('Reset Server Password')
+                    Action::make('edit-server-ip')
+                        ->label('Server IP')
+                        ->icon('heroicon-o-wifi'),
+                    Action::make('edit-server-password')
+                        ->label('Server Password')
                         ->icon('heroicon-o-key'),
+                    Action::make('edit-panel-url')
+                        ->label('Panel URL')
+                        ->icon('heroicon-o-globe-alt'),
                 ],
             )->icon('fas-circle-chevron-down'),
         ];
