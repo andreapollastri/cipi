@@ -1,7 +1,7 @@
 # Cipi - Server Management CLI
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/andreapollastri/cipi/master/cipi-logo.png" alt="Cipi Logo" width="200"/>
+  <h1>Work in progress... this is not a stable version!</h1>
 </p>
 
 <p align="center">
