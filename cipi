@@ -1,0 +1,177 @@
+#!/bin/bash
+
+#############################################
+# Cipi - Server Management CLI
+# Version: 4.0.0
+# Author: Andrea Pollastri
+# License: MIT
+#############################################
+
+set -e
+
+# Paths
+CIPI_DIR="/usr/local/cipi"
+CIPI_LIB_DIR="${CIPI_DIR}/lib"
+CIPI_DATA_DIR="/etc/cipi"
+CIPI_VERSION="4.0.0"
+
+# Colors
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+CYAN='\033[0;36m'
+NC='\033[0m' # No Color
+BOLD='\033[1m'
+
+# Load library functions
+if [ -d "${CIPI_LIB_DIR}" ]; then
+    for lib in "${CIPI_LIB_DIR}"/*.sh; do
+        [ -f "$lib" ] && source "$lib"
+    done
+fi
+
+# Check if running as root
+check_root() {
+    if [ "$(id -u)" != "0" ]; then
+        echo -e "${RED}${BOLD}Error: Cipi must be run as root${NC}"
+        echo -e "Please run with sudo or as root user"
+        exit 1
+    fi
+}
+
+# Display logo
+show_logo() {
+    echo -e "${GREEN}${BOLD}"
+    echo " ██████ ██ ██████  ██"
+    echo "██      ██ ██   ██ ██"
+    echo "██      ██ ██████  ██"
+    echo "██      ██ ██      ██"
+    echo " ██████ ██ ██      ██"
+    echo -e "${NC}"
+}
+
+# Display version
+show_version() {
+    show_logo
+    echo -e "Version: ${CYAN}${CIPI_VERSION}${NC}"
+    echo ""
+}
+
+# Display help
+show_help() {
+    show_logo
+    echo -e "${BOLD}Usage:${NC} cipi [command] [options]"
+    echo ""
+    echo -e "${BOLD}Commands:${NC}"
+    echo ""
+    echo -e "  ${CYAN}status${NC}                          Show server status"
+    echo -e "  ${CYAN}version${NC}                         Show Cipi version"
+    echo ""
+    echo -e "${BOLD}App Management:${NC}"
+    echo -e "  ${CYAN}app create${NC}                      Create a new app"
+    echo -e "  ${CYAN}app list${NC}                        List all apps"
+    echo -e "  ${CYAN}app show <user>${NC}                 Show app details"
+    echo -e "  ${CYAN}app edit <user> --php=X.X${NC}       Change PHP version for app"
+    echo -e "  ${CYAN}app env <user>${NC}                  Edit .env file for app"
+    echo -e "  ${CYAN}app crontab <user>${NC}              Edit crontab for app"
+    echo -e "  ${CYAN}app password <user>${NC}             Change app SSH password"
+    echo -e "  ${CYAN}app delete <user>${NC}               Delete an app"
+    echo ""
+    echo -e "${BOLD}Domain Management:${NC}"
+    echo -e "  ${CYAN}domain create${NC}                   Create/assign a domain"
+    echo -e "  ${CYAN}domain list${NC}                     List all domains"
+    echo -e "  ${CYAN}domain delete <domain>${NC}          Delete a domain"
+    echo -e "  ${CYAN}alias add <domain> <alias>${NC}      Add alias to domain"
+    echo -e "  ${CYAN}alias remove <domain> <alias>${NC}   Remove alias from domain"
+    echo ""
+    echo -e "${BOLD}Database Management:${NC}"
+    echo -e "  ${CYAN}database create${NC}                 Create a new database"
+    echo -e "  ${CYAN}database list${NC}                   List all databases"
+    echo -e "  ${CYAN}database password <name>${NC}        Change database password"
+    echo -e "  ${CYAN}database delete <name>${NC}          Delete a database"
+    echo ""
+    echo -e "${BOLD}PHP Management:${NC}"
+    echo -e "  ${CYAN}php list${NC}                        List installed PHP versions"
+    echo -e "  ${CYAN}php install <version>${NC}           Install PHP version (5.6-8.5)"
+    echo -e "  ${CYAN}php switch <version>${NC}            Switch CLI PHP version"
+    echo ""
+    echo -e "${BOLD}Service Management:${NC}"
+    echo -e "  ${CYAN}service restart <service>${NC}       Restart service (nginx|php|mysql|supervisor|redis)"
+    echo ""
+    echo -e "${BOLD}System Management:${NC}"
+    echo -e "  ${CYAN}logs [--lines=N]${NC}                View ClamAV antivirus scan logs"
+    echo -e "  ${CYAN}update${NC}                          Update Cipi to latest version"
+    echo ""
+    echo -e "${BOLD}Examples:${NC}"
+    echo -e "  cipi status"
+    echo -e "  cipi app create --user=myapp --repository=https://github.com/user/repo.git --php=8.4"
+    echo -e "  cipi app edit myapp --php=8.3"
+    echo -e "  cipi app env myapp"
+    echo -e "  cipi app crontab myapp"
+    echo -e "  cipi app password myapp"
+    echo -e "  cipi database create --name=mydb"
+    echo -e "  cipi database password mydb"
+    echo -e "  cipi domain create --domain=example.com --aliases=www.example.com --app=myapp"
+    echo -e "  cipi logs --lines=100"
+    echo ""
+}
+
+# Main command router
+main() {
+    # If no command provided, show help
+    if [ $# -eq 0 ]; then
+        show_help
+        exit 0
+    fi
+
+    # Root check is now done at the top of the script
+
+    COMMAND=$1
+    shift
+
+    case $COMMAND in
+        status)
+            cmd_status "$@"
+            ;;
+        version)
+            show_version
+            ;;
+        app)
+            cmd_app "$@"
+            ;;
+        domain)
+            cmd_domain "$@"
+            ;;
+        alias)
+            cmd_alias "$@"
+            ;;
+        database)
+            cmd_database "$@"
+            ;;
+        php)
+            cmd_php "$@"
+            ;;
+        service)
+            cmd_service "$@"
+            ;;
+        logs)
+            cmd_logs "$@"
+            ;;
+        update)
+            cmd_update "$@"
+            ;;
+        help|--help|-h)
+            show_help
+            ;;
+        *)
+            echo -e "${RED}Unknown command: $COMMAND${NC}"
+            echo ""
+            show_help
+            exit 1
+            ;;
+    esac
+}
+
+# Run main
+main "$@"

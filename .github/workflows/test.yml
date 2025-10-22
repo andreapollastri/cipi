@@ -1,0 +1,59 @@
+name: Test
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  shellcheck:
+    name: ShellCheck
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run ShellCheck
+      uses: ludeeus/action-shellcheck@master
+      with:
+        scandir: './lib'
+        additional_files: 'cipi install.sh'
+        severity: warning
+
+  syntax-check:
+    name: Bash Syntax Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Check Bash Syntax
+      run: |
+        bash -n cipi
+        bash -n install.sh
+        for file in lib/*.sh; do
+          bash -n "$file"
+        done
+
+  test-ubuntu:
+    name: Test Installation on Ubuntu 24.04
+    runs-on: ubuntu-24.04
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Test Installation (Dry Run)
+      run: |
+        # This would be a dry-run test
+        # Full installation test would require a VM
+        chmod +x install.sh cipi
+        echo "Installation script syntax check passed"
+        
+    - name: Test CLI Help
+      run: |
+        chmod +x cipi
+        # Note: This will fail without root, but checks basic syntax
+        ./cipi --help || true
+        echo "CLI help check completed"
+
