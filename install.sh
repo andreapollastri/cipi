@@ -148,8 +148,10 @@ setup_editor() {
     echo -e "${GREEN}${BOLD}Configuring default editor...${NC}"
     sleep 1
     
-    # Set nano as default editor system-wide
-    update-alternatives --set editor /usr/bin/nano
+    # Set nano as default editor system-wide (only if registered)
+    if update-alternatives --list editor | grep -q nano; then
+        update-alternatives --set editor /usr/bin/nano 2>/dev/null || true
+    fi
     
     # Add to profile for all users
     cat > /etc/profile.d/cipi-editor.sh <<'EOF'
