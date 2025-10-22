@@ -12,7 +12,7 @@ set -e
 # Configuration
 BUILD="4.0.0"
 REPO="andreapollastri/cipi"
-BRANCH="${1:-main}"
+BRANCH="${1:-latest}"
 
 # Colors
 RED='\033[0;31m'

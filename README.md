@@ -10,7 +10,7 @@
 
 <p align="center">
   <a href="https://github.com/andreapollastri/cipi/releases"><img src="https://img.shields.io/github/v/release/andreapollastri/cipi" alt="Latest Release"></a>
-  <a href="https://github.com/andreapollastri/cipi/blob/main/LICENSE"><img src="https://img.shields.io/github/license/andreapollastri/cipi" alt="License"></a>
+  <a href="https://github.com/andreapollastri/cipi/blob/latest/LICENSE"><img src="https://img.shields.io/github/license/andreapollastri/cipi" alt="License"></a>
   <a href="https://github.com/andreapollastri/cipi/stargazers"><img src="https://img.shields.io/github/stars/andreapollastri/cipi?style=social" alt="Stars"></a>
 </p>
 
@@ -113,7 +113,7 @@ Cipi implements **production-ready security** with multiple layers of protection
 ## ⚡ Quick Installation
 
 ```bash
-wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/main/install.sh | bash
+wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/refs/heads/latest/install.sh | bash
 ```
 
 Installation takes approximately **10-15 minutes** depending on your server's internet speed.
@@ -125,7 +125,7 @@ AWS disables root login by default. Use this method:
 ```bash
 ssh ubuntu@<your-server-ip>
 sudo -s
-wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/main/install.sh | bash
+wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/refs/heads/latest/install.sh | bash
 ```
 
 **Important:**
@@ -555,7 +555,7 @@ Your websites will **continue to work normally**. You'll need to manage:
 You can reinstall Cipi at any time without affecting existing sites:
 
 ```bash
-wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/main/install.sh | bash
+wget -O - https://raw.githubusercontent.com/andreapollastri/cipi/refs/heads/latest/install.sh | bash
 ```
 
 Cipi will detect existing virtual hosts and continue managing them.
