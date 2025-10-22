@@ -91,7 +91,15 @@ install_basics() {
     apt-get update
     apt-get install -y software-properties-common curl wget nano vim git \
         sed zip unzip openssl expect apt-transport-https \
-        ca-certificates gnupg lsb-release jq bc awscli
+        ca-certificates gnupg lsb-release jq bc python3-pip
+    
+    # Install AWS CLI v2
+    cd /tmp
+    curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+    unzip -q awscliv2.zip
+    ./aws/install
+    rm -rf awscliv2.zip aws
+    cd -
     
     echo -e "${GREEN}✓ Basic packages installed${NC}"
 }
