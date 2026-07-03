@@ -106,12 +106,21 @@ show_help() {
     echo -e "    ${CYAN}cipi worker remove <app> <queue>${NC}    Remove worker"
     echo -e "    ${CYAN}cipi worker restart <app>${NC}           Restart workers"
     echo ""
-    echo -e "  ${BOLD}${CYAN}DATABASE${NC}"
+    echo -e "  ${BOLD}${CYAN}DATABASE (MariaDB)${NC}"
     echo -e "    ${CYAN}cipi db create${NC}                      Create database"
     echo -e "    ${CYAN}cipi db list${NC}                        List databases"
     echo -e "    ${CYAN}cipi db delete <name>${NC}                Delete database"
     echo -e "    ${CYAN}cipi db backup <name>${NC}               Backup database"
     echo -e "    ${CYAN}cipi db restore <name> <file>${NC}        Restore database"
+    echo ""
+    echo -e "  ${BOLD}${CYAN}DATABASE (PostgreSQL)${NC}"
+    echo -e "    ${CYAN}cipi pgdb install${NC}                   Install PostgreSQL"
+    echo -e "    ${CYAN}cipi pgdb create${NC}                    Create database"
+    echo -e "    ${CYAN}cipi pgdb list${NC}                      List databases"
+    echo -e "    ${CYAN}cipi pgdb delete <name>${NC}              Delete database"
+    echo -e "    ${CYAN}cipi pgdb backup <name>${NC}             Backup database"
+    echo -e "    ${CYAN}cipi pgdb restore <name> <file>${NC}      Restore database"
+    echo -e "    ${CYAN}cipi pgdb password <name>${NC}           Reset user password"
     echo ""
     echo -e "  ${BOLD}${CYAN}API${NC}"
     echo -e "    ${CYAN}cipi api <domain>${NC}                 Configure API at domain"
@@ -221,6 +230,17 @@ show_status() {
             printf "  %-16s ${RED}● stopped${NC}\n" "$svc"
         fi
     done
+    # Show PostgreSQL only when installed
+    if command -v psql &>/dev/null; then
+        local pg_svc; pg_svc=$(systemctl list-units --type=service --state=loaded 2>/dev/null | awk '/postgresql/{print $1; exit}')
+        if [[ -n "$pg_svc" ]]; then
+            if systemctl is-active --quiet "$pg_svc" 2>/dev/null; then
+                printf "  %-16s ${GREEN}● running${NC}\n" "postgresql"
+            else
+                printf "  %-16s ${RED}● stopped${NC}\n" "postgresql"
+            fi
+        fi
+    fi
 
     echo -e "\n${BOLD}PHP${NC}"
     for v in 8.4 8.5; do
@@ -252,6 +272,7 @@ main() {
         deploy)     require_root; source "${CIPI_LIB}/deploy.sh";      deploy_command "$@" ;;
         worker)     require_root; source "${CIPI_LIB}/worker.sh";      worker_command "$@" ;;
         db)         require_root; source "${CIPI_LIB}/db.sh";          db_command "$@" ;;
+        pgdb)       require_root; source "${CIPI_LIB}/pgdb.sh";        pgdb_command "$@" ;;
         ssl)        require_root; source "${CIPI_LIB}/ssl.sh";         ssl_command "$@" ;;
         php)        require_root; source "${CIPI_LIB}/php.sh";         php_command "$@" ;;
         firewall)   require_root; source "${CIPI_LIB}/firewall.sh";    firewall_command "$@" ;;

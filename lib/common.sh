@@ -353,7 +353,7 @@ EOF
 mkdir -p "${CIPI_CONFIG}" "${CIPI_LOG}"
 chmod 700 "${CIPI_CONFIG}"
 vault_init
-for f in apps.json databases.json; do
+for f in apps.json databases.json pgdatabases.json; do
     if [[ ! -f "${CIPI_CONFIG}/$f" ]]; then
         echo "{}" | vault_write "$f"
     fi
