@@ -223,26 +223,19 @@ echo "[${TIMESTAMP}] [${DISPLAY_FROM:-$RHOST}] [key:${SSH_KEY_NAME}] ${SUBJECT}"
 # ── Send email (only if SMTP configured) ─────────────────────
 
 readonly SMTP_CFG="${CIPI_CONFIG}/smtp.json"
-readonly SMTP_RC="${CIPI_CONFIG}/.msmtprc"
 
 [[ -f "$SMTP_CFG" ]] || exit 0
-[[ -f "$SMTP_RC" ]] || exit 0
 
 source "${CIPI_LIB}/vault.sh" 2>/dev/null || exit 0
 source "${CIPI_LIB}/notifications.sh" 2>/dev/null || true
+source "${CIPI_LIB}/smtp.sh" 2>/dev/null || true
 
 if [[ -n "$NOTIFY_TRIGGER" ]] && declare -f _notify_trigger_enabled &>/dev/null && ! _notify_trigger_enabled "$NOTIFY_TRIGGER"; then
     exit 0
 fi
 
-_SJ=$(vault_read smtp.json 2>/dev/null) || exit 0
-[[ "$(echo "$_SJ" | jq -r '.enabled // false')" == "true" ]] || exit 0
-
-TO=$(echo "$_SJ" | jq -r '.to // empty')
-FROM=$(echo "$_SJ" | jq -r '.from // "noreply@localhost"')
-[[ -z "$TO" ]] && exit 0
-
-printf "From: %s\nTo: %s\nSubject: %s\n\n%s\n" "$FROM" "$TO" "$SUBJECT" "$BODY" | \
-    msmtp -C "$SMTP_RC" "$TO" 2>/dev/null &
+if declare -f _smtp_send &>/dev/null; then
+    _smtp_send "$SUBJECT" "$BODY" 2>/dev/null &
+fi
 
 exit 0

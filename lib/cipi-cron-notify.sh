@@ -16,6 +16,7 @@ readonly SMTP_RC="${CIPI_CONFIG}/.msmtprc"
 
 source "${CIPI_LIB}/vault.sh"
 source "${CIPI_LIB}/notifications.sh" 2>/dev/null || true
+source "${CIPI_LIB}/smtp.sh" 2>/dev/null || true
 
 OUTPUT=$("$@" 2>&1)
 RC=$?
@@ -38,16 +39,9 @@ ${OUTPUT:-<no output>}"
     if declare -f _notify_trigger_enabled &>/dev/null && ! _notify_trigger_enabled "cron_fail"; then
         exit $RC
     fi
-    [[ ! -f "$SMTP_CFG" ]] && exit $RC
-    _SJ=$(vault_read smtp.json 2>/dev/null) || exit $RC
-    [[ "$(echo "$_SJ" | jq -r '.enabled // false')" != "true" ]] && exit $RC
-
-    TO=$(echo "$_SJ" | jq -r '.to // empty')
-    FROM=$(echo "$_SJ" | jq -r '.from // "noreply@localhost"')
-    [[ -z "$TO" ]] && exit $RC
-
-    printf "From: %s\nTo: %s\nSubject: %s\n\n%s\n" "$FROM" "$TO" "$SUBJECT" "$BODY" | \
-        msmtp -C "$SMTP_RC" "$TO" 2>/dev/null || true
+    if declare -f _smtp_send &>/dev/null; then
+        _smtp_send "$SUBJECT" "$BODY" 2>/dev/null || true
+    fi
 fi
 
 exit $RC

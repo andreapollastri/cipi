@@ -4,6 +4,20 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.7.20] — 2026-07-25
+
+### Fixed
+
+- **`cipi smtp configure` / `cipi smtp test` failed with working credentials** — several msmtp integration bugs:
+  - Password was written via an **unquoted heredoc**, so `$` / backticks in passwords were shell-expanded and corrupted before msmtp saw them.
+  - `.msmtprc` stored the password in cleartext; msmtp then **refused the file** when permissions were not strictly `0600` (common after group changes under `/etc/cipi`).
+  - Hardcoded `tls_trust_file /etc/ssl/certs/ca-certificates.crt` made send fail when that path was missing; trust file is now used only if present.
+  - `tls_starttls` stayed `on` even when TLS was disabled.
+  - Test failures hid the real msmtp error (`2>/dev/null`) and did not detect an unreachable host/port.
+- SMTP now uses **`passwordeval`** (`lib/cipi-smtp-pass.sh`) so the password stays in encrypted `smtp.json` only; configure/test print the msmtp error and check TCP reachability. **Migration 4.7.20** regenerates `.msmtprc` on existing servers.
+
+---
+
 ## [4.7.19] — 2026-07-23
 
 ### Fixed
