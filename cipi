@@ -31,6 +31,14 @@ require_root() {
     fi
 }
 
+# If first arg is help/-h/--help, show topic help and exit.
+_maybe_cmd_help() {
+    local topic="$1" arg="${2:-}"
+    case "$arg" in
+        help|--help|-h) show_help "$topic"; exit 0 ;;
+    esac
+}
+
 show_logo() {
     echo -e "${GREEN}${BOLD}"
     echo " ██████ ██ ██████  ██"
@@ -41,156 +49,370 @@ show_logo() {
     echo -e "${NC}"
 }
 
+# ── Help helpers ─────────────────────────────────────────────
+_help_h()    { echo -e "\n  ${BOLD}${CYAN}$1${NC}"; }
+_help_cmd()  { printf "    ${CYAN}%-44s${NC} %s\n" "$1" "$2"; }
+_help_note() { echo -e "    ${DIM}$1${NC}"; }
+_help_topic_header() {
+    if [[ -n "${CIPI_HELP_INLINE:-}" ]]; then
+        echo -e "\n  ${BOLD}${CYAN}$1${NC}"
+        echo -e "  ${DIM}────────────────────────────────────────${NC}"
+    else
+        show_logo
+        echo -e "${BOLD}Cipi v${CIPI_VERSION}${NC} ${DIM}— $1${NC}"
+    fi
+}
+
+_help_topics_list() {
+    cat <<'EOF'
+app  domains  deploy  worker  db  service  ssl  php
+auth  basicauth  ssh  firewall  ban  backup  sync  git
+api  gui  smtp  notifications  reset  server
+EOF
+}
+
 show_help() {
+    local topic="${1:-}"
+
+    if [[ -n "$topic" ]]; then
+        show_help_topic "$topic"
+        return
+    fi
+
     show_logo
     echo -e "${BOLD}Cipi v${CIPI_VERSION}${NC} ${DIM}— Server Control Panel for Laravel${NC}"
     echo ""
-    echo -e "  ${BOLD}${CYAN}SERVER${NC}"
-    echo -e "    ${CYAN}cipi status${NC}                         Server status"
-    echo -e "    ${CYAN}cipi version${NC}                        Cipi version"
-    echo -e "    ${CYAN}cipi self-update [--check]${NC}          Update Cipi"
+    echo -e "  Usage:  ${CYAN}cipi <command> [args]${NC}"
+    echo -e "          ${CYAN}cipi help <topic>${NC}"
     echo ""
-    echo -e "  ${BOLD}${CYAN}SERVICES${NC}"
-    echo -e "    ${CYAN}cipi service list [service]${NC}         Services status"
-    echo -e "    ${CYAN}cipi service restart [service|all]${NC}  Restart service(s)"
-    echo -e "    ${CYAN}cipi service start <service>${NC}        Start a service"
-    echo -e "    ${CYAN}cipi service stop <service>${NC}         Stop a service"
-    echo -e "    ${DIM}  services: nginx mariadb supervisor fail2ban php<ver>-fpm${NC}"
+    echo -e "  ${BOLD}Core${NC}"
+    _help_cmd "cipi status"              "Server overview"
+    _help_cmd "cipi version"             "Cipi version"
+    _help_cmd "cipi self-update"         "Update Cipi  ${DIM}[--check]${NC}"
+    _help_cmd "cipi service ..."           "nginx, mariadb, php-fpm, ..."
     echo ""
-    echo -e "  ${BOLD}${CYAN}APPS${NC}"
-    echo -e "    ${CYAN}cipi app create [--custom]${NC}"
-    echo -e "                            Create app (Laravel default, or --custom for simple deploy)"
-    echo -e "    ${CYAN}cipi app list${NC}                       List apps"
-    echo -e "    ${CYAN}cipi app show <app>${NC}                 App details"
-    echo -e "    ${CYAN}cipi app edit <app> [--domain=D] [--php=X.Y]${NC}  Edit app"
-    echo -e "    ${CYAN}cipi app delete <app>${NC}               Delete app"
-    echo -e "    ${CYAN}cipi app suspend <app>${NC}              Take app offline (503 page)"
-    echo -e "    ${CYAN}cipi app unsuspend <app>${NC}            Bring app back online"
-    echo -e "    ${CYAN}cipi app env <app>${NC}                  Edit .env"
-    echo -e "    ${CYAN}cipi app logs <app> [--type=T]${NC}      Tail logs"
-    echo -e "    ${CYAN}cipi app tinker <app>${NC}               Laravel Tinker"
-    echo -e "    ${CYAN}cipi app artisan <app> <cmd>${NC}        Artisan command"
-    echo -e "    ${CYAN}cipi app reset-password <app>${NC}       Reset app SSH password"
-    echo -e "    ${CYAN}cipi app reset-db-password <app>${NC}    Reset app DB password"
+    echo -e "  ${BOLD}Apps & deploy${NC}"
+    _help_cmd "cipi app ..."               "Create, edit, logs, env, ..."
+    _help_cmd "cipi domains / alias ..."   "Domains & aliases"
+    _help_cmd "cipi deploy <app>"        "Deploy / rollback / webhook"
+    _help_cmd "cipi worker ..."            "Queue workers"
+    _help_cmd "cipi db ..."                "Databases"
     echo ""
-    echo -e "  ${BOLD}${CYAN}DOMAINS${NC}"
-    echo -e "    ${CYAN}cipi domains${NC}                         Map all domains/aliases to apps"
-    echo -e "    ${CYAN}cipi alias add <app> <domain>${NC}       Add alias"
-    echo -e "    ${CYAN}cipi alias remove <app> <domain>${NC}    Remove alias"
-    echo -e "    ${CYAN}cipi alias list <app>${NC}               List aliases"
+    echo -e "  ${BOLD}Security & access${NC}"
+    _help_cmd "cipi ssl / ssh / firewall / ban"  "Certs, keys, firewall, bans"
+    _help_cmd "cipi auth / basicauth ..."  "Composer auth.json & HTTP basic auth"
+    _help_cmd "cipi reset ..."             "Reset root / DB / Valkey passwords"
     echo ""
-    echo -e "  ${BOLD}${CYAN}AUTH${NC}"
-    echo -e "    ${CYAN}cipi auth create <app>${NC}              Create auth.json in shared"
-    echo -e "    ${CYAN}cipi auth edit <app>${NC}                Edit auth.json"
-    echo -e "    ${CYAN}cipi auth show <app>${NC}                Show auth.json content"
-    echo -e "    ${CYAN}cipi auth delete <app>${NC}              Delete auth.json"
+    echo -e "  ${BOLD}Panel${NC}"
+    _help_cmd "cipi api ..."               "REST API for the control panel"
+    _help_cmd "cipi gui ..."               "Web control panel"
     echo ""
-    echo -e "  ${BOLD}${CYAN}BASIC AUTH${NC}"
-    echo -e "    ${CYAN}cipi basicauth enable <app> [--user=N] [--password=P]${NC}"
-    echo -e "                            Protect app with HTTP basic auth"
-    echo -e "    ${CYAN}cipi basicauth disable <app>${NC}        Remove HTTP basic auth"
-    echo -e "    ${CYAN}cipi basicauth status <app>${NC}         Show basic auth status"
+    echo -e "  ${BOLD}Ops${NC}"
+    _help_cmd "cipi php / backup / sync / git"   "PHP, S3 backups, migrate apps, Git tokens"
+    _help_cmd "cipi smtp / notifications"        "Email alerts & triggers"
     echo ""
-    echo -e "  ${BOLD}${CYAN}DEPLOY${NC}"
-    echo -e "    ${CYAN}cipi deploy <app>${NC}                        Deploy via Deployer"
-    echo -e "    ${CYAN}cipi deploy <app> --rollback${NC}             Rollback"
-    echo -e "    ${CYAN}cipi deploy <app> --releases${NC}             List releases"
-    echo -e "    ${CYAN}cipi deploy <app> --key${NC}                  Show SSH deploy key"
-    echo -e "    ${CYAN}cipi deploy <app> --webhook${NC}              Show webhook info"
-    echo -e "    ${CYAN}cipi deploy <app> --unlock${NC}               Unlock a stuck deploy"
-    echo -e "    ${CYAN}cipi deploy <app> --trust-host=<host[:port]>${NC}  Trust a custom Git server"
+    echo -e "  ${DIM}Detailed help:${NC}  ${CYAN}cipi help <topic>${NC}"
+    echo -e "  ${DIM}Topics:${NC}         $(_help_topics_list | tr '\n' ' ' | sed 's/  */ /g')"
+    echo -e "  ${DIM}Everything:${NC}     ${CYAN}cipi help all${NC}"
     echo ""
-    echo -e "  ${BOLD}${CYAN}WORKERS${NC}"
-    echo -e "    ${CYAN}cipi worker add <app> [--queue=Q]${NC}    Add worker"
-    echo -e "    ${CYAN}cipi worker list <app>${NC}              List workers"
-    echo -e "    ${CYAN}cipi worker remove <app> <queue>${NC}    Remove worker"
-    echo -e "    ${CYAN}cipi worker restart <app>${NC}           Restart workers"
+}
+
+show_help_topic() {
+    local topic
+    topic=$(echo "${1:-}" | tr '[:upper:]' '[:lower:]')
+
+    case "$topic" in
+        server|core|status|self-update|version)
+            _help_topic_header "Server"
+            echo ""
+            _help_cmd "cipi status"                    "Server status"
+            _help_cmd "cipi version"                   "Cipi version"
+            _help_cmd "cipi self-update [--check]"     "Update Cipi"
+            echo ""
+            ;;
+
+        service|services)
+            _help_topic_header "Services"
+            echo ""
+            _help_cmd "cipi service list [service]"         "Services status"
+            _help_cmd "cipi service restart [service|all]"  "Restart service(s)"
+            _help_cmd "cipi service start <service>"        "Start a service"
+            _help_cmd "cipi service stop <service>"         "Stop a service"
+            _help_note "services: nginx mariadb supervisor fail2ban php<ver>-fpm"
+            echo ""
+            ;;
+
+        app|apps)
+            _help_topic_header "Apps"
+            _help_h "Lifecycle"
+            _help_cmd "cipi app create [--custom]"     "Create app (Laravel, or --custom)"
+            _help_cmd "cipi app list"                  "List apps"
+            _help_cmd "cipi app show <app>"            "App details"
+            _help_cmd "cipi app edit <app>"            "Edit app  ${DIM}[--domain=D] [--php=X.Y]${NC}"
+            _help_cmd "cipi app delete <app>"          "Delete app"
+            _help_cmd "cipi app suspend <app>"         "Take offline (503)"
+            _help_cmd "cipi app unsuspend <app>"       "Bring back online"
+            _help_h "Runtime"
+            _help_cmd "cipi app env <app>"             "Edit .env"
+            _help_cmd "cipi app logs <app> [--type=T]" "Tail logs"
+            _help_cmd "cipi app tinker <app>"          "Laravel Tinker"
+            _help_cmd "cipi app artisan <app> <cmd>"   "Artisan command"
+            _help_h "Credentials"
+            _help_cmd "cipi app reset-password <app>"    "Reset app SSH password"
+            _help_cmd "cipi app reset-db-password <app>" "Reset app DB password"
+            echo ""
+            ;;
+
+        domain|domains|alias|aliases)
+            _help_topic_header "Domains & aliases"
+            echo ""
+            _help_cmd "cipi domains"                   "Map all domains/aliases to apps"
+            _help_cmd "cipi alias add <app> <domain>"  "Add alias"
+            _help_cmd "cipi alias remove <app> <domain>" "Remove alias"
+            _help_cmd "cipi alias list <app>"          "List aliases"
+            echo ""
+            ;;
+
+        auth)
+            _help_topic_header "Composer auth.json"
+            echo ""
+            _help_cmd "cipi auth create <app>"         "Create auth.json in shared"
+            _help_cmd "cipi auth edit <app>"           "Edit auth.json"
+            _help_cmd "cipi auth show <app>"           "Show auth.json content"
+            _help_cmd "cipi auth delete <app>"         "Delete auth.json"
+            echo ""
+            ;;
+
+        basicauth|basic-auth)
+            _help_topic_header "HTTP basic auth"
+            echo ""
+            _help_cmd "cipi basicauth enable <app>"    "Protect app  ${DIM}[--user=N] [--password=P]${NC}"
+            _help_cmd "cipi basicauth disable <app>"   "Remove HTTP basic auth"
+            _help_cmd "cipi basicauth status <app>"    "Show basic auth status"
+            echo ""
+            ;;
+
+        deploy|deployment)
+            _help_topic_header "Deploy"
+            echo ""
+            _help_cmd "cipi deploy <app>"              "Deploy via Deployer"
+            _help_cmd "cipi deploy <app> --rollback"   "Rollback"
+            _help_cmd "cipi deploy <app> --releases"   "List releases"
+            _help_cmd "cipi deploy <app> --key"        "Show SSH deploy key"
+            _help_cmd "cipi deploy <app> --webhook"    "Show webhook info"
+            _help_cmd "cipi deploy <app> --unlock"     "Unlock a stuck deploy"
+            _help_cmd "cipi deploy <app> --trust-host=<host[:port]>" "Trust a custom Git server"
+            echo ""
+            ;;
+
+        worker|workers)
+            _help_topic_header "Workers"
+            echo ""
+            _help_cmd "cipi worker add <app> [--queue=Q]" "Add worker"
+            _help_cmd "cipi worker list <app>"         "List workers"
+            _help_cmd "cipi worker remove <app> <queue>" "Remove worker"
+            _help_cmd "cipi worker restart <app>"      "Restart workers"
+            echo ""
+            ;;
+
+        db|database|databases)
+            _help_topic_header "Database"
+            echo ""
+            _help_cmd "cipi db create"                 "Create database"
+            _help_cmd "cipi db list"                   "List databases"
+            _help_cmd "cipi db delete <name>"          "Delete database"
+            _help_cmd "cipi db backup <name>"          "Backup database"
+            _help_cmd "cipi db restore <name> <file>"  "Restore database"
+            echo ""
+            ;;
+
+        api)
+            _help_topic_header "API"
+            echo ""
+            _help_cmd "cipi api <domain>"              "Configure API at domain"
+            _help_cmd "cipi api ssl"                   "SSL for API domain"
+            _help_cmd "cipi api update"                "Update Laravel + cipi-api"
+            _help_cmd "cipi api upgrade"               "Full rebuild (fresh Laravel + package)"
+            _help_cmd "cipi api status"                "Show API versions and status"
+            _help_cmd "cipi api token list|create|revoke" "API token management"
+            _help_cmd "cipi api fix-permissions"       "Fix panel API ownership (SQLite/logs)"
+            echo ""
+            ;;
+
+        gui|panel)
+            _help_topic_header "GUI"
+            echo ""
+            _help_cmd "cipi gui <domain>"              "Configure web control panel"
+            _help_cmd "cipi gui ssl"                   "SSL for GUI domain"
+            _help_cmd "cipi gui update"                "Update cipi/gui, migrate, refresh theme"
+            _help_cmd "cipi gui refresh-theme"         "Reload GUI CSS/views from package"
+            _help_cmd "cipi gui upgrade"               "Full rebuild (fresh Laravel + package)"
+            _help_cmd "cipi gui status"                "Show GUI versions and status"
+            _help_cmd "cipi gui fix-permissions"       "Repair GUI (open_basedir, vendor, perms)"
+            _help_cmd "cipi gui repair"                "Alias for fix-permissions"
+            _help_cmd "cipi gui reset-user"            "Reset admin email/password (clears 2FA)"
+            _help_cmd "cipi gui remove"                "Remove GUI panel (alias: uninstall)"
+            _help_note "reset-user flags: --email= --password= --name="
+            _help_note "remove flags: --force"
+            _help_note "Requires cipi api on managed servers + API tokens"
+            echo ""
+            ;;
+
+        git|github|gitlab)
+            _help_topic_header "Git integration"
+            echo ""
+            _help_cmd "cipi git status"                "Git provider status"
+            _help_cmd "cipi git github-token <token>"  "Save GitHub PAT"
+            _help_cmd "cipi git gitlab-token <token>"  "Save GitLab PAT"
+            _help_cmd "cipi git gitlab-url <url>"      "Self-hosted GitLab URL"
+            _help_cmd "cipi git remove-github"         "Remove GitHub token"
+            _help_cmd "cipi git remove-gitlab"         "Remove GitLab token + URL"
+            echo ""
+            ;;
+
+        sync)
+            _help_topic_header "Sync"
+            echo ""
+            _help_cmd "cipi sync export [app ...] [opts]" "Export apps to archive"
+            _help_cmd "cipi sync import <file> [app ...]" "Import apps from archive"
+            _help_cmd "cipi sync push [app ...] [opts]"   "Export + transfer to remote"
+            _help_cmd "cipi sync list <file>"          "Inspect archive contents"
+            _help_cmd "cipi sync pubkey"               "Show this server's sync public key"
+            _help_cmd "cipi sync trust"                "Trust a remote server's key"
+            _help_note "export: --with-db --with-storage --output=<path>"
+            _help_note "push:   --host=IP --port=22 --user=cipi --with-db --with-storage --import"
+            _help_note "import: --update --deploy --yes"
+            echo ""
+            ;;
+
+        ssh|ssh-keys|keys)
+            _help_topic_header "SSH keys"
+            echo ""
+            _help_cmd "cipi ssh list"                  "List authorized SSH keys"
+            _help_cmd "cipi ssh add [key]"             "Add an SSH public key"
+            _help_cmd "cipi ssh remove [n]"            "Remove an SSH key by number"
+            echo ""
+            ;;
+
+        ssl|cert|certs|certificate)
+            _help_topic_header "SSL"
+            echo ""
+            _help_cmd "cipi ssl install <app>"         "SSL certificate"
+            _help_cmd "cipi ssl renew"                 "Renew all certs"
+            echo ""
+            ;;
+
+        php)
+            _help_topic_header "PHP"
+            echo ""
+            _help_cmd "cipi php list"                  "PHP versions"
+            _help_cmd "cipi php install <ver>"         "Install PHP"
+            _help_cmd "cipi php switch <ver>"          "Switch system default PHP"
+            _help_cmd "cipi php upgrade"               "Upgrade installed PHP packages"
+            echo ""
+            ;;
+
+        firewall|ufw)
+            _help_topic_header "Firewall"
+            echo ""
+            _help_cmd "cipi firewall allow <port>"     "Allow port"
+            _help_cmd "cipi firewall list"             "Firewall rules"
+            echo ""
+            ;;
+
+        ban|fail2ban)
+            _help_topic_header "Ban"
+            echo ""
+            _help_cmd "cipi ban list"                  "List banned IPs"
+            _help_cmd "cipi ban unban <IP>"            "Unban an IP"
+            echo ""
+            ;;
+
+        backup|backups|s3)
+            _help_topic_header "Backup"
+            echo ""
+            _help_cmd "cipi backup configure"          "Configure S3"
+            _help_cmd "cipi backup run [app]"          "Run backup"
+            _help_cmd "cipi backup list [app]"         "List S3 backups"
+            _help_cmd "cipi backup prune [app] --weeks=N" "Delete backups older than N weeks"
+            echo ""
+            ;;
+
+        smtp|mail|email)
+            _help_topic_header "SMTP"
+            echo ""
+            _help_cmd "cipi smtp configure"            "Configure email alerts"
+            _help_cmd "cipi smtp status"               "SMTP status"
+            _help_cmd "cipi smtp test"                 "Send test email"
+            _help_cmd "cipi smtp disable|enable|delete" "Toggle or remove"
+            _help_note "See also: cipi help notifications"
+            echo ""
+            ;;
+
+        notifications|notify|triggers)
+            _help_topic_header "Notifications"
+            echo ""
+            _help_cmd "cipi notifications list"        "List email triggers"
+            _help_cmd "cipi notifications enable|disable <t>" "Toggle a trigger"
+            _help_cmd "cipi notifications enable-all|disable-all|reset" "Bulk toggle / reset"
+            _help_note "All triggers on by default; choose what to send when SMTP is set"
+            _help_note "See also: cipi help smtp"
+            echo ""
+            ;;
+
+        reset|passwords)
+            _help_topic_header "Reset"
+            echo ""
+            _help_cmd "cipi reset root-password"       "Reset root SSH password"
+            _help_cmd "cipi reset db-password"         "Reset MariaDB root password"
+            _help_cmd "cipi reset valkey-password"     "Reset Valkey password"
+            echo ""
+            ;;
+
+        all|full)
+            show_help_all
+            ;;
+
+        *)
+            error "Unknown help topic: ${topic}"
+            echo -e "  Topics: $(_help_topics_list | tr '\n' ' ' | sed 's/  */ /g')"
+            echo -e "  Or run: ${CYAN}cipi help${NC} / ${CYAN}cipi help all${NC}"
+            exit 1
+            ;;
+    esac
+}
+
+# Full dump (former monolithic help) for power users / docs.
+show_help_all() {
+    show_logo
+    echo -e "${BOLD}Cipi v${CIPI_VERSION}${NC} ${DIM}— all commands${NC}"
+    echo -e "  ${DIM}Tip: use ${CYAN}cipi help <topic>${DIM} for a shorter view${NC}"
+
+    CIPI_HELP_INLINE=1
+    show_help_topic server
+    show_help_topic service
+    show_help_topic app
+    show_help_topic domains
+    show_help_topic auth
+    show_help_topic basicauth
+    show_help_topic deploy
+    show_help_topic worker
+    show_help_topic db
+    show_help_topic api
+    show_help_topic gui
+    show_help_topic git
+    show_help_topic sync
+    show_help_topic ssh
+    show_help_topic ssl
+    show_help_topic php
+    show_help_topic firewall
+    show_help_topic ban
+    show_help_topic backup
+    show_help_topic smtp
+    show_help_topic notifications
+    show_help_topic reset
+    unset CIPI_HELP_INLINE
     echo ""
-    echo -e "  ${BOLD}${CYAN}DATABASE${NC}"
-    echo -e "    ${CYAN}cipi db create${NC}                      Create database"
-    echo -e "    ${CYAN}cipi db list${NC}                        List databases"
-    echo -e "    ${CYAN}cipi db delete <name>${NC}                Delete database"
-    echo -e "    ${CYAN}cipi db backup <name>${NC}               Backup database"
-    echo -e "    ${CYAN}cipi db restore <name> <file>${NC}        Restore database"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}API${NC}"
-    echo -e "    ${CYAN}cipi api <domain>${NC}                 Configure API at domain"
-    echo -e "    ${CYAN}cipi api ssl${NC}                      SSL for API domain"
-    echo -e "    ${CYAN}cipi api update${NC}                   Update Laravel + cipi-api (composer update)"
-    echo -e "    ${CYAN}cipi api upgrade${NC}                  Full rebuild (fresh Laravel + package)"
-    echo -e "    ${CYAN}cipi api status${NC}                   Show API versions and status"
-    echo -e "    ${CYAN}cipi api token list|create|revoke${NC} API token management"
-    echo -e "    ${CYAN}cipi api fix-permissions${NC}            Fix panel API file ownership (SQLite/logs)"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}GUI${NC}"
-    echo -e "    ${CYAN}cipi gui <domain>${NC}                 Configure web control panel"
-    echo -e "    ${CYAN}cipi gui ssl${NC}                      SSL for GUI domain"
-    echo -e "    ${CYAN}cipi gui update${NC}                   Update cipi/gui, migrate, refresh theme"
-    echo -e "    ${CYAN}cipi gui refresh-theme${NC}            Reload GUI CSS/views from package (alias: artisan cipi:gui-refresh-theme)"
-    echo -e "    ${CYAN}cipi gui upgrade${NC}                  Full rebuild (fresh Laravel + package)"
-    echo -e "    ${CYAN}cipi gui status${NC}                   Show GUI versions and status"
-    echo -e "    ${CYAN}cipi gui fix-permissions${NC}            Repair GUI (open_basedir, vendor copy, permissions)"
-    echo -e "    ${CYAN}cipi gui repair${NC}                     Alias for fix-permissions"
-    echo -e "    ${CYAN}cipi gui reset-user${NC}                 Reset admin email/password (clears 2FA)"
-    echo -e "    ${CYAN}cipi gui remove${NC}                     Remove GUI panel (alias: uninstall)"
-    echo -e "    ${DIM}  reset-user flags: --email= --password= --name=${NC}"
-    echo -e "    ${DIM}  remove flags: --force${NC}"
-    echo -e "    ${DIM}  Requires cipi api on managed servers + API tokens${NC}"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}GIT INTEGRATION${NC}"
-    echo -e "    ${CYAN}cipi git status${NC}                      Git provider status"
-    echo -e "    ${CYAN}cipi git github-token <token>${NC}        Save GitHub PAT"
-    echo -e "    ${CYAN}cipi git gitlab-token <token>${NC}        Save GitLab PAT"
-    echo -e "    ${CYAN}cipi git gitlab-url <url>${NC}            Self-hosted GitLab URL"
-    echo -e "    ${CYAN}cipi git remove-github${NC}               Remove GitHub token"
-    echo -e "    ${CYAN}cipi git remove-gitlab${NC}               Remove GitLab token + URL"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}SYNC${NC}"
-    echo -e "    ${CYAN}cipi sync export [app ...] [opts]${NC}  Export apps to archive"
-    echo -e "    ${CYAN}cipi sync import <file> [app ...]${NC}  Import apps from archive"
-    echo -e "    ${CYAN}cipi sync push [app ...] [opts]${NC}    Export + transfer to remote server"
-    echo -e "    ${CYAN}cipi sync list <file>${NC}              Inspect archive contents"
-    echo -e "    ${CYAN}cipi sync pubkey${NC}                   Show this server's sync public key"
-    echo -e "    ${CYAN}cipi sync trust${NC}                    Trust a remote server's key"
-    echo -e "    ${DIM}  export flags: --with-db --with-storage --output=<path>${NC}"
-    echo -e "    ${DIM}  push flags:   --host=IP --port=22 --user=cipi --with-db --with-storage --import${NC}"
-    echo -e "    ${DIM}  import flags: --update --deploy --yes${NC}"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}SSH KEYS${NC}"
-    echo -e "    ${CYAN}cipi ssh list${NC}                      List authorized SSH keys"
-    echo -e "    ${CYAN}cipi ssh add [key]${NC}                 Add an SSH public key"
-    echo -e "    ${CYAN}cipi ssh remove [n]${NC}                Remove an SSH key by number"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}SSL / PHP / FIREWALL / BAN / BACKUP${NC}"
-    echo -e "    ${CYAN}cipi ssl install <app>${NC}              SSL certificate"
-    echo -e "    ${CYAN}cipi ssl renew${NC}                      Renew all certs"
-    echo -e "    ${CYAN}cipi php list${NC}                       PHP versions"
-    echo -e "    ${CYAN}cipi php install <ver>${NC}               Install PHP"
-    echo -e "    ${CYAN}cipi php switch <ver>${NC}                Switch system default PHP"
-    echo -e "    ${CYAN}cipi php upgrade${NC}                    Upgrade installed PHP packages"
-    echo -e "    ${CYAN}cipi firewall allow <port>${NC}          Allow port"
-    echo -e "    ${CYAN}cipi firewall list${NC}                  Firewall rules"
-    echo -e "    ${CYAN}cipi ban list${NC}                       List banned IPs"
-    echo -e "    ${CYAN}cipi ban unban <IP>${NC}                 Unban an IP"
-    echo -e "    ${CYAN}cipi backup configure${NC}               Configure S3"
-    echo -e "    ${CYAN}cipi backup run [app]${NC}               Run backup"
-    echo -e "    ${CYAN}cipi backup list [app]${NC}              List S3 backups"
-    echo -e "    ${CYAN}cipi backup prune [app] --weeks=N${NC}   Delete backups older than N weeks"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}NOTIFICATIONS${NC}"
-    echo -e "    ${CYAN}cipi smtp configure${NC}                 Configure email alerts"
-    echo -e "    ${CYAN}cipi smtp status${NC}                    SMTP status"
-    echo -e "    ${CYAN}cipi smtp test${NC}                      Send test email"
-    echo -e "    ${CYAN}cipi smtp disable|enable|delete${NC}     Toggle or remove"
-    echo -e "    ${CYAN}cipi notifications list${NC}             List email triggers"
-    echo -e "    ${CYAN}cipi notifications enable|disable <t>${NC}  Toggle a trigger"
-    echo -e "    ${CYAN}cipi notifications enable-all|disable-all|reset${NC}"
-    echo -e "    ${DIM}  All triggers on by default; choose what to send when SMTP is set${NC}"
-    echo ""
-    echo -e "  ${BOLD}${CYAN}RESET${NC}"
-    echo -e "    ${CYAN}cipi reset root-password${NC}            Reset root SSH password"
-    echo -e "    ${CYAN}cipi reset db-password${NC}              Reset MariaDB root password"
-    echo -e "    ${CYAN}cipi reset valkey-password${NC}          Reset Valkey password"
 }
 
 show_status() {
@@ -242,32 +464,32 @@ main() {
     local cmd="$1"; shift || true
 
     case "$cmd" in
-        help|--help|-h)       show_help ;;
+        help|--help|-h)       show_help "$@" ;;
         version|--version|-v) echo "Cipi v${CIPI_VERSION}" ;;
         status)     require_root; show_status ;;
-        app)        require_root; source "${CIPI_LIB}/app.sh";         app_command "$@" ;;
-        alias)      require_root; source "${CIPI_LIB}/app.sh";         alias_command "$@" ;;
-        domains)    require_root; source "${CIPI_LIB}/app.sh";         domains_command "$@" ;;
-        auth)       require_root; source "${CIPI_LIB}/app.sh";         auth_command "$@" ;;
-        basicauth)  require_root; source "${CIPI_LIB}/app.sh";         basicauth_command "$@" ;;
-        deploy)     require_root; source "${CIPI_LIB}/deploy.sh";      deploy_command "$@" ;;
-        worker)     require_root; source "${CIPI_LIB}/worker.sh";      worker_command "$@" ;;
-        db)         require_root; source "${CIPI_LIB}/db.sh";          db_command "$@" ;;
-        ssl)        require_root; source "${CIPI_LIB}/ssl.sh";         ssl_command "$@" ;;
-        php)        require_root; source "${CIPI_LIB}/php.sh";         php_command "$@" ;;
-        firewall)   require_root; source "${CIPI_LIB}/firewall.sh";    firewall_command "$@" ;;
-        ban)        require_root; source "${CIPI_LIB}/ban.sh";         ban_command "$@" ;;
-        backup)     require_root; source "${CIPI_LIB}/backup.sh";      backup_command "$@" ;;
-        self-update) require_root; source "${CIPI_LIB}/self-update.sh"; selfupdate_command "$@" ;;
-        service)    require_root; source "${CIPI_LIB}/service.sh";    service_command "$@" ;;
-        api)        require_root; source "${CIPI_LIB}/api.sh";       api_command "$@" ;;
-        gui)        require_root; source "${CIPI_LIB}/gui.sh";       gui_command "$@" ;;
-        git)        require_root; source "${CIPI_LIB}/git.sh";       git_command "$@" ;;
-        sync)       require_root; source "${CIPI_LIB}/sync.sh";      sync_command "$@" ;;
-        ssh)        require_root; source "${CIPI_LIB}/ssh.sh";       ssh_command "$@" ;;
-        smtp)           require_root; source "${CIPI_LIB}/smtp.sh";           smtp_command "$@" ;;
-        notifications)  require_root; source "${CIPI_LIB}/notifications.sh"; notifications_command "$@" ;;
-        reset)      require_root; source "${CIPI_LIB}/reset.sh";     reset_command "$@" ;;
+        app)        _maybe_cmd_help app "$@";        require_root; source "${CIPI_LIB}/app.sh";         app_command "$@" ;;
+        alias)      _maybe_cmd_help domains "$@";    require_root; source "${CIPI_LIB}/app.sh";         alias_command "$@" ;;
+        domains)    _maybe_cmd_help domains "$@";    require_root; source "${CIPI_LIB}/app.sh";         domains_command "$@" ;;
+        auth)       _maybe_cmd_help auth "$@";       require_root; source "${CIPI_LIB}/app.sh";         auth_command "$@" ;;
+        basicauth)  _maybe_cmd_help basicauth "$@";  require_root; source "${CIPI_LIB}/app.sh";         basicauth_command "$@" ;;
+        deploy)     _maybe_cmd_help deploy "$@";     require_root; source "${CIPI_LIB}/deploy.sh";      deploy_command "$@" ;;
+        worker)     _maybe_cmd_help worker "$@";     require_root; source "${CIPI_LIB}/worker.sh";      worker_command "$@" ;;
+        db)         _maybe_cmd_help db "$@";         require_root; source "${CIPI_LIB}/db.sh";          db_command "$@" ;;
+        ssl)        _maybe_cmd_help ssl "$@";        require_root; source "${CIPI_LIB}/ssl.sh";         ssl_command "$@" ;;
+        php)        _maybe_cmd_help php "$@";        require_root; source "${CIPI_LIB}/php.sh";         php_command "$@" ;;
+        firewall)   _maybe_cmd_help firewall "$@";   require_root; source "${CIPI_LIB}/firewall.sh";    firewall_command "$@" ;;
+        ban)        _maybe_cmd_help ban "$@";        require_root; source "${CIPI_LIB}/ban.sh";         ban_command "$@" ;;
+        backup)     _maybe_cmd_help backup "$@";     require_root; source "${CIPI_LIB}/backup.sh";      backup_command "$@" ;;
+        self-update) _maybe_cmd_help server "$@";    require_root; source "${CIPI_LIB}/self-update.sh"; selfupdate_command "$@" ;;
+        service)    _maybe_cmd_help service "$@";    require_root; source "${CIPI_LIB}/service.sh";    service_command "$@" ;;
+        api)        _maybe_cmd_help api "$@";        require_root; source "${CIPI_LIB}/api.sh";       api_command "$@" ;;
+        gui)        _maybe_cmd_help gui "$@";        require_root; source "${CIPI_LIB}/gui.sh";       gui_command "$@" ;;
+        git)        _maybe_cmd_help git "$@";        require_root; source "${CIPI_LIB}/git.sh";       git_command "$@" ;;
+        sync)       _maybe_cmd_help sync "$@";       require_root; source "${CIPI_LIB}/sync.sh";      sync_command "$@" ;;
+        ssh)        _maybe_cmd_help ssh "$@";        require_root; source "${CIPI_LIB}/ssh.sh";       ssh_command "$@" ;;
+        smtp)       _maybe_cmd_help smtp "$@";       require_root; source "${CIPI_LIB}/smtp.sh";      smtp_command "$@" ;;
+        notifications) _maybe_cmd_help notifications "$@"; require_root; source "${CIPI_LIB}/notifications.sh"; notifications_command "$@" ;;
+        reset)      _maybe_cmd_help reset "$@";      require_root; source "${CIPI_LIB}/reset.sh";     reset_command "$@" ;;
         *) error "Unknown command: $cmd"; echo "Run 'cipi help'"; exit 1 ;;
     esac
 }

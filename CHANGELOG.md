@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.7.23] — 2026-07-25
+
+### Changed
+
+- **`cipi help`** — main help is now a short index grouped by area (Core, Apps & deploy, Security, Panel, Ops). Full command lists live in topic help: **`cipi help <topic>`** (e.g. `app`, `deploy`, `gui`) or **`cipi <command> help`**. Use **`cipi help all`** for the previous monolithic dump.
+
+---
+
 ## [4.7.22] — 2026-07-25
 
 ### Fixed
