@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.7.22] — 2026-07-25
+
+### Fixed
+
+- **`cipi smtp` Permission denied / AppArmor** — msmtp cannot use **`/etc/cipi/.msmtprc`** (setgid + AppArmor deny read on **`/etc/cipi/*`**), cannot run **`passwordeval`** helpers like **`cat`**, and cannot write custom log paths under **`/var/log`**. Send now uses only system **`/etc/msmtprc`** (`root:msmtp` **640**) with an embedded password — no `-C`, no `passwordeval`, no `logfile`. Legacy **`/etc/cipi/.msmtprc`** is removed. Configure/test show real msmtp errors and check host reachability. **Migration 4.7.22**.
+
+---
+
 ## [4.7.21] — 2026-07-25
 
 ### Fixed

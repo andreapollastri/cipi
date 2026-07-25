@@ -12,7 +12,6 @@ if [[ -z "${CIPI_LIB:-}" ]]; then readonly CIPI_LIB="/opt/cipi/lib"; fi
 if [[ -z "${CIPI_CONFIG:-}" ]]; then readonly CIPI_CONFIG="/etc/cipi"; fi
 if [[ -z "${CIPI_LOG:-}" ]]; then readonly CIPI_LOG="/var/log/cipi"; fi
 readonly SMTP_CFG="${CIPI_CONFIG}/smtp.json"
-readonly SMTP_RC="${CIPI_CONFIG}/.msmtprc"
 
 source "${CIPI_LIB}/vault.sh"
 source "${CIPI_LIB}/notifications.sh" 2>/dev/null || true
