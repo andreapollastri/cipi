@@ -12,12 +12,23 @@ _smtp_is_enabled() {
     [[ -f "$SMTP_CFG" ]] && [[ "$(vault_read smtp.json | jq -r '.enabled // false')" == "true" ]]
 }
 
+# Debian/Ubuntu ship msmtp setgid (group msmtp). That drops root's groups, so
+# msmtp cannot traverse /etc/cipi (750 root:cipi-api) nor read vault secrets
+# via passwordeval → "Permission denied" on .msmtprc. Cipi only sends as root.
+_smtp_drop_setgid() {
+    local bin; bin=$(command -v msmtp) || return 0
+    if [[ -g "$bin" ]]; then
+        chmod g-s "$bin" 2>/dev/null || true
+    fi
+}
+
 _smtp_ensure_msmtp() {
     if ! command -v msmtp &>/dev/null; then
         step "Installing msmtp..."
         apt-get update -qq && apt-get install -y -qq msmtp msmtp-mta
         success "msmtp installed"
     fi
+    _smtp_drop_setgid
 }
 
 _smtp_trust_file() {
@@ -31,6 +42,7 @@ _smtp_trust_file() {
 # Generate .msmtprc from smtp.json (called after configure / before send)
 _smtp_write_rc() {
     [[ ! -f "$SMTP_CFG" ]] && return 1
+    _smtp_drop_setgid
     local _sj host port user from tls starttls trust_file log_file
     _sj=$(vault_read smtp.json) || return 1
     host=$(echo "$_sj" | jq -r '.host // ""')
@@ -171,10 +183,11 @@ _smtp_send() {
     _smtp_write_rc || return 1
 
     local from; from=$(echo "$_sj" | jq -r '.from // "noreply@localhost"')
+    local bin; bin=$(command -v msmtp) || return 1
     # Keep stderr visible to callers (configure/test); notification helpers may redirect.
     printf "From: %s\nTo: %s\nSubject: %s\nMIME-Version: 1.0\nContent-Type: text/plain; charset=UTF-8\n\n%b\n" \
         "$from" "$to" "$subject" "$body" | \
-        msmtp -C "$SMTP_RC" -- "$to"
+        "$bin" -C "$SMTP_RC" -- "$to"
 }
 
 _smtp_disable() {

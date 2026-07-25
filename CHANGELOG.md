@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.7.21] — 2026-07-25
+
+### Fixed
+
+- **`cipi smtp` → `msmtp: /etc/cipi/.msmtprc: Permission denied`** — Debian/Ubuntu ship **`msmtp` setgid** (`msmtp` group). After setgid the process can no longer traverse **`/etc/cipi`** (**750** `root:cipi-api`) or read vault secrets via **`passwordeval`**. Cipi now clears the setgid bit on the msmtp binary (mail is only sent as root). **Migration 4.7.21** applies this on existing servers and regenerates `.msmtprc`.
+
+---
+
 ## [4.7.20] — 2026-07-25
 
 ### Fixed
