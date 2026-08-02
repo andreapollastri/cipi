@@ -7,9 +7,10 @@ ssl_command() {
     local sub="${1:-}"; shift||true
     case "$sub" in
         install) _ssl_install "$@" ;;
+        force)   _ssl_force "$@" ;;
         renew)   _ssl_renew ;;
         status)  _ssl_status ;;
-        *) error "Use: install renew status"; exit 1 ;;
+        *) error "Use: install force renew status"; exit 1 ;;
     esac
 }
 
@@ -60,6 +61,7 @@ _ssl_install() {
         fi
 
         sed -i "s|^APP_URL=http://|APP_URL=https://|" "/home/${app}/shared/.env" 2>/dev/null || true
+        app_set "$app" force_https "true"
         log_action "SSL INSTALLED: $app"
         cipi_notify \
             "Cipi SSL installed: ${d} (${app}) on $(hostname)" \
@@ -72,6 +74,48 @@ _ssl_install() {
         error "SSL failed. Check: DNS points to this server, port 80 is open, domain is correct."
         exit 1
     fi
+}
+
+# Re-apply HTTP → HTTPS redirect for an app that already has a certificate.
+# Useful after vhost regeneration (alias/www/basicauth) when the Certbot
+# redirect block was overwritten. No new ACME issuance — no rate-limit risk.
+_ssl_force() {
+    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi ssl force <app>"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    local d; d=$(app_get "$app" domain)
+    [[ -z "$d" ]] && { error "No domain for app '$app'"; exit 1; }
+
+    if [[ ! -d "/etc/letsencrypt/live/${d}" ]]; then
+        error "No SSL certificate for '${d}'. Run: cipi ssl install ${app}"
+        exit 1
+    fi
+    if [[ ! -f "/etc/nginx/sites-available/${app}" ]]; then
+        error "Nginx vhost for '${app}' not found."
+        exit 1
+    fi
+    if ! command -v certbot &>/dev/null; then
+        error "certbot not found"; exit 1
+    fi
+
+    step "Forcing HTTP → HTTPS redirect for ${d}..."
+    if ! certbot install --nginx --cert-name "${d}" --non-interactive --redirect 2>&1; then
+        error "Failed to apply HTTPS redirect. Check: nginx -t"
+        exit 1
+    fi
+    if nginx -t 2>&1; then
+        systemctl reload nginx 2>/dev/null || true
+    else
+        error "Nginx config test failed after redirect. Check: nginx -t"
+        exit 1
+    fi
+
+    app_set "$app" force_https "true"
+    log_action "SSL FORCE HTTPS: $app"
+    cipi_notify \
+        "Cipi SSL force HTTPS: ${d} (${app}) on $(hostname)" \
+        "HTTP → HTTPS redirect was forced.\n\nServer: $(hostname)\nApp: ${app}\nDomain: ${d}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        ssl_force
+    success "HTTP → HTTPS redirect enabled for ${d}"
 }
 
 _ssl_renew() {

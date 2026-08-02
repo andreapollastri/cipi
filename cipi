@@ -65,7 +65,7 @@ _help_topic_header() {
 
 _help_topics_list() {
     cat <<'EOF'
-app  domains  deploy  worker  db  service  ssl  php
+app  domains  www  deploy  worker  db  service  ssl  php
 auth  basicauth  ssh  firewall  ban  backup  sync  git
 api  gui  smtp  notifications  reset  server
 EOF
@@ -93,7 +93,7 @@ show_help() {
     echo ""
     echo -e "  ${BOLD}Apps & deploy${NC}"
     _help_cmd "cipi app ..."               "Create, edit, logs, env, ..."
-    _help_cmd "cipi domains / alias ..."   "Domains & aliases"
+    _help_cmd "cipi domains / alias / www" "Domains, aliases & www redirects"
     _help_cmd "cipi deploy <app>"        "Deploy / rollback / webhook"
     _help_cmd "cipi worker ..."            "Queue workers"
     _help_cmd "cipi db ..."                "Databases"
@@ -170,6 +170,18 @@ show_help_topic() {
             _help_cmd "cipi alias add <app> <domain>"  "Add alias"
             _help_cmd "cipi alias remove <app> <domain>" "Remove alias"
             _help_cmd "cipi alias list <app>"          "List aliases"
+            _help_note "See also: cipi help www"
+            echo ""
+            ;;
+
+        www)
+            _help_topic_header "WWW redirects"
+            echo ""
+            _help_cmd "cipi www add <app>"             "Add www (or apex) alias"
+            _help_cmd "cipi www force-to-root <app>"   "Redirect www → apex"
+            _help_cmd "cipi www force-from-root <app>" "Redirect apex → www"
+            _help_cmd "cipi www clear <app>"           "Clear www canonical redirect"
+            _help_cmd "cipi www status <app>"          "Show www redirect status"
             echo ""
             ;;
 
@@ -298,7 +310,9 @@ show_help_topic() {
             _help_topic_header "SSL"
             echo ""
             _help_cmd "cipi ssl install <app>"         "SSL certificate"
+            _help_cmd "cipi ssl force <app>"           "Force HTTP → HTTPS redirect"
             _help_cmd "cipi ssl renew"                 "Renew all certs"
+            _help_cmd "cipi ssl status"                "List certificates"
             echo ""
             ;;
 
@@ -393,6 +407,7 @@ show_help_all() {
     show_help_topic service
     show_help_topic app
     show_help_topic domains
+    show_help_topic www
     show_help_topic auth
     show_help_topic basicauth
     show_help_topic deploy
@@ -470,6 +485,7 @@ main() {
         app)        _maybe_cmd_help app "$@";        require_root; source "${CIPI_LIB}/app.sh";         app_command "$@" ;;
         alias)      _maybe_cmd_help domains "$@";    require_root; source "${CIPI_LIB}/app.sh";         alias_command "$@" ;;
         domains)    _maybe_cmd_help domains "$@";    require_root; source "${CIPI_LIB}/app.sh";         domains_command "$@" ;;
+        www)        _maybe_cmd_help www "$@";        require_root; source "${CIPI_LIB}/app.sh";         www_command "$@" ;;
         auth)       _maybe_cmd_help auth "$@";       require_root; source "${CIPI_LIB}/app.sh";         auth_command "$@" ;;
         basicauth)  _maybe_cmd_help basicauth "$@";  require_root; source "${CIPI_LIB}/app.sh";         basicauth_command "$@" ;;
         deploy)     _maybe_cmd_help deploy "$@";     require_root; source "${CIPI_LIB}/deploy.sh";      deploy_command "$@" ;;

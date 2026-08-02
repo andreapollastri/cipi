@@ -4,6 +4,25 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.8.0] — 2026-08-02
+
+### Added
+
+- **`cipi www`** — manage www/apex aliases and canonical redirects:
+  - **`cipi www add <app>`** — add the counterpart host (`www.` + apex, or apex when primary is already `www.*`)
+  - **`cipi www force-to-root <app>`** — 301 redirect `www.domain` → `domain` (auto-adds the missing alias)
+  - **`cipi www force-from-root <app>`** — 301 redirect `domain` → `www.domain`
+  - **`cipi www clear <app>`** / **`cipi www status <app>`** — clear or inspect redirect state
+  - State lives in `apps.json` (`www_redirect`); `_create_nginx_vhost` emits a dedicated redirect server block (ACME path kept public). Survives vhost regeneration; SSL is re-applied via `certbot install --redirect`.
+- **`cipi ssl force <app>`** — re-apply HTTP → HTTPS redirect for an app that already has a Let's Encrypt cert (no new issuance). Also set automatically by **`cipi ssl install`** (`force_https` in `apps.json`).
+
+### Changed
+
+- **`cipi alias add|remove`** — after regenerating the vhost, re-apply SSL with `certbot install --redirect` (same pattern as basicauth/suspend) so HTTPS is not dropped.
+- **`apps-public.json`** — projection now includes `www_redirect` and `force_https`. **Migration 4.8.0** regenerates it and refreshes the panel API sudoers whitelist.
+
+---
+
 ## [4.7.23] — 2026-07-25
 
 ### Changed

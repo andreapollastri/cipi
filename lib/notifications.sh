@@ -18,6 +18,10 @@ app_ssh_password_reset|Apps|App SSH password reset
 app_db_password_reset|Apps|App DB password reset
 alias_add|Domains|Alias added
 alias_remove|Domains|Alias removed
+www_add|Domains|WWW alias added
+www_force_to_root|Domains|WWW force to-root
+www_force_from_root|Domains|WWW force from-root
+www_clear|Domains|WWW redirect cleared
 auth_create|Auth|Composer auth.json created
 auth_edit|Auth|Composer auth.json edited
 auth_delete|Auth|Composer auth.json deleted
@@ -27,6 +31,7 @@ deploy_success|Deploy|Deploy succeeded
 deploy_fail|Deploy|Deploy failed
 deploy_rollback|Deploy|Deploy rollback
 ssl_install|SSL|SSL certificate installed
+ssl_force|SSL|HTTP → HTTPS redirect forced
 ssl_renew|SSL|SSL certificates renewed
 php_install|PHP|PHP version installed
 php_switch|PHP|System PHP switched

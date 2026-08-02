@@ -94,7 +94,7 @@ generate_app_key()  { echo "base64:$(openssl rand -base64 32)"; }
 validate_username() {
     local n="$1"
     [[ ! "$n" =~ ^[a-z][a-z0-9]{2,31}$ ]] && return 1
-    local bad=("root" "admin" "www" "nginx" "mysql" "mariadb" "redis" "valkey" "git" "deploy" "cipi" "ubuntu" "debian" "supervisor" "nobody" "postfix" "sshd" "clamav" "daemon" "bin" "sys")
+    local bad=("root" "admin" "www" "nginx" "mysql" "mariadb" "postgres" "pgsql" "redis" "valkey" "git" "deploy" "cipi" "ubuntu" "debian" "supervisor" "nobody" "postfix" "sshd" "clamav" "daemon" "bin" "sys")
     for b in "${bad[@]}"; do [[ "$n" == "$b" ]] && return 1; done
     return 0
 }
@@ -173,15 +173,15 @@ app_get() { vault_read apps.json | jq -r --arg a "$1" --arg k "$2" '.[$a][$k] //
 
 # Generate apps-public.json: a plaintext projection of apps.json containing
 # only non-sensitive fields (domain, aliases, php, branch, repository, user,
-# created_at, suspended, basic_auth, custom, docroot). The encrypted apps.json
-# keeps webhook tokens and git IDs safe.
+# created_at, suspended, basic_auth, www_redirect, force_https, custom, docroot, engine).
+# The encrypted apps.json keeps webhook tokens and git IDs safe.
 _update_apps_public() {
     [[ -f "${CIPI_CONFIG}/apps.json" ]] || return 0
     _cipi_config_writable || return 0
     local json
     json=$(vault_read apps.json) || return 0
     echo "$json" | jq '
-        with_entries(.value |= {domain, aliases, php, branch, repository, user, created_at, suspended, basic_auth, custom, docroot})
+        with_entries(.value |= {domain, aliases, php, branch, repository, user, created_at, suspended, basic_auth, www_redirect, force_https, custom, docroot, engine})
     ' > "${CIPI_CONFIG}/apps-public.json" 2>/dev/null || return 0
     _cipi_safe_chmod 640 "${CIPI_CONFIG}/apps-public.json"
     chgrp cipi-api "${CIPI_CONFIG}/apps-public.json" 2>/dev/null || true

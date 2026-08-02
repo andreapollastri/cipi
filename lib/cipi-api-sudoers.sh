@@ -20,7 +20,13 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi deploy *, \
                                /usr/local/bin/cipi alias add *, \
                                /usr/local/bin/cipi alias remove *, \
+                               /usr/local/bin/cipi www add *, \
+                               /usr/local/bin/cipi www force-to-root *, \
+                               /usr/local/bin/cipi www force-from-root *, \
+                               /usr/local/bin/cipi www clear *, \
+                               /usr/local/bin/cipi www status *, \
                                /usr/local/bin/cipi ssl install *, \
+                               /usr/local/bin/cipi ssl force *, \
                                /usr/local/bin/cipi db list, \
                                /usr/local/bin/cipi db create *, \
                                /usr/local/bin/cipi db delete *, \

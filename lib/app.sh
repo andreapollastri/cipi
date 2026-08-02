@@ -7,9 +7,12 @@
 
 app_create() {
     parse_args "$@"
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
     local app_user="${ARG_user:-}" domain="${ARG_domain:-}" repository="${ARG_repository:-}"
     local branch="${ARG_branch:-main}" php_ver="${ARG_php:-8.5}"
     local is_custom="${ARG_custom:-false}"
+    local db_engine="${ARG_engine:-}"
 
     # App type: laravel (default) or custom
     local app_type="laravel"
@@ -32,6 +35,23 @@ app_create() {
         read_input "Branch" "$branch" branch
     fi
     [[ -z "${ARG_php:-}" ]] && read_input "PHP version" "$php_ver" php_ver
+
+    # Database engine (Laravel only)
+    if [[ "$app_type" == "laravel" ]]; then
+        db_ensure_engine_state
+        local default_engine
+        default_engine=$(db_get_default_engine)
+        if [[ -z "$db_engine" ]]; then
+            local engine_opts="mariadb"
+            db_engine_is_installed pgsql && engine_opts="mariadb|pgsql"
+            read_input "Database engine (${engine_opts})" "$default_engine" db_engine
+        fi
+        [[ -z "$db_engine" ]] && db_engine="$default_engine"
+        db_engine=$(db_normalize_engine "$db_engine") || { error "Invalid engine. Use: mariadb pgsql"; exit 1; }
+        db_require_engine "$db_engine" >/dev/null || exit 1
+    else
+        db_engine=""
+    fi
 
     # Custom app: docroot only (Nginx always uses index.php)
     local docroot=""
@@ -205,24 +225,19 @@ BASH
         git_setup_repo "$app_user" "$repository" "$domain" "" "$deploy_key" "skip_webhook"
     fi
 
-    # 4. MariaDB database (Laravel only)
+    # 4. Database (Laravel only)
     if [[ "$app_type" == "laravel" ]]; then
-        step "Database..."
-        local db_root; db_root=$(get_db_root_password)
-        mariadb -u root -p"${db_root}" <<SQL
-CREATE DATABASE IF NOT EXISTS \`${app_user}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${app_user}'@'localhost' IDENTIFIED BY '${db_pass}';
-CREATE USER IF NOT EXISTS '${app_user}'@'127.0.0.1' IDENTIFIED BY '${db_pass}';
-GRANT ALL PRIVILEGES ON \`${app_user}\`.* TO '${app_user}'@'localhost';
-GRANT ALL PRIVILEGES ON \`${app_user}\`.* TO '${app_user}'@'127.0.0.1';
-FLUSH PRIVILEGES;
-SQL
-        success "Database"
+        step "Database ($(db_engine_label "$db_engine"))..."
+        db_create_database "$db_engine" "$app_user" "$app_user" "$db_pass" \
+            || { error "Database create failed"; exit 1; }
+        success "Database ($(db_engine_label "$db_engine"))"
     fi
 
     # 5. Config: .env (Laravel only)
     if [[ "$app_type" == "laravel" ]]; then
         step ".env..."
+        local db_env
+        db_env=$(db_laravel_env_block "$db_engine" "$app_user" "$app_user" "$db_pass")
         cat > "${home}/shared/.env" <<ENV
 APP_NAME="${app_user}"
 APP_ENV=production
@@ -233,12 +248,7 @@ APP_URL=https://${domain}
 LOG_CHANNEL=daily
 LOG_LEVEL=error
 
-DB_CONNECTION=mysql
-DB_HOST=127.0.0.1
-DB_PORT=3306
-DB_DATABASE=${app_user}
-DB_USERNAME=${app_user}
-DB_PASSWORD=${db_pass}
+${db_env}
 
 BROADCAST_CONNECTION=log
 CACHE_STORE=database
@@ -300,6 +310,7 @@ JSON
     "repository": "${repository}",
     "branch": "${branch}",
     "php": "${php_ver}",
+    "engine": "${db_engine}",
     "webhook_token": "${webhook_token}",
     "created_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 }
@@ -310,7 +321,7 @@ JSON
     if [[ -n "${GIT_PROVIDER:-}" ]]; then
         git_save_app_data "$app_user" "$GIT_PROVIDER" "${GIT_DEPLOY_KEY_ID:-}" "${GIT_WEBHOOK_ID:-}"
     fi
-    log_action "APP CREATED: $app_user domain=$domain php=$php_ver"
+    log_action "APP CREATED: $app_user domain=$domain php=$php_ver engine=${db_engine:-none}"
 
     # Email notification
     local _notify_repo _notify_branch
@@ -382,10 +393,10 @@ SUDO
     echo ""
     echo -e "  ${BOLD}SSH${NC}         ${CYAN}${app_user}${NC} / ${CYAN}${user_pass}${NC}"
     if [[ "$app_type" == "laravel" ]]; then
-        echo -e "  ${BOLD}Database${NC}    ${CYAN}${app_user}${NC} / ${CYAN}${db_pass}${NC}"
+        echo -e "  ${BOLD}Database${NC}    ${CYAN}${app_user}${NC} / ${CYAN}${db_pass}${NC}  ${DIM}($(db_engine_label "$db_engine"))${NC}"
         echo ""
-        echo -e "  ${BOLD}MariaDB URL${NC}"
-        echo -e "  ${CYAN}mariadb+ssh://${app_user}:${user_pass}@${server_ip}/${app_user}:${db_pass}@127.0.0.1/${app_user}${NC}"
+        echo -e "  ${BOLD}$(db_engine_label "$db_engine") URL${NC}"
+        echo -e "  ${CYAN}$(db_connection_url "$db_engine" "$app_user" "$user_pass" "$server_ip" "$app_user" "$db_pass" "$app_user")${NC}"
         echo ""
     fi
     if [[ "$app_type" == "custom" ]]; then
@@ -473,9 +484,20 @@ app_show() {
     [[ "$is_custom" == "true" ]] && [[ -n "$docroot_show" ]] && printf "  %-14s ${CYAN}/%s${NC}\n" "Docroot" "$docroot_show"
     printf "  %-14s ${CYAN}%s${NC}\n" "Domain" "$d"
     printf "  %-14s ${CYAN}%s${NC}\n" "Aliases" "$aliases"
+    case "$(app_get "$app" www_redirect)" in
+        to-root)   printf "  %-14s ${CYAN}%s${NC}\n" "WWW" "force to-root (www → apex)" ;;
+        from-root) printf "  %-14s ${CYAN}%s${NC}\n" "WWW" "force from-root (apex → www)" ;;
+    esac
+    if [[ "$(app_get "$app" force_https)" == "true" ]]; then
+        printf "  %-14s ${GREEN}%s${NC}\n" "HTTPS" "forced (http → https)"
+    fi
     printf "  %-14s ${CYAN}%s${NC}\n" "Repository" "$repo"
     printf "  %-14s ${CYAN}%s${NC}\n" "Branch" "$b"
     printf "  %-14s ${CYAN}%s${NC}\n" "PHP" "$p"
+    if [[ "$is_custom" != "true" ]]; then
+        local eng; eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+        printf "  %-14s ${CYAN}%s${NC}\n" "DB engine" "$eng"
+    fi
     printf "  %-14s ${CYAN}%s${NC}\n" "Created" "$ca"
     if [[ "$(app_get "$app" suspended)" == "true" ]]; then
         printf "  %-14s ${YELLOW}%s${NC}\n" "Status" "suspended (offline)"
@@ -540,7 +562,8 @@ _app_change_domain() {
              | map(select(. != $new))
              | if (index($old) != null) then . else . + [$old] end
              | unique
-           )' | vault_write apps.json
+           )
+         | .[$a].www_redirect = ""' | vault_write apps.json
     ensure_apps_json_api_access
 
     php_ver=$(app_get "$app" php)
@@ -686,7 +709,16 @@ app_delete() {
     local skip_db; skip_db=false
     [[ "$(app_get "$app" custom)" == "true" ]] && skip_db=true
     if [[ "$skip_db" != "true" ]]; then
-        step "Database...";    local dbr; dbr=$(get_db_root_password); mariadb -u root -p"$dbr" -e "DROP DATABASE IF EXISTS \`${app}\`; DROP USER IF EXISTS '${app}'@'localhost'; DROP USER IF EXISTS '${app}'@'127.0.0.1'; FLUSH PRIVILEGES;" 2>/dev/null||true
+        # shellcheck source=/dev/null
+        source "${CIPI_LIB}/db.sh"
+        local eng; eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+        eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+        step "Database ($(db_engine_label "$eng"))..."
+        if db_engine_is_installed "$eng"; then
+            db_drop_database "$eng" "$app" "$app" || true
+        else
+            warn "$(db_engine_label "$eng") not installed — skipping DB drop"
+        fi
     fi
     step "Crontab...";     crontab -u "$app" -r 2>/dev/null||true
     step "Sudoers...";     rm -f "/etc/sudoers.d/cipi-${app}"
@@ -825,6 +857,21 @@ app_artisan() {
 
 # ── ALIAS ─────────────────────────────────────────────────────
 
+# Ensure domain is in the app's aliases[]. Returns 0 if newly added, 1 if already present.
+_alias_ensure() {
+    local app="$1" dom="$2"
+    local primary; primary=$(app_get "$app" domain)
+    [[ "$dom" == "$primary" ]] && return 1
+    if vault_read apps.json | jq -e --arg a "$app" --arg d "$dom" '(.[$a].aliases // []) | index($d) != null' &>/dev/null; then
+        return 1
+    fi
+    domain_is_used_by_other_app "$dom" "$app" && { error "Domain '${dom}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
+    validate_domain "$dom" || { error "Invalid domain"; exit 1; }
+    vault_read apps.json | jq --arg a "$app" --arg d "$dom" '.[$a].aliases+=[$d]|.[$a].aliases|=unique' | vault_write apps.json
+    ensure_apps_json_api_access
+    return 0
+}
+
 alias_add() {
     local app="${1:-}" dom="${2:-}"
     [[ -z "$app" || -z "$dom" ]] && { error "Usage: cipi alias add <app> <domain>"; exit 1; }
@@ -833,9 +880,13 @@ alias_add() {
     local primary; primary=$(app_get "$app" domain)
     [[ "$dom" == "$primary" ]] && { error "'${dom}' is already the primary domain"; exit 1; }
     domain_is_used_by_other_app "$dom" "$app" && { error "Domain '${dom}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
+    if vault_read apps.json | jq -e --arg a "$app" --arg d "$dom" '(.[$a].aliases // []) | index($d) != null' &>/dev/null; then
+        info "'${dom}' is already an alias of '${app}'"; return
+    fi
     vault_read apps.json | jq --arg a "$app" --arg d "$dom" '.[$a].aliases+=[$d]|.[$a].aliases|=unique' | vault_write apps.json
     ensure_apps_json_api_access
-    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"; reload_nginx
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
     log_action "ALIAS ADDED: $dom → $app"
     cipi_notify \
         "Cipi alias added: ${dom} → ${app} on $(hostname)" \
@@ -849,9 +900,21 @@ alias_remove() {
     local app="${1:-}" dom="${2:-}"
     [[ -z "$app" || -z "$dom" ]] && { error "Usage: cipi alias remove <app> <domain>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
+
+    local www_mode
+    www_mode=$(app_get "$app" www_redirect)
+    if [[ "$www_mode" == "to-root" || "$www_mode" == "from-root" ]]; then
+        _www_resolve_pair "$(app_get "$app" domain)"
+        if [[ "$dom" == "$WWW_PAIR_APEX" || "$dom" == "$WWW_PAIR_HOST" ]]; then
+            error "Alias '${dom}' is required by www redirect (${www_mode}). Run: cipi www clear ${app}"
+            exit 1
+        fi
+    fi
+
     vault_read apps.json | jq --arg a "$app" --arg d "$dom" '.[$a].aliases-=[$d]' | vault_write apps.json
     ensure_apps_json_api_access
-    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"; reload_nginx
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
     log_action "ALIAS REMOVED: $dom ← $app"
     cipi_notify \
         "Cipi alias removed: ${dom} from ${app} on $(hostname)" \
@@ -867,7 +930,151 @@ alias_list() {
     echo -e "  Primary: ${CYAN}$(app_get "$app" domain)${NC}"
     vault_read apps.json | jq -r --arg a "$app" '.[$a].aliases // [] | .[]' | while read -r a; do
         echo -e "  Alias:   ${CYAN}${a}${NC}"
-    done; echo ""
+    done
+    local www_mode; www_mode=$(app_get "$app" www_redirect)
+    case "$www_mode" in
+        to-root)   echo -e "  WWW:     ${CYAN}force to-root${NC} (www → apex)" ;;
+        from-root) echo -e "  WWW:     ${CYAN}force from-root${NC} (apex → www)" ;;
+    esac
+    echo ""
+}
+
+# ── WWW (canonical www / apex redirects) ──────────────────────
+# Sets WWW_PAIR_APEX and WWW_PAIR_HOST from a primary domain.
+_www_resolve_pair() {
+    local primary="$1"
+    if [[ "$primary" == www.* ]]; then
+        WWW_PAIR_HOST="$primary"
+        WWW_PAIR_APEX="${primary#www.}"
+    else
+        WWW_PAIR_APEX="$primary"
+        WWW_PAIR_HOST="www.${primary}"
+    fi
+}
+
+# Ensure the apex/www counterpart of the primary is present as an alias.
+_www_ensure_pair() {
+    local app="$1" primary other
+    primary=$(app_get "$app" domain)
+    _www_resolve_pair "$primary"
+    if [[ "$primary" == "$WWW_PAIR_HOST" ]]; then other="$WWW_PAIR_APEX"; else other="$WWW_PAIR_HOST"; fi
+    if _alias_ensure "$app" "$other"; then
+        info "Added alias '${other}'"
+        return 0
+    fi
+    return 1
+}
+
+www_add() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi www add <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    local primary other
+    primary=$(app_get "$app" domain)
+    _www_resolve_pair "$primary"
+    if [[ "$primary" == "$WWW_PAIR_HOST" ]]; then other="$WWW_PAIR_APEX"; else other="$WWW_PAIR_HOST"; fi
+
+    if [[ -z "$other" || "$other" == "$primary" ]]; then
+        error "Cannot derive www/apex pair from '${primary}'"; exit 1
+    fi
+
+    if ! _alias_ensure "$app" "$other"; then
+        info "'${other}' is already configured for '${app}'"
+        return
+    fi
+
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
+    log_action "WWW ADDED: $other → $app"
+    cipi_notify \
+        "Cipi www alias added: ${other} → ${app} on $(hostname)" \
+        "A www/apex alias was added.\n\nServer: $(hostname)\nApp: ${app}\nAlias: ${other}\nPrimary: ${primary}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        www_add
+    success "'${other}' added to '${app}'"
+    info "Run: cipi ssl install ${app}  (to update certificate)"
+}
+
+www_force_to_root() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi www force-to-root <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    _www_ensure_pair "$app" || true
+    _www_resolve_pair "$(app_get "$app" domain)"
+
+    app_set "$app" www_redirect "to-root"
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
+    log_action "WWW FORCE TO-ROOT: $app (${WWW_PAIR_HOST} → ${WWW_PAIR_APEX})"
+    cipi_notify \
+        "Cipi www force to-root: ${app} on $(hostname)" \
+        "WWW canonical redirect enabled (www → apex).\n\nServer: $(hostname)\nApp: ${app}\nRedirect: ${WWW_PAIR_HOST} → ${WWW_PAIR_APEX}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        www_force_to_root
+    success "WWW redirect: ${WWW_PAIR_HOST} → ${WWW_PAIR_APEX}"
+}
+
+www_force_from_root() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi www force-from-root <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    _www_ensure_pair "$app" || true
+    _www_resolve_pair "$(app_get "$app" domain)"
+
+    app_set "$app" www_redirect "from-root"
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
+    log_action "WWW FORCE FROM-ROOT: $app (${WWW_PAIR_APEX} → ${WWW_PAIR_HOST})"
+    cipi_notify \
+        "Cipi www force from-root: ${app} on $(hostname)" \
+        "WWW canonical redirect enabled (apex → www).\n\nServer: $(hostname)\nApp: ${app}\nRedirect: ${WWW_PAIR_APEX} → ${WWW_PAIR_HOST}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        www_force_from_root
+    success "WWW redirect: ${WWW_PAIR_APEX} → ${WWW_PAIR_HOST}"
+}
+
+www_clear() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi www clear <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    local mode; mode=$(app_get "$app" www_redirect)
+    if [[ "$mode" != "to-root" && "$mode" != "from-root" ]]; then
+        info "No www redirect configured for '${app}'"; return
+    fi
+
+    app_set "$app" www_redirect ""
+    _create_nginx_vhost "$app" "$(app_get "$app" domain)" "$(app_get "$app" php)"
+    _nginx_reapply_ssl "$app"
+    log_action "WWW CLEAR: $app"
+    cipi_notify \
+        "Cipi www redirect cleared: ${app} on $(hostname)" \
+        "WWW canonical redirect was cleared.\n\nServer: $(hostname)\nApp: ${app}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        www_clear
+    success "WWW redirect cleared for '${app}'"
+}
+
+www_status() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi www status <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    local primary mode
+    primary=$(app_get "$app" domain)
+    _www_resolve_pair "$primary"
+    mode=$(app_get "$app" www_redirect)
+
+    echo -e "\n${BOLD}WWW — ${app}${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "  %-14s ${CYAN}%s${NC}\n" "Primary" "$primary"
+    printf "  %-14s ${CYAN}%s${NC}\n" "Apex" "$WWW_PAIR_APEX"
+    printf "  %-14s ${CYAN}%s${NC}\n" "WWW" "$WWW_PAIR_HOST"
+    case "$mode" in
+        to-root)   printf "  %-14s ${GREEN}%s${NC}\n" "Redirect" "to-root (${WWW_PAIR_HOST} → ${WWW_PAIR_APEX})" ;;
+        from-root) printf "  %-14s ${GREEN}%s${NC}\n" "Redirect" "from-root (${WWW_PAIR_APEX} → ${WWW_PAIR_HOST})" ;;
+        *)         printf "  %-14s ${DIM}%s${NC}\n" "Redirect" "none" ;;
+    esac
+    echo ""
 }
 
 # ── DOMAINS (global mapping) ──────────────────────────────────
@@ -1116,6 +1323,50 @@ EOF
         return 0
     fi
 
+    # WWW canonical redirect (cipi www force-to-root|force-from-root). Emits a
+    # dedicated server block for the non-canonical host; the app block keeps the
+    # remaining names. ACME stays public on the redirect host. certbot install
+    # clones both blocks into :443 so HTTPS inherits the same redirect.
+    local www_redirect_block="" www_mode
+    www_mode=$(app_get "$app" www_redirect)
+    if [[ "$www_mode" == "to-root" || "$www_mode" == "from-root" ]]; then
+        local canonical redirect_from redir_scheme
+        _www_resolve_pair "$domain"
+        if [[ "$www_mode" == "to-root" ]]; then
+            canonical="$WWW_PAIR_APEX"
+            redirect_from="$WWW_PAIR_HOST"
+        else
+            canonical="$WWW_PAIR_HOST"
+            redirect_from="$WWW_PAIR_APEX"
+        fi
+        # Drop the redirect host from the app server_name list.
+        names=$(echo "$names" | tr ' ' '\n' | grep -vxF "$redirect_from" | grep -v '^[[:space:]]*$' | awk '!seen[$0]++' | tr '\n' ' ' | sed 's/ $//')
+        if [[ -z "$names" ]]; then
+            names="$canonical"
+        fi
+        redir_scheme="http"
+        [[ -d "/etc/letsencrypt/live/${domain}" ]] && redir_scheme="https"
+        www_redirect_block=$(cat <<EOF
+server {
+    listen 80;
+    listen [::]:80;
+    server_name ${redirect_from};
+    access_log /home/${app}/logs/nginx-access.log;
+    error_log /home/${app}/logs/nginx-error.log;
+    location ^~ /.well-known/acme-challenge/ {
+        default_type "text/plain";
+        root /var/www/html;
+        try_files \$uri =404;
+    }
+    location / {
+        return 301 ${redir_scheme}://${canonical}\$request_uri;
+    }
+}
+
+EOF
+)
+    fi
+
     # HTTP basic auth (cipi basicauth enable <app>). Injected into the app's
     # location blocks — NOT at server level — so that certbot's auto-generated
     # ACME challenge location (exact match, inherits from server) stays public
@@ -1137,7 +1388,7 @@ EOF
 
     if [[ "$vhost_type" == "custom" ]]; then
         cat > "/etc/nginx/sites-available/${app}" <<EOF
-server {
+${www_redirect_block}server {
     listen 80;
     listen [::]:80;
     server_name ${names};
@@ -1167,7 +1418,7 @@ ${auth_block}        fastcgi_pass unix:/run/php/${app}.sock;
 EOF
     else
         cat > "/etc/nginx/sites-available/${app}" <<EOF
-server {
+${www_redirect_block}server {
     listen 80;
     listen [::]:80;
     server_name ${names};
@@ -1558,15 +1809,14 @@ app_reset_db_password() {
     local is_custom; is_custom=$(app_get "$app" custom)
     [[ "$is_custom" == "true" ]] && { error "Custom apps have no database"; exit 1; }
 
-    local new_pass dbr
-    new_pass=$(generate_password 40)
-    dbr=$(get_db_root_password)
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
+    local eng new_pass
+    eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+    eng=$(db_require_engine "$eng") || exit 1
 
-    mariadb -u root -p"${dbr}" <<SQL
-ALTER USER '${app}'@'localhost' IDENTIFIED BY '${new_pass}';
-ALTER USER '${app}'@'127.0.0.1' IDENTIFIED BY '${new_pass}';
-FLUSH PRIVILEGES;
-SQL
+    new_pass=$(generate_password 40)
+    db_change_user_password "$eng" "$app" "$new_pass" || { error "Password change failed"; exit 1; }
 
     local env_file="/home/${app}/shared/.env"
     [[ -f "$env_file" ]] || { warn ".env not found"; return; }
@@ -1624,6 +1874,18 @@ alias_command() {
         remove) alias_remove "$@" ;;
         list)   alias_list "$@" ;;
         *) error "Unknown: $sub"; echo "Use: add remove list"; exit 1 ;;
+    esac
+}
+
+www_command() {
+    local sub="${1:-}"; shift||true
+    case "$sub" in
+        add)            www_add "$@" ;;
+        force-to-root)  www_force_to_root "$@" ;;
+        force-from-root) www_force_from_root "$@" ;;
+        clear)          www_clear "$@" ;;
+        status)         www_status "$@" ;;
+        *) error "Unknown: $sub"; echo "Use: add force-to-root force-from-root clear status"; exit 1 ;;
     esac
 }
 
