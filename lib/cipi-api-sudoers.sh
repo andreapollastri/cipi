@@ -28,6 +28,8 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi ssl install *, \
                                /usr/local/bin/cipi ssl force *, \
                                /usr/local/bin/cipi db list, \
+                               /usr/local/bin/cipi db list *, \
+                               /usr/local/bin/cipi db engines, \
                                /usr/local/bin/cipi db create *, \
                                /usr/local/bin/cipi db delete *, \
                                /usr/local/bin/cipi db backup *, \

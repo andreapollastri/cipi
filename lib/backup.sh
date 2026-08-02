@@ -148,7 +148,8 @@ _bk_run() {
     local target="${1:-}" cf="${CIPI_CONFIG}/backup.json"
     [[ ! -f "$cf" ]] && { error "Run: cipi backup configure"; exit 1; }
     local bucket; bucket=$(vault_read backup.json | jq -r '.bucket')
-    local dbr; dbr=$(get_db_root_password)
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
     local ts; ts=$(date +%Y-%m-%d_%H%M%S)
     local tmp="$(_bk_tmp_base)/cipi-bk-${ts}"; mkdir -p "$tmp"
     local backup_errors=""
@@ -158,12 +159,20 @@ _bk_run() {
         local ok=true
         step "Backup '${app}'..."
 
-        mariadb-dump -u root -p"$dbr" --single-transaction "$app" 2>"${d}/db.err" | gzip >"${d}/db.sql.gz"
-        local dump_rc=${PIPESTATUS[0]}
-        if [[ $dump_rc -ne 0 ]]; then
-            error "  DB dump failed:"; sed 's/^/    /' "${d}/db.err"; ok=false
+        local eng; eng=$(app_get "$app" engine 2>/dev/null || true)
+        [[ -z "$eng" ]] && eng="mariadb"
+        eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+        if [[ "$(app_get "$app" custom)" == "true" ]]; then
+            : # no database
+        elif db_engine_is_installed "$eng"; then
+            if ! db_dump_database "$eng" "$app" "${d}/db.sql.gz" 2>"${d}/db.err"; then
+                error "  DB dump failed:"; sed 's/^/    /' "${d}/db.err" 2>/dev/null; ok=false
+            fi
+            rm -f "${d}/db.err"
+            echo "$eng" > "${d}/db.engine"
+        else
+            error "  DB engine '${eng}' not installed"; ok=false
         fi
-        rm -f "${d}/db.err"
 
         local tar_err
         tar_err=$(tar -czf "${d}/shared.tar.gz" -C "/home/${app}" shared/ 2>&1) || {

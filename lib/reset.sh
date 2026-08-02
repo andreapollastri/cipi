@@ -33,28 +33,57 @@ reset_root_password() {
 # ── DB ROOT PASSWORD ─────────────────────────────────────────
 
 reset_db_root_password() {
-    local old_pass new_pass
-    old_pass=$(get_db_root_password)
+    parse_args "$@"
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
+    db_ensure_engine_state
+
+    local engine="${ARG_engine:-}"
+    if [[ -z "$engine" ]]; then
+        engine=$(db_get_default_engine)
+    fi
+    engine=$(db_require_engine "$engine") || exit 1
+
+    local new_pass
     new_pass=$(generate_password 40)
 
-    mariadb -u root -p"${old_pass}" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${new_pass}'; FLUSH PRIVILEGES;" 2>/dev/null
+    case "$engine" in
+        mariadb)
+            local old_pass
+            old_pass=$(db_get_root_password mariadb)
+            mariadb -u root -p"${old_pass}" -e "ALTER USER 'root'@'localhost' IDENTIFIED BY '${new_pass}'; FLUSH PRIVILEGES;" 2>/dev/null \
+                || { error "Failed to change MariaDB root password"; exit 1; }
+            local tmp
+            tmp=$(mktemp)
+            vault_read server.json | jq --arg p "$new_pass" '.db_root_password = $p' > "$tmp"
+            vault_write server.json < "$tmp"
+            rm -f "$tmp"
+            ;;
+        pgsql)
+            local old_pass
+            old_pass=$(db_get_root_password pgsql)
+            PGPASSWORD="$old_pass" psql -U postgres -h 127.0.0.1 -p 5432 -v ON_ERROR_STOP=1 \
+                -c "ALTER USER postgres WITH PASSWORD '${new_pass}';" \
+                || { error "Failed to change PostgreSQL password"; exit 1; }
+            local tmp
+            tmp=$(mktemp)
+            vault_read server.json | jq --arg p "$new_pass" '
+                .db_engines.pgsql.root_password = $p
+                | del(.pgsql_root_password)
+            ' > "$tmp"
+            vault_write server.json < "$tmp"
+            rm -f "$tmp"
+            ;;
+    esac
 
-    # Update server.json
-    local tmp
-    tmp=$(mktemp)
-    vault_read server.json | jq --arg p "$new_pass" '. + {db_root_password: $p}' > "$tmp"
-    vault_write server.json < "$tmp"
-    rm -f "$tmp"
-
-    log_action "DB ROOT PASSWORD RESET"
-
+    log_action "DB ROOT PASSWORD RESET: $engine"
     cipi_notify \
-        "Cipi DB root password reset on $(hostname)" \
-        "The MariaDB root password was regenerated.\n\nServer: $(hostname)\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        "Cipi $(db_engine_label "$engine") root password reset on $(hostname)" \
+        "The $(db_engine_label "$engine") root password was regenerated.\n\nServer: $(hostname)\nEngine: ${engine}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
         reset_db_password
 
     echo ""
-    echo -e "${GREEN}✓${NC} New MariaDB root password: ${CYAN}${new_pass}${NC}"
+    echo -e "${GREEN}✓${NC} New $(db_engine_label "$engine") root password: ${CYAN}${new_pass}${NC}"
     echo -e "${YELLOW}${BOLD}⚠ SAVE THIS PASSWORD — shown only once${NC}"
     echo ""
 }
@@ -102,7 +131,7 @@ reset_command() {
     local sub="${1:-}"; shift||true
     case "$sub" in
         root-password)  reset_root_password ;;
-        db-password)    reset_db_root_password ;;
+        db-password)    reset_db_root_password "$@" ;;
         valkey-password|redis-password) reset_valkey_password ;;
         *) error "Unknown: $sub"; echo "Use: root-password db-password valkey-password"; exit 1 ;;
     esac

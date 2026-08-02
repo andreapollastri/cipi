@@ -42,8 +42,12 @@ app_create() {
         local default_engine
         default_engine=$(db_get_default_engine)
         if [[ -z "$db_engine" ]]; then
-            local engine_opts="mariadb"
-            db_engine_is_installed pgsql && engine_opts="mariadb|pgsql"
+            local -a _eng_opts=()
+            db_engine_is_installed mariadb && _eng_opts+=("mariadb")
+            db_engine_is_installed pgsql && _eng_opts+=("pgsql")
+            local engine_opts
+            engine_opts=$(IFS='|'; echo "${_eng_opts[*]}")
+            [[ -z "$engine_opts" ]] && { error "No database engine installed"; exit 1; }
             read_input "Database engine (${engine_opts})" "$default_engine" db_engine
         fi
         [[ -z "$db_engine" ]] && db_engine="$default_engine"

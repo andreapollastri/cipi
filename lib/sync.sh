@@ -80,8 +80,10 @@ _sync_export() {
     success "Config files"
 
     # 2. Per-app data
-    local dbr=""
-    [[ "$with_db" == "true" ]] && dbr=$(get_db_root_password)
+    if [[ "$with_db" == "true" ]]; then
+        # shellcheck source=/dev/null
+        source "${CIPI_LIB}/db.sh"
+    fi
 
     for app in "${apps[@]}"; do
         local ad="${tmp}/apps/${app}"
@@ -110,11 +112,14 @@ _sync_export() {
         [[ ! -s "${ad}/crontab" ]] && rm -f "${ad}/crontab"
 
         # Database dump
-        if [[ "$with_db" == "true" ]]; then
+        if [[ "$with_db" == "true" ]] && [[ "$(app_get "$app" custom)" != "true" ]]; then
             step "  Database dump..."
-            if mariadb-dump -u root -p"$dbr" --single-transaction --routines --triggers "$app" 2>/dev/null | gzip > "${ad}/db.sql.gz"; then
+            local eng; eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+            eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+            echo "$eng" > "${ad}/db.engine"
+            if db_engine_is_installed "$eng" && db_dump_database "$eng" "$app" "${ad}/db.sql.gz"; then
                 local sz; sz=$(du -h "${ad}/db.sql.gz" | cut -f1)
-                success "  Database (${sz})"
+                success "  Database (${eng}, ${sz})"
             else
                 warn "  Database dump failed (skipping)"
                 rm -f "${ad}/db.sql.gz"
@@ -435,7 +440,8 @@ _sync_import() {
     fi
 
     echo ""
-    local dbr; dbr=$(get_db_root_password)
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
     local -a imported=() updated=() failed=()
     source "${CIPI_LIB}/app.sh"
 
@@ -456,10 +462,10 @@ _sync_import() {
 
         # Route: update existing or create new
         if [[ " ${existing[*]} " =~ " ${app} " ]]; then
-            _sync_update_app "$app" "$ad" "$dir" "$php_ver" "$domain" "$branch" "$repository" "$dbr" "$run_deploy"
+            _sync_update_app "$app" "$ad" "$dir" "$php_ver" "$domain" "$branch" "$repository" "" "$run_deploy"
             updated+=("$app")
         else
-            _sync_create_app "$app" "$ad" "$dir" "$php_ver" "$domain" "$branch" "$repository" "$dbr" "$run_deploy"
+            _sync_create_app "$app" "$ad" "$dir" "$php_ver" "$domain" "$branch" "$repository" "" "$run_deploy"
             imported+=("$app")
         fi
     done
@@ -547,22 +553,23 @@ BASH
     fi
 
     # 4. Database
-    step "Database..."
-    local db_pass; db_pass=$(generate_password 40)
-    mariadb -u root -p"$dbr" <<SQL
-CREATE DATABASE IF NOT EXISTS \`${app}\` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
-CREATE USER IF NOT EXISTS '${app}'@'localhost' IDENTIFIED BY '${db_pass}';
-CREATE USER IF NOT EXISTS '${app}'@'127.0.0.1' IDENTIFIED BY '${db_pass}';
-GRANT ALL PRIVILEGES ON \`${app}\`.* TO '${app}'@'localhost';
-GRANT ALL PRIVILEGES ON \`${app}\`.* TO '${app}'@'127.0.0.1';
-FLUSH PRIVILEGES;
-SQL
-    success "Database (new credentials)"
+    local eng db_pass db_conn db_port
+    eng=$(jq -r --arg a "$app" '.[$a].engine // "mariadb"' "${dir}/config/apps.json" 2>/dev/null)
+    [[ -f "${ad}/db.engine" ]] && eng=$(cat "${ad}/db.engine")
+    eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+    if ! db_engine_is_installed "$eng"; then
+        error "App '${app}' requires ${eng} but it is not installed. Run: cipi db install ${eng}"
+        return 1
+    fi
+    step "Database ($(db_engine_label "$eng"))..."
+    db_pass=$(generate_password 40)
+    db_create_database "$eng" "$app" "$app" "$db_pass" || { error "Database create failed"; return 1; }
+    success "Database (new credentials, ${eng})"
 
     # 5. DB dump
     if [[ -f "${ad}/db.sql.gz" ]]; then
         step "Restoring database..."
-        if gunzip -c "${ad}/db.sql.gz" | mariadb -u root -p"$dbr" "$app" 2>/dev/null; then
+        if db_restore_database "$eng" "$app" "${ad}/db.sql.gz"; then
             success "Database data restored"
         else
             warn "Database restore had issues"
@@ -571,12 +578,20 @@ SQL
 
     # 6. .env
     step ".env..."
+    db_conn=$(db_engine_laravel_connection "$eng")
+    db_port=$(db_engine_port "$eng")
     if [[ -f "${ad}/env" ]]; then
         cp "${ad}/env" "${home}/shared/.env"
+        sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=${db_conn}|" "${home}/shared/.env"
         sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${db_pass}|" "${home}/shared/.env"
         sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${app}|" "${home}/shared/.env"
         sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${app}|" "${home}/shared/.env"
         sed -i "s|^DB_HOST=.*|DB_HOST=127.0.0.1|" "${home}/shared/.env"
+        if grep -q '^DB_PORT=' "${home}/shared/.env"; then
+            sed -i "s|^DB_PORT=.*|DB_PORT=${db_port}|" "${home}/shared/.env"
+        else
+            sed -i "/^DB_HOST=/a DB_PORT=${db_port}" "${home}/shared/.env"
+        fi
         success ".env (restored, DB credentials updated)"
     else
         warn "No .env in archive"
@@ -596,7 +611,8 @@ SQL
     ensure_app_logs_permissions "$app"
 
     # 10. apps.json
-    local app_json; app_json=$(jq --arg a "$app" '.[$a]' "${dir}/config/apps.json")
+    local app_json
+    app_json=$(jq --arg a "$app" --arg e "$eng" '.[$a] + {engine: (.[$a].engine // $e)}' "${dir}/config/apps.json")
     app_save "$app" "$app_json"
 
     # 11. PHP-FPM
@@ -691,17 +707,21 @@ _sync_update_app() {
     # 1. .env — sync from source but preserve local DB credentials
     if [[ -f "${ad}/env" ]]; then
         step ".env..."
-        local local_db_pass local_db_user local_db_name local_db_host
+        local local_db_pass local_db_user local_db_name local_db_host local_db_port local_db_conn
         local_db_pass=$(grep -m1 '^DB_PASSWORD=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
         local_db_user=$(grep -m1 '^DB_USERNAME=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
         local_db_name=$(grep -m1 '^DB_DATABASE=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
         local_db_host=$(grep -m1 '^DB_HOST=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
+        local_db_port=$(grep -m1 '^DB_PORT=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
+        local_db_conn=$(grep -m1 '^DB_CONNECTION=' "${home}/shared/.env" 2>/dev/null | cut -d= -f2-)
         cp "${ad}/env" "${home}/shared/.env"
         # Re-apply local DB credentials
         [[ -n "$local_db_pass" ]] && sed -i "s|^DB_PASSWORD=.*|DB_PASSWORD=${local_db_pass}|" "${home}/shared/.env"
         [[ -n "$local_db_user" ]] && sed -i "s|^DB_USERNAME=.*|DB_USERNAME=${local_db_user}|" "${home}/shared/.env"
         [[ -n "$local_db_name" ]] && sed -i "s|^DB_DATABASE=.*|DB_DATABASE=${local_db_name}|" "${home}/shared/.env"
         [[ -n "$local_db_host" ]] && sed -i "s|^DB_HOST=.*|DB_HOST=${local_db_host}|" "${home}/shared/.env"
+        [[ -n "$local_db_port" ]] && sed -i "s|^DB_PORT=.*|DB_PORT=${local_db_port}|" "${home}/shared/.env"
+        [[ -n "$local_db_conn" ]] && sed -i "s|^DB_CONNECTION=.*|DB_CONNECTION=${local_db_conn}|" "${home}/shared/.env"
         chown "${app}:${app}" "${home}/shared/.env"
         chmod 640 "${home}/shared/.env"
         success ".env (synced, local DB credentials preserved)"
@@ -715,15 +735,14 @@ _sync_update_app() {
         success "auth.json synced"
     fi
 
-    # 3. DB dump — drop and reimport
+    # 3. DB dump — drop and reimport (same engine as local app)
     if [[ -f "${ad}/db.sql.gz" ]]; then
         step "Database sync..."
-        mariadb -u root -p"$dbr" -e "
-            SET FOREIGN_KEY_CHECKS=0;
-            SELECT CONCAT('DROP TABLE IF EXISTS \`',table_name,'\`;') FROM information_schema.tables
-            WHERE table_schema='${app}'" 2>/dev/null | grep -v CONCAT | mariadb -u root -p"$dbr" "$app" 2>/dev/null
-        if gunzip -c "${ad}/db.sql.gz" | mariadb -u root -p"$dbr" "$app" 2>/dev/null; then
-            success "Database data synced"
+        local eng; eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+        [[ -f "${ad}/db.engine" ]] && eng=$(cat "${ad}/db.engine")
+        eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+        if db_engine_is_installed "$eng" && db_restore_database "$eng" "$app" "${ad}/db.sql.gz"; then
+            success "Database data synced (${eng})"
         else
             warn "Database sync had issues"
         fi

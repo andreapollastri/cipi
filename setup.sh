@@ -628,7 +628,13 @@ CNFEOF
     [ -f /etc/cipi/server.json ] || echo '{}' > /etc/cipi/server.json
     local tmp
     tmp=$(mktemp)
-    jq --arg p "$DB_ROOT_PASS" '. + {db_root_password: $p}' /etc/cipi/server.json > "$tmp"
+    jq --arg p "$DB_ROOT_PASS" '
+        . + {
+            db_root_password: $p,
+            db_default_engine: "mariadb",
+            db_engines: ((.db_engines // {}) + {mariadb: {installed: true, port: 3306}})
+        }
+    ' /etc/cipi/server.json > "$tmp"
     mv "$tmp" /etc/cipi/server.json
     chmod 600 /etc/cipi/server.json
 
@@ -950,6 +956,10 @@ Unattended-Upgrade::Package-Blacklist {
     "mariadb-server";
     "mariadb-client";
     "mariadb-common";
+    "postgresql";
+    "postgresql-.*";
+    "postgresql-common";
+    "postgresql-client.*";
     "valkey";
     "valkey-server";
     "php.*";

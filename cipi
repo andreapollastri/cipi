@@ -138,14 +138,14 @@ show_help_topic() {
             _help_cmd "cipi service restart [service|all]"  "Restart service(s)"
             _help_cmd "cipi service start <service>"        "Start a service"
             _help_cmd "cipi service stop <service>"         "Stop a service"
-            _help_note "services: nginx mariadb supervisor fail2ban php<ver>-fpm"
+            _help_note "services: nginx mariadb postgresql supervisor fail2ban php<ver>-fpm"
             echo ""
             ;;
 
         app|apps)
             _help_topic_header "Apps"
             _help_h "Lifecycle"
-            _help_cmd "cipi app create [--custom]"     "Create app (Laravel, or --custom)"
+            _help_cmd "cipi app create [--custom]"     "Create app  ${DIM}[--engine=mariadb|pgsql]${NC}"
             _help_cmd "cipi app list"                  "List apps"
             _help_cmd "cipi app show <app>"            "App details"
             _help_cmd "cipi app edit <app>"            "Edit app  ${DIM}[--domain=D] [--php=X.Y]${NC}"
@@ -230,11 +230,18 @@ show_help_topic() {
         db|database|databases)
             _help_topic_header "Database"
             echo ""
-            _help_cmd "cipi db create"                 "Create database"
-            _help_cmd "cipi db list"                   "List databases"
-            _help_cmd "cipi db delete <name>"          "Delete database"
-            _help_cmd "cipi db backup <name>"          "Backup database"
-            _help_cmd "cipi db restore <name> <file>"  "Restore database"
+            _help_cmd "cipi db engines"                "List engines + default"
+            _help_cmd "cipi db install <engine>"       "Install engine  ${DIM}mariadb|pgsql${NC}"
+            _help_cmd "cipi db uninstall <engine>"     "Remove engine (data lost)"
+            _help_cmd "cipi db default <engine>"       "Set default engine"
+            _help_cmd "cipi db create"                 "Create database  ${DIM}[--engine=]${NC}"
+            _help_cmd "cipi db list"                   "List databases  ${DIM}[--engine=]${NC}"
+            _help_cmd "cipi db delete <name>"          "Delete database  ${DIM}[--engine=]${NC}"
+            _help_cmd "cipi db backup <name>"          "Backup database  ${DIM}[--engine=]${NC}"
+            _help_cmd "cipi db restore <name> <file>"  "Restore database  ${DIM}[--engine=]${NC}"
+            _help_cmd "cipi db password <name>"        "Reset DB user password  ${DIM}[--engine=]${NC}"
+            _help_note "MariaDB is native (3306). Optional: cipi db install pgsql (5432)"
+            _help_note "app create: --engine=mariadb|pgsql (default from cipi db default)"
             echo ""
             ;;
 
@@ -378,7 +385,7 @@ show_help_topic() {
             _help_topic_header "Reset"
             echo ""
             _help_cmd "cipi reset root-password"       "Reset root SSH password"
-            _help_cmd "cipi reset db-password"         "Reset MariaDB root password"
+            _help_cmd "cipi reset db-password"         "Reset DB root password  ${DIM}[--engine=]${NC}"
             _help_cmd "cipi reset valkey-password"     "Reset Valkey password"
             echo ""
             ;;
@@ -452,11 +459,15 @@ show_status() {
     printf "  %-14s ${CYAN}%s${NC}\n" "Disk" "$(df -h / | awk 'NR==2{print $3"/"$2" ("$5")"}')"
 
     echo -e "\n${BOLD}Services${NC}"
-    for svc in nginx mariadb supervisor fail2ban; do
+    local -a status_svcs=(nginx mariadb supervisor fail2ban)
+    systemctl list-unit-files --quiet postgresql.service &>/dev/null && status_svcs+=(postgresql)
+    for svc in "${status_svcs[@]}"; do
         if systemctl is-active --quiet "$svc" 2>/dev/null; then
             printf "  %-16s ${GREEN}● running${NC}\n" "$svc"
-        else
+        elif systemctl list-unit-files --quiet "${svc}.service" &>/dev/null; then
             printf "  %-16s ${RED}● stopped${NC}\n" "$svc"
+        else
+            printf "  %-16s ${DIM}● not installed${NC}\n" "$svc"
         fi
     done
 

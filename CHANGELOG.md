@@ -15,11 +15,20 @@ All notable changes to Cipi are documented in this file.
   - **`cipi www clear <app>`** / **`cipi www status <app>`** — clear or inspect redirect state
   - State lives in `apps.json` (`www_redirect`); `_create_nginx_vhost` emits a dedicated redirect server block (ACME path kept public). Survives vhost regeneration; SSL is re-applied via `certbot install --redirect`.
 - **`cipi ssl force <app>`** — re-apply HTTP → HTTPS redirect for an app that already has a Let's Encrypt cert (no new issuance). Also set automatically by **`cipi ssl install`** (`force_https` in `apps.json`).
+- **Multi-engine databases (MariaDB + PostgreSQL)** — MariaDB stays native on **3306**; optional PostgreSQL on **5432**:
+  - **`cipi db install pgsql`** / **`cipi db uninstall pgsql|mariadb`** — install or remove a non-default engine (data destroyed on uninstall)
+  - **`cipi db default mariadb|pgsql`** — server-wide default used when `--engine` is omitted
+  - **`cipi db engines`** — show installed engines, ports, and default
+  - **`cipi db create|list|delete|backup|restore|password`** accept **`--engine=mariadb|pgsql`**
+  - **`cipi app create --engine=pgsql`** (interactive prompt when creating Laravel apps); `.env` + connection URL match the engine
+  - App metadata stores `engine`; backup/sync/reset-db-password follow it
+  - **`cipi reset db-password [--engine=]`** resets the root password for the chosen (or default) engine
+  - **`cipi service`** recognizes **`postgresql`** (aliases: `pgsql`, `postgres`)
 
 ### Changed
 
 - **`cipi alias add|remove`** — after regenerating the vhost, re-apply SSL with `certbot install --redirect` (same pattern as basicauth/suspend) so HTTPS is not dropped.
-- **`apps-public.json`** — projection now includes `www_redirect` and `force_https`. **Migration 4.8.0** regenerates it and refreshes the panel API sudoers whitelist.
+- **`apps-public.json`** — projection now includes `www_redirect`, `force_https`, and `engine`. **Migration 4.8.0** regenerates it, nests legacy `databases.json` under `mariadb`, backfills `engine=mariadb` on apps, and refreshes the panel API sudoers whitelist.
 
 ---
 
