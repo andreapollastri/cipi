@@ -4,7 +4,11 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
-## [Unreleased]
+## [5.0.0] — 2026-08-04
+
+### Fixed
+
+- **First deploy fails on `horizon:terminate` / `readlink …/current`** — Deployer resolves `{{current_path}}` with `readlink` before the shell `|| true` can run, so a brand-new app (no `current` symlink yet) aborted at `before('deploy:symlink', 'horizon:terminate')`. Templates now guard with `[ -L {{deploy_path}}/current ]` and call artisan via `{{deploy_path}}/current`. **Migration 5.0.0** regenerates existing `deploy.php` files.
 
 ### Added
 
