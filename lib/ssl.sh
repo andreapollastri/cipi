@@ -10,13 +10,65 @@ ssl_command() {
         force)   _ssl_force "$@" ;;
         renew)   _ssl_renew ;;
         status)  _ssl_status ;;
-        *) error "Use: install force renew status"; exit 1 ;;
+        dns)     _ssl_dns "$@" ;;
+        *) error "Use: install force renew status dns"; exit 1 ;;
     esac
 }
 
+_ssl_dns() {
+    local action="${1:-}"; shift || true
+    case "$action" in
+        set|configure) _ssl_dns_set "$@" ;;
+        show)          _ssl_dns_show ;;
+        *) error "Usage: cipi ssl dns set --provider=cloudflare --token=TOKEN"; exit 1 ;;
+    esac
+}
+
+_ssl_dns_set() {
+    parse_args "$@"
+    local provider="${ARG_provider:-cloudflare}"
+    local token="${ARG_token:-}"
+    [[ "$provider" == "cloudflare" ]] || { error "Supported DNS providers: cloudflare"; exit 1; }
+    [[ -z "$token" ]] && read_input "Cloudflare API token" "" token
+    [[ -z "$token" ]] && { error "Token required"; exit 1; }
+
+    # Install certbot DNS plugin if missing
+    if ! dpkg -l python3-certbot-dns-cloudflare 2>/dev/null | grep -q '^ii'; then
+        step "Installing certbot-dns-cloudflare..."
+        apt-get update -qq
+        DEBIAN_FRONTEND=noninteractive apt-get install -y -qq python3-certbot-dns-cloudflare >/dev/null
+    fi
+
+    local creds="/etc/cipi/cloudflare.ini"
+    cat > "$creds" <<EOF
+# Cloudflare API token for certbot DNS-01 (Cipi)
+dns_cloudflare_api_token = ${token}
+EOF
+    chmod 600 "$creds"
+    chown root:root "$creds"
+
+    echo "{\"provider\":\"cloudflare\",\"configured_at\":\"$(date -u '+%Y-%m-%dT%H:%M:%SZ')\"}" \
+        | vault_write ssl-dns.json
+    log_action "SSL DNS CONFIGURED: cloudflare"
+    success "Cloudflare DNS-01 credentials saved (root-only ${creds})"
+}
+
+_ssl_dns_show() {
+    if [[ -f "${CIPI_CONFIG}/ssl-dns.json" ]]; then
+        vault_read ssl-dns.json | jq .
+    else
+        info "DNS-01 not configured. Run: cipi ssl dns set --provider=cloudflare --token=TOKEN"
+    fi
+    if [[ -f /etc/cipi/cloudflare.ini ]]; then
+        echo -e "  Credentials file: ${CYAN}/etc/cipi/cloudflare.ini${NC} (present)"
+    fi
+}
+
 _ssl_install() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi ssl install <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi ssl install <app> [--dns=cloudflare] [--wildcard]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    parse_args "$@"
     local d; d=$(app_get "$app" domain)
     [[ -z "$d" ]] && { error "No domain for app '$app'"; exit 1; }
 
@@ -30,6 +82,14 @@ _ssl_install() {
     if ! nginx -t 2>/dev/null; then
         error "Nginx config test failed. Fix nginx errors before installing SSL."
         exit 1
+    fi
+
+    local dns_provider="${ARG_dns:-}"
+    local wildcard="${ARG_wildcard:-}"
+
+    if [[ -n "$dns_provider" ]]; then
+        _ssl_install_dns01 "$app" "$d" "$dns_provider" "$wildcard"
+        return $?
     fi
 
     local domains="-d ${d}"
@@ -62,6 +122,7 @@ _ssl_install() {
 
         sed -i "s|^APP_URL=http://|APP_URL=https://|" "/home/${app}/shared/.env" 2>/dev/null || true
         app_set "$app" force_https "true"
+        app_unset "$app" ssl_dns_provider 2>/dev/null || true
         log_action "SSL INSTALLED: $app"
         cipi_notify \
             "Cipi SSL installed: ${d} (${app}) on $(hostname)" \
@@ -74,6 +135,76 @@ _ssl_install() {
         error "SSL failed. Check: DNS points to this server, port 80 is open, domain is correct."
         exit 1
     fi
+}
+
+_ssl_install_dns01() {
+    local app="$1" d="$2" provider="$3" wildcard="${4:-}"
+    [[ "$provider" == "cloudflare" ]] || { error "Supported --dns providers: cloudflare"; exit 1; }
+    [[ -f /etc/cipi/cloudflare.ini ]] || {
+        error "DNS credentials missing. Run: cipi ssl dns set --provider=cloudflare --token=TOKEN"
+        exit 1
+    }
+    if ! command -v certbot &>/dev/null; then
+        error "certbot not found"; exit 1
+    fi
+
+    # Apex for wildcard: strip leading www. if present for *.apex naming
+    local apex="$d"
+    [[ "$apex" == www.* ]] && apex="${apex#www.}"
+
+    local domains="-d ${d}"
+    if [[ "$wildcard" == "true" ]]; then
+        domains="-d ${apex} -d *.${apex}"
+        # Cert name stays on primary app domain for certbot install compatibility
+    else
+        local aliases
+        aliases=$(vault_read apps.json | jq -r --arg a "$app" --arg d "$d" '.[$a].aliases // [] | map(select(. != $d)) | .[]' 2>/dev/null || true)
+        while read -r a; do
+            [[ -n "$a" ]] && domains+=" -d ${a}"
+        done <<< "${aliases:-}"
+    fi
+
+    echo ""
+    step "Installing SSL via DNS-01 (${provider}) for ${d}${wildcard:+ (wildcard)}..."
+    echo ""
+
+    if ! certbot certonly \
+        --dns-cloudflare \
+        --dns-cloudflare-credentials /etc/cipi/cloudflare.ini \
+        --dns-cloudflare-propagation-seconds 30 \
+        $domains \
+        --cert-name "${d}" \
+        --non-interactive \
+        --agree-tos \
+        --register-unsafely-without-email \
+        --expand 2>&1; then
+        echo ""
+        error "DNS-01 certificate issuance failed. Check Cloudflare token permissions (Zone:DNS:Edit)."
+        exit 1
+    fi
+
+    if ! certbot install --nginx --cert-name "${d}" --non-interactive --redirect 2>&1; then
+        error "Certificate issued but nginx install failed. Check: nginx -t"
+        exit 1
+    fi
+
+    if nginx -t 2>&1; then
+        systemctl reload nginx 2>/dev/null || true
+    else
+        error "Nginx config test failed after certbot install. Check: nginx -t"
+        exit 1
+    fi
+
+    sed -i "s|^APP_URL=http://|APP_URL=https://|" "/home/${app}/shared/.env" 2>/dev/null || true
+    app_set "$app" force_https "true"
+    app_set "$app" ssl_dns_provider "$provider"
+    log_action "SSL INSTALLED DNS-01: $app provider=$provider wildcard=${wildcard:-false}"
+    cipi_notify \
+        "Cipi SSL installed (DNS-01): ${d} (${app}) on $(hostname)" \
+        "An SSL certificate was installed via DNS-01.\n\nServer: $(hostname)\nApp: ${app}\nDomain: ${d}\nProvider: ${provider}\nWildcard: ${wildcard:-false}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        ssl_install
+    echo ""
+    success "SSL installed for ${d} via DNS-01 (${provider})"
 }
 
 # Re-apply HTTP → HTTPS redirect for an app that already has a certificate.
@@ -120,27 +251,34 @@ _ssl_force() {
 
 _ssl_renew() {
     step "Renewing certificates..."
-    certbot renew --nginx --non-interactive 2>&1
-    systemctl reload nginx 2>/dev/null
-    log_action "SSL RENEWED"
-    cipi_notify \
-        "Cipi SSL renewed on $(hostname)" \
-        "SSL certificates were renewed.\n\nServer: $(hostname)\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
-        ssl_renew
-    success "Renewal complete"
+    if certbot renew --quiet 2>&1; then
+        systemctl reload nginx 2>/dev/null || true
+        log_action "SSL RENEWED"
+        cipi_notify \
+            "Cipi SSL renewed on $(hostname)" \
+            "SSL certificates were renewed.\n\nServer: $(hostname)\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+            ssl_renew
+        success "Renewal complete"
+    else
+        error "Renewal failed"
+        exit 1
+    fi
 }
 
 _ssl_status() {
-    echo -e "\n${BOLD}SSL Certificates${NC}"
-    certbot certificates 2>/dev/null | while IFS= read -r line; do
-        case "$line" in
-            *"Certificate Name:"*) echo -e "\n  ${BOLD}${line##*: }${NC}" ;;
-            *"Domains:"*)          echo -e "    Domains: ${CYAN}${line##*: }${NC}" ;;
-            *"Expiry Date:"*)
-                local exp; exp=$(echo "${line##*: }"|awk '{print $1}')
-                local days; days=$(( ($(date -d "$exp" +%s) - $(date +%s)) / 86400 ))
-                local c="${GREEN}"; [[ $days -lt 14 ]] && c="${RED}"; [[ $days -lt 30 && $days -ge 14 ]] && c="${YELLOW}"
-                echo -e "    Expiry:  ${c}${exp} (${days}d)${NC}" ;;
-        esac
-    done; echo ""
+    echo -e "\n${BOLD}SSL certificates${NC}"
+    if [[ ! -d /etc/letsencrypt/live ]]; then
+        info "No certificates"
+        return
+    fi
+    local name
+    for name in /etc/letsencrypt/live/*/; do
+        [[ -d "$name" ]] || continue
+        local cn; cn=$(basename "$name")
+        [[ "$cn" == "README" ]] && continue
+        local expiry
+        expiry=$(openssl x509 -enddate -noout -in "${name}cert.pem" 2>/dev/null | cut -d= -f2 || echo "?")
+        printf "  %-40s %s\n" "$cn" "$expiry"
+    done
+    echo ""
 }

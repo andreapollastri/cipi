@@ -4,6 +4,31 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [Unreleased]
+
+### Added
+
+- **Optional Laravel Octane (FrankenPHP)** — create Laravel apps that serve HTTP via Octane instead of PHP-FPM, in parallel with classic FPM apps on the same server:
+  - **`cipi app create --octane`** or **`--octane=frankenphp`** (Laravel only; rejected with `--custom`)
+  - Allocates a localhost port (`8100–8999`), stores `octane` / `octane_port` in `apps.json`
+  - Nginx vhost proxies to Octane (`proxy_pass`) and serves static files from `current/public` — no per-app FPM pool
+  - Supervisor program `${app}-octane` alongside queue workers; Deployer template `laravel-octane.php` restarts/reloads on deploy
+  - `.env`: `OCTANE_SERVER=frankenphp`, `OCTANE_HTTPS=true`
+  - Requires `laravel/octane` + `php artisan octane:install --server=frankenphp` in the app repo (Octane starts after the first successful deploy)
+- **`cipi app convert <app> --to=octane|fpm`** — convert an existing Laravel app between PHP-FPM and Octane (pool/vhost/supervisor/deployer/`.env`; SSL re-applied when present)
+- **Laravel Reverb** — **`cipi app reverb enable|disable|status`**: localhost port `9000–9099`, Supervisor `${app}-reverb`, Nginx `/app` WebSocket proxy, `.env` `REVERB_*`
+- **Laravel Horizon** — **`cipi worker horizon enable|disable|status`**: mutually exclusive with `queue:work` workers; deploy runs `horizon:terminate` + `cipi-worker` restart
+- **Scheduler CLI** — **`cipi schedule on|off|status <app>`** (crontab `schedule:run` already existed; now manageable; `schedule` in apps.json)
+- **Node build on deploy** — **`cipi app edit --node-build='npm ci && npm run build'`** / **`--no-node-build`**; Deployer runs `.deployer/node-build.sh` after vendors (fail-closed; validated command)
+- **`cipi app clone <src> --domain=…`** — staging as a new app (`[--name=] [--branch=] [--with-db|--no-db]`); sets `cloned_from`; does not copy webhook/git IDs
+- **Pre-deploy DB snapshot** — opt-in via **`predeploy_snapshot`** / **`cipi deploy --snapshot`** / **`--snapshot-required`**; dump under `/var/log/cipi/backups/`; code rollback does not auto-restore DB
+- **Resource limits** — **`cipi app limits <app>`** (`--fpm-max-children`, `--memory-limit`, `--octane-workers`, `--worker-procs`) with hard caps
+- **SSL DNS-01 (Cloudflare)** — **`cipi ssl dns set --provider=cloudflare --token=`** then **`cipi ssl install <app> --dns=cloudflare [--wildcard]`**; HTTP-01 remains default
+- **HTTP healthchecks** — **`cipi health set|unset|check|list`**; cron every 5 minutes; notify `health_fail` after 3 consecutive failures
+- **`apps-public.json`** — also exposes `reverb`, `reverb_port`, `horizon`, `schedule`, `node_build`, `cloned_from`, `predeploy_snapshot`, `limits`, `health_url`, `health_expect`, `ssl_dns_provider`
+
+---
+
 ## [4.8.1] — 2026-08-03
 
 ### Fixed
@@ -269,7 +294,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **`setup.sh` failed on fresh VPS when `unattended-upgrades` holds the apt lock** — the typical flow (new VPS → paste the install command) often collides with the first automatic security update, so the very first `apt-get` could exit immediately with *Could not get lock* and abort the install. **`setup.sh`** now waits up to **300s** for the lock on every **`apt-get`** via **`DPkg::Lock::Timeout`**, shows a short *System updates in progress…* message when the lock is already held, and writes **`/etc/apt/apt.conf.d/00cipi-lock-timeout`** so later steps (PPA, NodeSource, cron) inherit the same timeout. **`set -o pipefail`** was added so piped installers (e.g. NodeSource) cannot fail silently. **`lib/php-apt.sh`**: direct **`dpkg -i`** (Sury keyring) uses **`cipi_wait_for_dpkg_lock`** because dpkg does not honour the apt timeout; removed **`|| true`** on that path so a broken keyring install stops instead of continuing with missing PHP packages. **Migration 4.6.7** applies the apt.conf snippet on existing servers.
+- **`setup.sh` failed on fresh VPS when `unattended-upgrades` holds the apt lock** — the typical flow (new VPS → paste the install command) often collides with the first automatic security update, so the very first `apt-get` could exit immediately with _Could not get lock_ and abort the install. **`setup.sh`** now waits up to **300s** for the lock on every **`apt-get`** via **`DPkg::Lock::Timeout`**, shows a short _System updates in progress…_ message when the lock is already held, and writes **`/etc/apt/apt.conf.d/00cipi-lock-timeout`** so later steps (PPA, NodeSource, cron) inherit the same timeout. **`set -o pipefail`** was added so piped installers (e.g. NodeSource) cannot fail silently. **`lib/php-apt.sh`**: direct **`dpkg -i`** (Sury keyring) uses **`cipi_wait_for_dpkg_lock`** because dpkg does not honour the apt timeout; removed **`|| true`** on that path so a broken keyring install stops instead of continuing with missing PHP packages. **Migration 4.6.7** applies the apt.conf snippet on existing servers.
 
 ---
 
@@ -277,7 +302,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **`setup.sh` MariaDB / PHP on Ubuntu 26.04 (resolute)** — the installer still always added the MariaDB.org **11.4** repo and **`ppa:ondrej/php`**, which have no **`resolute`** suite yet (*Release file not found* at *Installing MariaDB…*). `setup.sh` now bootstraps **`lib/php-apt.sh`** (curl from GitHub when `/opt/cipi` does not exist), sanitises broken third-party sources left by a partial install, uses **`mariadb_setup_apt_repo`** (MariaDB.org when available, otherwise **Ubuntu main** — 11.8.x on 26.04), and **`php_setup_apt_sources`** (ondrej → **packages.sury.org** → archive). **`mariadb_setup_apt_repo`** / **`mariadb_apt_source_label`** added to **`lib/php-apt.sh`**.
+- **`setup.sh` MariaDB / PHP on Ubuntu 26.04 (resolute)** — the installer still always added the MariaDB.org **11.4** repo and **`ppa:ondrej/php`**, which have no **`resolute`** suite yet (_Release file not found_ at _Installing MariaDB…_). `setup.sh` now bootstraps **`lib/php-apt.sh`** (curl from GitHub when `/opt/cipi` does not exist), sanitises broken third-party sources left by a partial install, uses **`mariadb_setup_apt_repo`** (MariaDB.org when available, otherwise **Ubuntu main** — 11.8.x on 26.04), and **`php_setup_apt_sources`** (ondrej → **packages.sury.org** → archive). **`mariadb_setup_apt_repo`** / **`mariadb_apt_source_label`** added to **`lib/php-apt.sh`**.
 
 ---
 
@@ -294,7 +319,7 @@ No migration required — both fixes are input-validation only and take effect i
 ### Fixed
 
 - **`common.sh` CIPI_LIB when sourced outside `cipi`** — Migrations and other callers that `source common.sh` without going through the main binary left `CIPI_LIB` unset, so `source "${CIPI_LIB}/vault.sh"` failed mid–self-update (notably migration **4.6.3** after token-abilities / api.sh steps). `common.sh` now derives `CIPI_LIB` from its own path via `BASH_SOURCE` when unset (same pattern as `CIPI_CONFIG` / `CIPI_LOG`), with no hardcoded `/opt/cipi/lib`.
-- **Migration runner hygiene** — `self-update` exports `CIPI_LIB`, `CIPI_CONFIG`, and `CIPI_LOG` before running migrations, runs each migration under `set -euo pipefail`, and prints a clear *migration failed — version not updated* message instead of a raw bash traceback.
+- **Migration runner hygiene** — `self-update` exports `CIPI_LIB`, `CIPI_CONFIG`, and `CIPI_LOG` before running migrations, runs each migration under `set -euo pipefail`, and prints a clear _migration failed — version not updated_ message instead of a raw bash traceback.
 - **Partial 4.6.3 recovery** — Servers stuck at **4.6.2** with libs already copied from 4.6.3 can re-run `cipi self-update`: migration **4.6.3** remains idempotent; **4.6.4** verifies the path fix and completes any remaining cron / notifications steps. Emergency pre-release patch: `lib/fix-common-readonly.sh` now also applies the `CIPI_LIB` derive block.
 
 ---
@@ -340,7 +365,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **PHP install / `apt-get update` failed on Ubuntu 26.04 (resolute)** — `setup.sh` and `cipi php install` always added **`ppa:ondrej/php`**, but Launchpad does not publish a **`resolute`** suite yet, so `apt-get update` failed with *Release file not found* (including on re-runs at *Installing base packages* when a broken PPA source was left from a partial install). Cipi now probes PHP APT sources per codename: when Launchpad ondrej has a suite (**noble**, **jammy**, …) it uses the PPA as before; when it does not (**resolute** / Ubuntu 26.04) it configures **[packages.sury.org](https://packages.sury.org/php/)** instead (same maintainer, co-installable **`php8.3` / `php8.4` / `php8.5`** — multi-PHP works on 26.04); if neither repo is available, it falls back to **Ubuntu main** (single version). **`lib/php-apt.sh`** centralises the logic; `setup.sh` bootstraps it before the first `apt-get update` and sanitises stale broken sources; **`cipi php install`** uses the same helper. **Migration 4.5.12** removes a leftover broken ondrej source and wires up packages.sury.org where needed.
+- **PHP install / `apt-get update` failed on Ubuntu 26.04 (resolute)** — `setup.sh` and `cipi php install` always added **`ppa:ondrej/php`**, but Launchpad does not publish a **`resolute`** suite yet, so `apt-get update` failed with _Release file not found_ (including on re-runs at _Installing base packages_ when a broken PPA source was left from a partial install). Cipi now probes PHP APT sources per codename: when Launchpad ondrej has a suite (**noble**, **jammy**, …) it uses the PPA as before; when it does not (**resolute** / Ubuntu 26.04) it configures **[packages.sury.org](https://packages.sury.org/php/)** instead (same maintainer, co-installable **`php8.3` / `php8.4` / `php8.5`** — multi-PHP works on 26.04); if neither repo is available, it falls back to **Ubuntu main** (single version). **`lib/php-apt.sh`** centralises the logic; `setup.sh` bootstraps it before the first `apt-get update` and sanitises stale broken sources; **`cipi php install`** uses the same helper. **Migration 4.5.12** removes a leftover broken ondrej source and wires up packages.sury.org where needed.
 
 ---
 
@@ -348,7 +373,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **MariaDB install failed on Ubuntu 26.04 (resolute)** — `setup.sh` always added the MariaDB.org **11.4** APT repo using `$(lsb_release -cs)`, but that repository does not publish a **`resolute`** suite yet, so `apt-get update` failed with *Release file not found*. The installer now probes the repo for a valid `Release` file per codename: when the suite exists (e.g. **noble**, **jammy**) it uses MariaDB.org 11.4 as before; when it does not (e.g. **resolute** / Ubuntu 26.04) it skips the third-party repo and installs **MariaDB from Ubuntu main** (11.8.x on 26.04). A leftover broken `/etc/apt/sources.list.d/mariadb.list` from a failed run is removed automatically.
+- **MariaDB install failed on Ubuntu 26.04 (resolute)** — `setup.sh` always added the MariaDB.org **11.4** APT repo using `$(lsb_release -cs)`, but that repository does not publish a **`resolute`** suite yet, so `apt-get update` failed with _Release file not found_. The installer now probes the repo for a valid `Release` file per codename: when the suite exists (e.g. **noble**, **jammy**) it uses MariaDB.org 11.4 as before; when it does not (e.g. **resolute** / Ubuntu 26.04) it skips the third-party repo and installs **MariaDB from Ubuntu main** (11.8.x on 26.04). A leftover broken `/etc/apt/sources.list.d/mariadb.list` from a failed run is removed automatically.
 
 ---
 
@@ -356,7 +381,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Fresh install failed after nginx.org package install** — the official nginx.org DEB does not create `/etc/nginx/sites-available/` or `/etc/nginx/sites-enabled/` (Debian/Ubuntu convention only), so `setup.sh` aborted with *No such file or directory* when writing the default vhost. `setup.sh` now creates those directories (and `/var/www/html`) and removes the stock `/etc/nginx/conf.d/default.conf` so it does not conflict with Cipi's default server block. **Migration 4.5.10** applies the same layout fix on existing servers (idempotent).
+- **Fresh install failed after nginx.org package install** — the official nginx.org DEB does not create `/etc/nginx/sites-available/` or `/etc/nginx/sites-enabled/` (Debian/Ubuntu convention only), so `setup.sh` aborted with _No such file or directory_ when writing the default vhost. `setup.sh` now creates those directories (and `/var/www/html`) and removes the stock `/etc/nginx/conf.d/default.conf` so it does not conflict with Cipi's default server block. **Migration 4.5.10** applies the same layout fix on existing servers (idempotent).
 
 ---
 
@@ -380,7 +405,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Valkey install used the wrong package name** — `setup.sh` and migration 4.5.6 installed `valkey`, but on Ubuntu 24.04 the daemon package is **`valkey-server`** (source `valkey`; binaries `valkey-server` + `valkey-tools`). On servers that had already updated to 4.5.6 the switch aborted with *"valkey package not available"* and left `redis-server` running (no data touched). Since 4.5.6 has already shipped and a migration can't be re-run, `setup.sh` is corrected to `valkey-server` and **migration 4.5.7 performs the full, corrected Redis → Valkey switch itself** (self-contained: reuse password, preserve the RDB/AOF dataset, purge `redis-server`, install `valkey-server` + `valkey-tools`, restore data, rewrite `server.json`/blacklist). It adds extra safety nets: it **auto-enables the `universe` component** when the package isn't found (via `add-apt-repository` if present, otherwise by editing the deb822/legacy APT sources directly — no `software-properties-common` needed) and re-checks; it runs a **post-start health check** (`PING` → `PONG` with the password) and, if Valkey doesn't come up healthy (or can't be installed), **rolls back to `redis-server` restoring both the saved password and the dataset**, so the server is never left without a working cache backend. The dataset snapshot is kept until the switch is verified, then cleaned up. Idempotent — servers already on Valkey skip it.
+- **Valkey install used the wrong package name** — `setup.sh` and migration 4.5.6 installed `valkey`, but on Ubuntu 24.04 the daemon package is **`valkey-server`** (source `valkey`; binaries `valkey-server` + `valkey-tools`). On servers that had already updated to 4.5.6 the switch aborted with _"valkey package not available"_ and left `redis-server` running (no data touched). Since 4.5.6 has already shipped and a migration can't be re-run, `setup.sh` is corrected to `valkey-server` and **migration 4.5.7 performs the full, corrected Redis → Valkey switch itself** (self-contained: reuse password, preserve the RDB/AOF dataset, purge `redis-server`, install `valkey-server` + `valkey-tools`, restore data, rewrite `server.json`/blacklist). It adds extra safety nets: it **auto-enables the `universe` component** when the package isn't found (via `add-apt-repository` if present, otherwise by editing the deb822/legacy APT sources directly — no `software-properties-common` needed) and re-checks; it runs a **post-start health check** (`PING` → `PONG` with the password) and, if Valkey doesn't come up healthy (or can't be installed), **rolls back to `redis-server` restoring both the saved password and the dataset**, so the server is never left without a working cache backend. The dataset snapshot is kept until the switch is verified, then cleaned up. Idempotent — servers already on Valkey skip it.
 
 ---
 
@@ -406,11 +431,11 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Changed
 
-- **PHP < 8.3 can no longer be installed** — Cipi now bundles **Deployer 8** (the current major, downloaded as the latest `deployer.org/deployer.phar`), which requires **PHP >= 8.3**. Because `dep` is executed with the *app's* PHP version (`/usr/bin/php${php_ver} /usr/local/bin/dep deploy …`), running the v8 phar under PHP 7.4/8.0/8.1/8.2 would break every deploy. To prevent that mismatch at the source, **`validate_php_version` now accepts only `8.3`, `8.4`, `8.5`**, so `cipi php install`, `cipi php switch`, `cipi app create` and `cipi app edit` reject older versions with a clear message. The PHP recipes (`lib/deployer/{laravel,custom}.php`) are PHP-based and unchanged in Deployer 8, so no recipe migration is needed. Legacy installs are still detectable and removable: **`cipi php remove`** uses the new **`validate_php_version_known`** helper (7.4–8.5) so you can clean up a pre-4.5.4 server with e.g. `cipi php remove 8.1`.
+- **PHP < 8.3 can no longer be installed** — Cipi now bundles **Deployer 8** (the current major, downloaded as the latest `deployer.org/deployer.phar`), which requires **PHP >= 8.3**. Because `dep` is executed with the _app's_ PHP version (`/usr/bin/php${php_ver} /usr/local/bin/dep deploy …`), running the v8 phar under PHP 7.4/8.0/8.1/8.2 would break every deploy. To prevent that mismatch at the source, **`validate_php_version` now accepts only `8.3`, `8.4`, `8.5`**, so `cipi php install`, `cipi php switch`, `cipi app create` and `cipi app edit` reject older versions with a clear message. The PHP recipes (`lib/deployer/{laravel,custom}.php`) are PHP-based and unchanged in Deployer 8, so no recipe migration is needed. Legacy installs are still detectable and removable: **`cipi php remove`** uses the new **`validate_php_version_known`** helper (7.4–8.5) so you can clean up a pre-4.5.4 server with e.g. `cipi php remove 8.1`.
 
 ### Added
 
-- **Deploy-time guard for apps still on PHP < 8.3** — restricting *installs* doesn't help servers that already host apps pinned to old PHP. **`cipi deploy <app>`** and **`cipi deploy <app> --rollback`** now call `_deploy_assert_php_compat`, which checks the **actually installed** Deployer major (`deployer_major_version`, parsed from `dep --version`): only when **Deployer 8+** is present *and* the app's PHP fails `validate_php_version` does it abort **before** invoking `dep`, with a clear "upgrade to 8.3/8.4/8.5" message instead of a cryptic phar parse error. Under Deployer 7 it's a no-op (those apps still deploy). **Migration 4.5.4** performs the same check once at update time — gated on Deployer 8+ — and prints the list of affected apps so operators know exactly what to upgrade (it changes nothing).
+- **Deploy-time guard for apps still on PHP < 8.3** — restricting _installs_ doesn't help servers that already host apps pinned to old PHP. **`cipi deploy <app>`** and **`cipi deploy <app> --rollback`** now call `_deploy_assert_php_compat`, which checks the **actually installed** Deployer major (`deployer_major_version`, parsed from `dep --version`): only when **Deployer 8+** is present _and_ the app's PHP fails `validate_php_version` does it abort **before** invoking `dep`, with a clear "upgrade to 8.3/8.4/8.5" message instead of a cryptic phar parse error. Under Deployer 7 it's a no-op (those apps still deploy). **Migration 4.5.4** performs the same check once at update time — gated on Deployer 8+ — and prints the list of affected apps so operators know exactly what to upgrade (it changes nothing).
 
 ---
 
@@ -418,7 +443,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Panel API HTTP 500 after every self-update (the *real* root cause)** — `lib/self-update.sh` runs `chown -R root:root /opt/cipi` on each update (including the nightly 03:50 cron), which also re-roots the Laravel panel app under `/opt/cipi/api`. With `storage/`, `database/` and `bootstrap/cache/` owned `root:root`, PHP-FPM (`www-data`) can no longer open `storage/logs/laravel.log` or write the SQLite DB — Laravel then fatals *while trying to log the error* (`UnexpectedValueException: ... laravel.log ... Permission denied`), so the browser only sees a bare `HTTP ERROR 500`. The compensating `www-data` re-chown lived **inside** the `cipi-api` package block, which is skipped when `/opt/cipi/cipi-api` is absent (package installed from Packagist) — so the panel stayed broken after each update. This is what the 4.5.0/4.5.1 work (FPM pool, sessions, job/metrics pruning) never addressed, because those targeted *symptoms*, not the ownership reset. Fix: `cipi self-update` now calls **`ensure_cipi_api_permissions` unconditionally right after the root chown**, and **`lib/migrations/4.5.3.sh`** repairs already-broken servers (reclaims `storage`/`database`/`bootstrap-cache`/`.env` for `www-data`, clears stale root-owned config cache, restarts FPM + queue). Immediate manual fix on an affected server: `cipi api fix-permissions && systemctl restart php8.5-fpm`.
+- **Panel API HTTP 500 after every self-update (the _real_ root cause)** — `lib/self-update.sh` runs `chown -R root:root /opt/cipi` on each update (including the nightly 03:50 cron), which also re-roots the Laravel panel app under `/opt/cipi/api`. With `storage/`, `database/` and `bootstrap/cache/` owned `root:root`, PHP-FPM (`www-data`) can no longer open `storage/logs/laravel.log` or write the SQLite DB — Laravel then fatals _while trying to log the error_ (`UnexpectedValueException: ... laravel.log ... Permission denied`), so the browser only sees a bare `HTTP ERROR 500`. The compensating `www-data` re-chown lived **inside** the `cipi-api` package block, which is skipped when `/opt/cipi/cipi-api` is absent (package installed from Packagist) — so the panel stayed broken after each update. This is what the 4.5.0/4.5.1 work (FPM pool, sessions, job/metrics pruning) never addressed, because those targeted _symptoms_, not the ownership reset. Fix: `cipi self-update` now calls **`ensure_cipi_api_permissions` unconditionally right after the root chown**, and **`lib/migrations/4.5.3.sh`** repairs already-broken servers (reclaims `storage`/`database`/`bootstrap-cache`/`.env` for `www-data`, clears stale root-owned config cache, restarts FPM + queue). Immediate manual fix on an affected server: `cipi api fix-permissions && systemctl restart php8.5-fpm`.
 
 ---
 
@@ -439,7 +464,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Panel API: recurring 500s on `/` and `/api/*` while user apps stayed up** — 4.5.0 fixed the *acute* FPM saturation symptom, but the *chronic* cause was untouched: the `cipi-api` Laravel package (v1.7.0+) registers scheduled commands (`cipi:prune-job-logs` daily @ 03:30, `cipi:record-server-metrics` every minute) and the cipi installer **never wired up `* * * * * php artisan schedule:run` for `/opt/cipi/api`** — user apps had it via their per-user crontab; the panel did not. Over weeks of operation this produced:
+- **Panel API: recurring 500s on `/` and `/api/*` while user apps stayed up** — 4.5.0 fixed the _acute_ FPM saturation symptom, but the _chronic_ cause was untouched: the `cipi-api` Laravel package (v1.7.0+) registers scheduled commands (`cipi:prune-job-logs` daily @ 03:30, `cipi:record-server-metrics` every minute) and the cipi installer **never wired up `* * * * * php artisan schedule:run` for `/opt/cipi/api`** — user apps had it via their per-user crontab; the panel did not. Over weeks of operation this produced:
   - `storage/app/cipi-job-logs/{uuid}.log` accumulating forever (one file per deploy / artisan / MCP / `sudo cipi db …` call invoked via the API), eventually exhausting disk space or inodes → `fopen()` failures surfaced as opaque 500s on the panel while per-app vhosts (separate pool, separate writes) kept serving.
   - `cipi_jobs` and `failed_jobs` rows accumulating forever in the panel SQLite, slowing every authenticated request and bloating WAL.
   - `database.sqlite-wal` growing unbounded — `PASSIVE` auto-checkpoints don't reclaim space under concurrent FPM + queue writers.
@@ -510,7 +535,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Panel API readonly SQLite / log permission errors** — Root-run `composer` (e.g. during `cipi self-update`) could leave `database.sqlite` or `storage/logs` owned by root before `migrate`, causing *attempt to write a readonly database* and Monolog *Permission denied* on `laravel.log`. Added **`ensure_cipi_api_permissions`** in `common.sh` (chown `storage`, `database`, `bootstrap/cache` → `www-data`, plus **`/opt/cipi/api/.env`** → `www-data`, mode `640`), invoked before API token commands, `api status`, `api update`, and after API install; **`cipi self-update`** now runs full `chown` immediately after `composer update` and runs `vendor:publish` as `www-data`. New command **`cipi api fix-permissions`** for manual repair. **`Migration 4.4.16`** also creates **`www-data`**’s PsySH config dir so **`cipi api status`** (tinker) is reliable.
+- **Panel API readonly SQLite / log permission errors** — Root-run `composer` (e.g. during `cipi self-update`) could leave `database.sqlite` or `storage/logs` owned by root before `migrate`, causing _attempt to write a readonly database_ and Monolog _Permission denied_ on `laravel.log`. Added **`ensure_cipi_api_permissions`** in `common.sh` (chown `storage`, `database`, `bootstrap/cache` → `www-data`, plus **`/opt/cipi/api/.env`** → `www-data`, mode `640`), invoked before API token commands, `api status`, `api update`, and after API install; **`cipi self-update`** now runs full `chown` immediately after `composer update` and runs `vendor:publish` as `www-data`. New command **`cipi api fix-permissions`** for manual repair. **`Migration 4.4.16`** also creates **`www-data`**’s PsySH config dir so **`cipi api status`** (tinker) is reliable.
 
 - **`cipi api status` appeared to hang after Domain** — Status prints **Queue** first. **Laravel** and **cipi-api** versions are read from **`composer.lock`** via **`jq`** (no **`php artisan`** / **`composer show`** bootstrap). Pending job count uses **`sqlite3`** on the panel SQLite DB when **`DB_CONNECTION=sqlite`**; **`tinker`** is only a fallback with a short **`timeout`**. **`timeout`** still applies to rare fallbacks; **`_api_ensure_psysh_home`** on new installs. Servers **already on 4.4.16** before this revision can run **`cipi api fix-permissions`** once (migration does not re-run).
 
@@ -566,7 +591,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **Deploy `deploy:writable` / chmod on `storage/logs/*.log`** — Residual per-file ACLs on Laravel logs (from older Cipi) still caused *Operation not permitted* during `chmod`. `ensure_app_logs_permissions` now strips file ACLs and default ACL on `logs/` and `shared/storage/logs` **before** re-applying directory-only ACLs for `cipi`. **`cipi deploy <app>`** runs this automatically before Deployer. **Migration 4.4.10** applies the same once on existing servers.
+- **Deploy `deploy:writable` / chmod on `storage/logs/*.log`** — Residual per-file ACLs on Laravel logs (from older Cipi) still caused _Operation not permitted_ during `chmod`. `ensure_app_logs_permissions` now strips file ACLs and default ACL on `logs/` and `shared/storage/logs` **before** re-applying directory-only ACLs for `cipi`. **`cipi deploy <app>`** runs this automatically before Deployer. **Migration 4.4.10** applies the same once on existing servers.
 
 ---
 
@@ -583,7 +608,7 @@ No migration required — both fixes are input-validation only and take effect i
 
 ### Fixed
 
-- **`common.sh` vs readonly `CIPI_CONFIG` / `CIPI_LOG`** — The main `cipi` binary sets these as `readonly` before sourcing `common.sh`; assigning `CIPI_CONFIG=...` caused *readonly variable*. Defaults now use `: "${CIPI_CONFIG:=...}"` / `: "${CIPI_LOG:=...}"` so existing readonly values are left unchanged and migrations still get defaults when unset.
+- **`common.sh` vs readonly `CIPI_CONFIG` / `CIPI_LOG`** — The main `cipi` binary sets these as `readonly` before sourcing `common.sh`; assigning `CIPI_CONFIG=...` caused _readonly variable_. Defaults now use `: "${CIPI_CONFIG:=...}"` / `: "${CIPI_LOG:=...}"` so existing readonly values are left unchanged and migrations still get defaults when unset.
 
 ---
 
@@ -592,7 +617,7 @@ No migration required — both fixes are input-validation only and take effect i
 ### Fixed
 
 - **Migration / `common.sh` when sourced standalone** — If `CIPI_LOG` was unset (e.g. migration 4.4.6 sourcing `common.sh`), `mkdir -p "${CIPI_LOG}"` expanded to an empty path. `common.sh` now defaults `CIPI_CONFIG` and `CIPI_LOG` before loading the vault.
-- **Deploy `deploy:writable` / chmod on Laravel logs** — ACLs applied with `setfacl -R` and default ACLs on `shared/storage/logs` caused `chmod` to fail with *Operation not permitted* on existing `laravel-*.log` files. Directory-only ACLs for `cipi` are kept; per-file and default ACLs on that tree are removed. **Migration 4.4.7** clears those ACLs on existing servers and reapplies the corrected layout.
+- **Deploy `deploy:writable` / chmod on Laravel logs** — ACLs applied with `setfacl -R` and default ACLs on `shared/storage/logs` caused `chmod` to fail with _Operation not permitted_ on existing `laravel-*.log` files. Directory-only ACLs for `cipi` are kept; per-file and default ACLs on that tree are removed. **Migration 4.4.7** clears those ACLs on existing servers and reapplies the corrected layout.
 
 ---
 

@@ -65,7 +65,7 @@ _help_topic_header() {
 
 _help_topics_list() {
     cat <<'EOF'
-app  domains  www  deploy  worker  db  service  ssl  php
+app  domains  www  deploy  worker  schedule  health  db  service  ssl  php
 auth  basicauth  ssh  firewall  ban  backup  sync  git
 api  gui  smtp  notifications  reset  server
 EOF
@@ -95,7 +95,9 @@ show_help() {
     _help_cmd "cipi app ..."               "Create, edit, logs, env, ..."
     _help_cmd "cipi domains / alias / www" "Domains, aliases & www redirects"
     _help_cmd "cipi deploy <app>"        "Deploy / rollback / webhook"
-    _help_cmd "cipi worker ..."            "Queue workers"
+    _help_cmd "cipi worker ..."            "Queue workers / Horizon"
+    _help_cmd "cipi schedule ..."          "Laravel scheduler on/off"
+    _help_cmd "cipi health ..."            "HTTP healthchecks"
     _help_cmd "cipi db ..."                "Databases"
     echo ""
     echo -e "  ${BOLD}Security & access${NC}"
@@ -145,10 +147,15 @@ show_help_topic() {
         app|apps)
             _help_topic_header "Apps"
             _help_h "Lifecycle"
-            _help_cmd "cipi app create [--custom]"     "Create app  ${DIM}[--engine=mariadb|pgsql]${NC}"
+            _help_cmd "cipi app create [--custom]"     "Create app  ${DIM}[--engine=] [--octane]${NC}"
+            _help_note "Laravel Octane: --octane or --octane=frankenphp (no FPM; Nginx → Octane)"
             _help_cmd "cipi app list"                  "List apps"
             _help_cmd "cipi app show <app>"            "App details"
-            _help_cmd "cipi app edit <app>"            "Edit app  ${DIM}[--domain=D] [--php=X.Y]${NC}"
+            _help_cmd "cipi app edit <app>"            "Edit app  ${DIM}[--domain=] [--php=] [--node-build=]${NC}"
+            _help_cmd "cipi app convert <app>"         "FPM ↔ Octane  ${DIM}--to=octane|fpm${NC}"
+            _help_cmd "cipi app clone <app>"           "Clone app (staging)  ${DIM}--domain= [--with-db]${NC}"
+            _help_cmd "cipi app reverb …"              "Reverb WebSockets  ${DIM}enable|disable|status${NC}"
+            _help_cmd "cipi app limits <app>"          "Resource limits  ${DIM}[--fpm-max-children=]${NC}"
             _help_cmd "cipi app delete <app>"          "Delete app"
             _help_cmd "cipi app suspend <app>"         "Take offline (503)"
             _help_cmd "cipi app unsuspend <app>"       "Bring back online"
@@ -208,6 +215,7 @@ show_help_topic() {
             _help_topic_header "Deploy"
             echo ""
             _help_cmd "cipi deploy <app>"              "Deploy via Deployer"
+            _help_cmd "cipi deploy <app> --snapshot"   "Deploy with DB dump first"
             _help_cmd "cipi deploy <app> --rollback"   "Rollback"
             _help_cmd "cipi deploy <app> --releases"   "List releases"
             _help_cmd "cipi deploy <app> --key"        "Show SSH deploy key"
@@ -224,6 +232,26 @@ show_help_topic() {
             _help_cmd "cipi worker list <app>"         "List workers"
             _help_cmd "cipi worker remove <app> <queue>" "Remove worker"
             _help_cmd "cipi worker restart <app>"      "Restart workers"
+            _help_cmd "cipi worker horizon …"          "Horizon  ${DIM}enable|disable|status <app>${NC}"
+            echo ""
+            ;;
+
+        schedule)
+            _help_topic_header "Scheduler"
+            echo ""
+            _help_cmd "cipi schedule status <app>"     "Show scheduler state"
+            _help_cmd "cipi schedule on <app>"         "Enable schedule:run cron"
+            _help_cmd "cipi schedule off <app>"        "Disable schedule:run cron"
+            echo ""
+            ;;
+
+        health)
+            _help_topic_header "Healthchecks"
+            echo ""
+            _help_cmd "cipi health set <app>"          "Configure URL  ${DIM}[--url=] [--expect=200]${NC}"
+            _help_cmd "cipi health unset <app>"        "Remove healthcheck"
+            _help_cmd "cipi health check <app>"        "Run probe once"
+            _help_cmd "cipi health list"               "List configured checks"
             echo ""
             ;;
 
@@ -316,7 +344,8 @@ show_help_topic() {
         ssl|cert|certs|certificate)
             _help_topic_header "SSL"
             echo ""
-            _help_cmd "cipi ssl install <app>"         "SSL certificate"
+            _help_cmd "cipi ssl install <app>"         "SSL certificate  ${DIM}[--dns=cloudflare] [--wildcard]${NC}"
+            _help_cmd "cipi ssl dns set"               "DNS-01 credentials  ${DIM}--provider=cloudflare --token=${NC}"
             _help_cmd "cipi ssl force <app>"           "Force HTTP → HTTPS redirect"
             _help_cmd "cipi ssl renew"                 "Renew all certs"
             _help_cmd "cipi ssl status"                "List certificates"
@@ -419,6 +448,8 @@ show_help_all() {
     show_help_topic basicauth
     show_help_topic deploy
     show_help_topic worker
+    show_help_topic schedule
+    show_help_topic health
     show_help_topic db
     show_help_topic api
     show_help_topic gui
@@ -501,6 +532,8 @@ main() {
         basicauth)  _maybe_cmd_help basicauth "$@";  require_root; source "${CIPI_LIB}/app.sh";         basicauth_command "$@" ;;
         deploy)     _maybe_cmd_help deploy "$@";     require_root; source "${CIPI_LIB}/deploy.sh";      deploy_command "$@" ;;
         worker)     _maybe_cmd_help worker "$@";     require_root; source "${CIPI_LIB}/worker.sh";      worker_command "$@" ;;
+        schedule)   _maybe_cmd_help schedule "$@";   require_root; source "${CIPI_LIB}/app.sh";         schedule_command "$@" ;;
+        health)     _maybe_cmd_help health "$@";     require_root; source "${CIPI_LIB}/health.sh";      health_command "$@" ;;
         db)         _maybe_cmd_help db "$@";         require_root; source "${CIPI_LIB}/db.sh";          db_command "$@" ;;
         ssl)        _maybe_cmd_help ssl "$@";        require_root; source "${CIPI_LIB}/ssl.sh";         ssl_command "$@" ;;
         php)        _maybe_cmd_help php "$@";        require_root; source "${CIPI_LIB}/php.sh";         php_command "$@" ;;

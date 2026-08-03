@@ -37,6 +37,7 @@ before('deploy:symlink', 'workers:stop');
 before('deploy:symlink', 'horizon:terminate');
 after('deploy:symlink', 'artisan:queue:restart');
 after('deploy:symlink', 'workers:restart');
+after('deploy:symlink', 'octane:reload');
 
 task('cipi:chmod_storage_logs_dir', function () {
     run('chmod 775 {{release_path}}/storage/logs 2>/dev/null || true');
@@ -58,4 +59,9 @@ task('workers:restart', function () {
 // No-op when Horizon is not installed / not running.
 task('horizon:terminate', function () {
     run('{{bin/php}} {{current_path}}/artisan horizon:terminate 2>/dev/null || true');
+});
+
+// Graceful Octane worker reload after symlink (no-op if Octane is not running yet).
+task('octane:reload', function () {
+    run('{{bin/php}} {{current_path}}/artisan octane:reload 2>/dev/null || true');
 });

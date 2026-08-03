@@ -615,11 +615,20 @@ BASH
     app_json=$(jq --arg a "$app" --arg e "$eng" '.[$a] + {engine: (.[$a].engine // $e)}' "${dir}/config/apps.json")
     app_save "$app" "$app_json"
 
-    # 11. PHP-FPM
-    step "PHP-FPM..."
-    _create_fpm_pool "$app" "$php_ver"
-    reload_php_fpm "$php_ver"
-    success "PHP-FPM ${php_ver}"
+    # 11. PHP-FPM (skipped for Octane apps)
+    local sync_octane sync_octane_port
+    sync_octane=$(echo "$app_json" | jq -r '.octane // empty')
+    sync_octane_port=$(echo "$app_json" | jq -r '.octane_port // empty')
+    if [[ -n "$sync_octane" ]]; then
+        step "PHP-FPM..."
+        success "Skipped (Octane)"
+        _ensure_nginx_octane_map
+    else
+        step "PHP-FPM..."
+        _create_fpm_pool "$app" "$php_ver"
+        reload_php_fpm "$php_ver"
+        success "PHP-FPM ${php_ver}"
+    fi
 
     # 12. Nginx
     step "Nginx..."
@@ -637,16 +646,45 @@ BASH
     else
         echo "" > "/etc/supervisor/conf.d/${app}.conf"
         _create_supervisor_worker "$app" "$php_ver" "default"
-        success "Worker (default)"
+        if [[ -n "$sync_octane" && -n "$sync_octane_port" ]]; then
+            _create_supervisor_octane "$app" "$php_ver" "$sync_octane_port"
+            success "Worker + Octane (:${sync_octane_port})"
+        else
+            success "Worker (default)"
+        fi
     fi
     reload_supervisor
 
-    # 14. Crontab
+    # 14. Crontab (respect schedule=off)
     step "Crontab..."
-    cat <<CRON | crontab -u "$app" -
+    local sync_schedule
+    sync_schedule=$(echo "$app_json" | jq -r '.schedule // "on"')
+    local schedule_block="# Laravel Scheduler (disabled by cipi schedule off)
+"
+    if [[ "$sync_schedule" != "off" ]]; then
+        schedule_block="# Laravel Scheduler
 * * * * * /usr/bin/php${php_ver} ${home}/current/artisan schedule:run >> /dev/null 2>&1
-* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1
+"
+    fi
+    cat <<CRON | crontab -u "$app" -
+${schedule_block}# Cipi deploy trigger
+* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && { /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1 || sudo /usr/local/bin/cipi-app-notify ${app} deploy \$? ${home}/logs/deploy.log; }
 CRON
+    # Restore reverb/horizon/octane supervisor extras when conf was empty
+    if [[ ! -f "${ad}/supervisor.conf" ]] || [[ ! -s "${ad}/supervisor.conf" ]]; then
+        local sync_reverb sync_reverb_port sync_horizon
+        sync_reverb=$(echo "$app_json" | jq -r '.reverb // empty')
+        sync_reverb_port=$(echo "$app_json" | jq -r '.reverb_port // empty')
+        sync_horizon=$(echo "$app_json" | jq -r '.horizon // empty')
+        if [[ "$sync_horizon" == "true" ]]; then
+            _supervisor_remove_program "$app" "${app}-worker-default" 2>/dev/null || true
+            _create_supervisor_horizon "$app" "$php_ver"
+        fi
+        if [[ -n "$sync_reverb" && -n "$sync_reverb_port" ]]; then
+            _create_supervisor_reverb "$app" "$php_ver" "$sync_reverb_port"
+        fi
+        reload_supervisor
+    fi
     success "Crontab"
 
     # 15. Deployer
@@ -759,10 +797,14 @@ _sync_update_app() {
     # 5. PHP version change
     if [[ "$php_ver" != "$cur_php" ]]; then
         step "PHP ${cur_php} → ${php_ver}..."
-        rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
-        _create_fpm_pool "$app" "$php_ver"
-        reload_php_fpm "$cur_php" 2>/dev/null || true
-        reload_php_fpm "$php_ver"
+        if [[ -n "$(app_get "$app" octane)" ]]; then
+            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf" 2>/dev/null || true
+        else
+            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
+            _create_fpm_pool "$app" "$php_ver"
+            reload_php_fpm "$cur_php" 2>/dev/null || true
+            reload_php_fpm "$php_ver"
+        fi
         sed -i "s|/usr/bin/php[0-9]\.[0-9]|/usr/bin/php${php_ver}|g" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null
         reload_supervisor
         crontab -u "$app" -l 2>/dev/null | sed "s|php${cur_php}|php${php_ver}|g" | crontab -u "$app" -
@@ -782,8 +824,9 @@ _sync_update_app() {
     local app_json; app_json=$(jq --arg a "$app" '.[$a]' "${dir}/config/apps.json")
     app_save "$app" "$app_json"
 
-    # 7. Regenerate nginx vhost (picks up alias changes)
+    # 7. Regenerate nginx vhost (picks up alias changes / Octane proxy)
     step "Nginx..."
+    [[ -n "$(app_get "$app" octane)" ]] && _ensure_nginx_octane_map
     _create_nginx_vhost "$app" "$domain" "$php_ver"
     ln -sf "/etc/nginx/sites-available/${app}" "/etc/nginx/sites-enabled/${app}"
     reload_nginx

@@ -16,7 +16,7 @@ No panel, no bloat — so you can focus on what you love: building your applicat
 
 ## What is Cipi?
 
-Cipi turns any Ubuntu VPS into a **multi-app PHP hosting platform** — Laravel by default, with full isolation, zero-downtime deploys, SSL, queue workers, and S3 backups — all managed from a single CLI. Use **`--custom`** for simple sites: classic deploy (no releases/shared), configurable docroot and Nginx (try_files, entry point), no DB or cron.
+Cipi turns any Ubuntu VPS into a **multi-app PHP hosting platform** — Laravel by default (PHP-FPM or optional **Octane/FrankenPHP**), with full isolation, zero-downtime deploys, SSL, queue workers, and S3 backups — all managed from a single CLI. Use **`--custom`** for simple sites: classic deploy (no releases/shared), configurable docroot and Nginx (try_files, entry point), no DB or cron.
 
 No web panel. No bloat. No sleepless nights fighting Nginx configs or PHP-FPM pools.  
 Just SSH and the `cipi` command.
@@ -43,6 +43,7 @@ wget -O - https://cipi.sh/setup.sh | bash
 cipi app create
 # username, domain, git repo, branch, PHP version
 # → Laravel: user, DB, Nginx, workers, cron, webhook
+# → Laravel Octane: cipi app create --octane
 # → Custom: user, Nginx, PHP-FPM; Git optional (empty = SFTP-only to ~/htdocs)
 ```
 
@@ -59,18 +60,20 @@ That's it. Your Laravel app is live.
 
 ## Stack
 
-Every app gets a fully isolated environment. **Laravel** (default): zero-downtime deploy, DB, workers, cron, webhook. **`--custom`**: classic deploy into `htdocs`, configurable docroot only; Nginx uses `index index.html index.php`, `try_files $uri $uri/ /index.php?$args`, `error_page 404 /404.html`. No DB, no .env, no cron, no workers.
+Every app gets a fully isolated environment. **Laravel** (default): zero-downtime deploy, DB, workers, cron, webhook — optionally **Octane (FrankenPHP)** instead of PHP-FPM. **`--custom`**: classic deploy into `htdocs`, configurable docroot only; Nginx uses `index index.html index.php`, `try_files $uri $uri/ /index.php?$args`, `error_page 404 /404.html`. No DB, no .env, no cron, no workers.
 
-| Component          | Details                                                                             |
-| ------------------ | ----------------------------------------------------------------------------------- |
-| **Web server**     | Nginx reverse proxy with per-app virtual hosts, optimized for Laravel               |
-| **PHP & Composer** | Selectable per app — PHP 7.4 to 8.5, hot-swappable                                  |
-| **Database**       | MariaDB, auto-tuned to RAM, dedicated DB and user per Laravel app                   |
-| **Queue workers**  | Supervisor with per-app pools (Laravel) — add, scale, monitor                       |
-| **Deployments**    | Deployer — Laravel: atomic symlink, 5 releases, rollback; Custom: clone into htdocs |
-| **SSL**            | Let's Encrypt via Certbot with SAN support and auto-renewal                         |
-| **Security**       | Fail2ban + UFW, per-app Linux user + PHP-FPM pool + SSH key                         |
-| **Backups**        | Automated DB and storage dumps to S3 or any compatible provider                     |
+| Component          | Details                                                                                                      |
+| ------------------ | ------------------------------------------------------------------------------------------------------------ |
+| **Web server**     | Nginx reverse proxy with per-app virtual hosts — PHP-FPM or Octane (`proxy_pass`), optimized for Laravel     |
+| **PHP & Composer** | Selectable per app — PHP 7.4 to 8.5, hot-swappable                                                           |
+| **Runtime**        | PHP-FPM pools by default; optional **Laravel Octane (FrankenPHP)** per app (`--octane`)                      |
+| **Database**       | MariaDB (default) + optional PostgreSQL; dedicated DB and user per Laravel app                               |
+| **Queue workers**  | Supervisor with per-app pools — `queue:work` or **Horizon**; optional **Reverb** for WebSockets              |
+| **Deployments**    | Deployer — Laravel: atomic symlink, 5 releases, rollback, optional Node build; Custom: clone into htdocs     |
+| **SSL**            | Let's Encrypt via Certbot — HTTP-01 by default; optional **DNS-01 (Cloudflare)** + wildcards                 |
+| **Security**       | Fail2ban + UFW, per-app Linux user + PHP-FPM/Octane + SSH key                                                |
+| **Healthchecks**   | HTTP probes every 5 minutes with failure alerts                                                              |
+| **Backups**        | Automated DB and storage dumps to S3 or any compatible provider; optional pre-deploy DB snapshots            |
 
 ---
 
@@ -78,11 +81,34 @@ Every app gets a fully isolated environment. **Laravel** (default): zero-downtim
 
 ### 🔒 Security & Isolation by Design
 
-Each app runs under its own Linux user with an isolated filesystem, PHP-FPM pool, and database. A compromise in one app cannot touch the others. Configs are encrypted at rest with AES-256 (Vault). GDPR-compliant log rotation included.
+Each app runs under its own Linux user with an isolated filesystem, PHP-FPM pool (or Octane process), and database. A compromise in one app cannot touch the others. Configs are encrypted at rest with AES-256 (Vault). GDPR-compliant log rotation included. Per-app **resource limits** (`cipi app limits`) cap FPM children, memory, Octane workers, and queue processes.
 
 ### ⚡ Zero-Downtime Deploys
 
-Deployer clones your repo, runs `composer install`, links storage, runs migrations, and swaps the symlink atomically. Roll back to any of the last 5 releases instantly.
+Deployer clones your repo, runs `composer install`, links storage, runs migrations, and swaps the symlink atomically. Optional **Node build** on deploy (`cipi app edit --node-build=…`). Roll back to any of the last 5 releases instantly. Opt-in **pre-deploy DB snapshot** (`cipi deploy --snapshot`).
+
+### 🚀 Laravel Octane (FrankenPHP)
+
+Serve Laravel via Octane instead of PHP-FPM — same server, side by side with classic apps:
+
+```bash
+cipi app create --octane
+cipi app convert myapp --to=octane   # or --to=fpm
+```
+
+Nginx proxies to a localhost Octane port; Supervisor runs `${app}-octane`. Requires `laravel/octane` in the app repo (starts after the first successful deploy).
+
+### 📡 Reverb, Horizon & Scheduler
+
+First-class Laravel extras, all CLI-managed:
+
+```bash
+cipi app reverb enable myapp
+cipi worker horizon enable myapp
+cipi schedule on myapp
+```
+
+Reverb gets a localhost port, Supervisor program, and Nginx `/app` WebSocket proxy. Horizon is mutually exclusive with `queue:work` workers. Scheduler toggles the crontab `schedule:run` entry.
 
 ### 🔗 Webhook Auto-Deploy
 
@@ -90,11 +116,21 @@ Native GitHub and GitLab integration — deploy keys and webhooks configured aut
 
 ### 📦 App Types
 
-**Laravel** (default) — zero-downtime deploy with releases, shared storage, workers, scheduler, webhook. **`--custom`** — for simple sites (e.g. WordPress, static+PHP): classic deploy into `htdocs` (no current/shared), choose docroot only (e.g. `/`, `www`, `dist`). Nginx: `index index.html index.php`, `try_files $uri $uri/ /index.php?$args`, `error_page 404 /404.html`. No DB, no .env, no cron, no workers, no webhook — just Nginx, PHP-FPM, and deploy key.
+**Laravel** (default) — zero-downtime deploy with releases, shared storage, workers, scheduler, webhook; add **`--octane`** for FrankenPHP. **`--custom`** — for simple sites (e.g. WordPress, static+PHP): classic deploy into `htdocs` (no current/shared), choose docroot only (e.g. `/`, `www`, `dist`). Nginx: `index index.html index.php`, `try_files $uri $uri/ /index.php?$args`, `error_page 404 /404.html`. No DB, no .env, no cron, no workers, no webhook — just Nginx, PHP-FPM, and deploy key.
 
-### 🌐 Aliases & SSL
+Clone an app for staging with **`cipi app clone <src> --domain=…`**.
 
-Add multiple domains or subdomains to any app. A single SAN certificate covers all of them. Auto-renew handles the rest.
+### 🌐 Aliases, www & SSL
+
+Add multiple domains or subdomains to any app. Manage www/apex aliases and canonical redirects with **`cipi www`**. A single SAN certificate covers all of them — HTTP-01 by default, or **DNS-01 via Cloudflare** for wildcards (`cipi ssl install --dns=cloudflare --wildcard`). Auto-renew handles the rest.
+
+### ❤️ HTTP Healthchecks
+
+Point Cipi at an HTTP endpoint; it probes every 5 minutes and alerts after consecutive failures:
+
+```bash
+cipi health set myapp --url=https://example.com/up --expect=200
+```
 
 ### 🤖 AI Agent Ready (MCP)
 

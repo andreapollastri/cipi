@@ -870,10 +870,22 @@ install_cipi() {
     cp cipi-install/lib/cipi-read-app-logs.sh /usr/local/bin/cipi-read-app-logs
     chmod 755 /usr/local/bin/cipi-read-app-logs
 
+    # HTTP healthcheck cron helper
+    cp cipi-install/lib/cipi-health-check.sh /usr/local/bin/cipi-health-check
+    chmod 700 /usr/local/bin/cipi-health-check
+    mkdir -p /var/log/cipi/health
+    if [ ! -f /etc/cron.d/cipi-health ]; then
+        cat > /etc/cron.d/cipi-health <<'EOF'
+# Cipi app HTTP healthchecks (every 5 minutes)
+*/5 * * * * root /usr/local/bin/cipi-health-check >/dev/null 2>&1
+EOF
+        chmod 644 /etc/cron.d/cipi-health
+    fi
+
     # Templates (if any)
     cp cipi-install/templates/* /opt/cipi/templates/ 2>/dev/null || true
 
-    chown -R root:root /usr/local/bin/cipi /usr/local/bin/cipi-worker /usr/local/bin/cipi-cron-notify /usr/local/bin/cipi-auth-notify /usr/local/bin/cipi-app-notify /usr/local/bin/cipi-read-app-logs /opt/cipi
+    chown -R root:root /usr/local/bin/cipi /usr/local/bin/cipi-worker /usr/local/bin/cipi-cron-notify /usr/local/bin/cipi-auth-notify /usr/local/bin/cipi-app-notify /usr/local/bin/cipi-read-app-logs /usr/local/bin/cipi-health-check /opt/cipi
 
     # Generate vault key for config encryption
     if [ ! -f /etc/cipi/.vault_key ]; then

@@ -23,7 +23,7 @@ _deploy_assert_php_compat() {
 
 deploy_command() {
     local app="${1:-}"; shift||true
-    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--key|--webhook]"; exit 1; }
+    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--key|--webhook|--snapshot|--snapshot-required]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     parse_args "$@"
 
@@ -35,6 +35,47 @@ deploy_command() {
     elif [[ -n "${ARG_trust_host:-}" ]];             then _deploy_trust_host "$app" "${ARG_trust_host}"
     else _deploy_run "$app"
     fi
+}
+
+# Pre-deploy DB snapshot (root/vault only). Opt-in via apps.json or --snapshot.
+_deploy_predeploy_snapshot() {
+    local app="$1"
+    local want="${ARG_snapshot:-}"
+    local required="${ARG_snapshot_required:-}"
+    [[ "$(app_get "$app" predeploy_snapshot)" == "true" ]] && want="true"
+    [[ "$want" != "true" && "$required" != "true" ]] && return 0
+    [[ "$(app_get "$app" custom)" == "true" ]] && return 0
+
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/db.sh"
+    local eng
+    eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
+    eng=$(db_normalize_engine "$eng" 2>/dev/null || echo "mariadb")
+    if ! db_engine_is_installed "$eng"; then
+        warn "Pre-deploy snapshot skipped — engine ${eng} not installed"
+        [[ "$required" == "true" ]] && { error "Snapshot required but engine missing"; return 1; }
+        return 0
+    fi
+
+    mkdir -p "${CIPI_LOG}/backups"
+    local dump="${CIPI_LOG}/backups/${eng}_${app}_predeploy_$(date +%Y%m%d_%H%M%S).sql.gz"
+    step "Pre-deploy DB snapshot → ${dump}..."
+    if db_dump_database "$eng" "$app" "$dump"; then
+        success "Snapshot saved: ${dump}"
+        echo "$dump" > "/tmp/cipi-predeploy-${app}.path" 2>/dev/null || true
+        return 0
+    fi
+
+    cipi_notify \
+        "Cipi pre-deploy snapshot failed: ${app} on $(hostname)" \
+        "Database dump before deploy failed.\n\nServer: $(hostname)\nApp: ${app}\nEngine: ${eng}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        deploy_snapshot_fail
+    if [[ "$required" == "true" ]]; then
+        error "Pre-deploy snapshot failed (required)"
+        return 1
+    fi
+    warn "Pre-deploy snapshot failed — continuing deploy"
+    return 0
 }
 
 _deploy_run() {
@@ -63,6 +104,10 @@ _deploy_run() {
     # Legacy per-file ACLs on laravel-*.log break deploy:writable chmod — strip before Deployer runs.
     ensure_app_logs_permissions "$app" || true
 
+    _deploy_predeploy_snapshot "$app" || exit 1
+    local snapshot_path=""
+    [[ -f "/tmp/cipi-predeploy-${app}.path" ]] && snapshot_path=$(cat "/tmp/cipi-predeploy-${app}.path" 2>/dev/null || true)
+
     info "Deploying '${app}'..."
     echo ""
     sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${df} 2>&1"
@@ -77,7 +122,11 @@ _deploy_run() {
             deploy_success
     else
         error "Deploy failed (exit $rc)"
-        warn "Rollback: cipi deploy ${app} --rollback"
+        warn "Rollback code: cipi deploy ${app} --rollback"
+        if [[ -n "$snapshot_path" && -f "$snapshot_path" ]]; then
+            warn "DB snapshot (not restored automatically): ${snapshot_path}"
+            warn "Restore: cipi db restore ${app} ${snapshot_path}"
+        fi
         log_action "DEPLOY FAIL: $app exit=$rc"
         cipi_notify \
             "Cipi deploy failed: ${app}" \

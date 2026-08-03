@@ -172,16 +172,20 @@ domain_is_used_by_other_app() {
 app_get() { vault_read apps.json | jq -r --arg a "$1" --arg k "$2" '.[$a][$k] // empty'; }
 
 # Generate apps-public.json: a plaintext projection of apps.json containing
-# only non-sensitive fields (domain, aliases, php, branch, repository, user,
-# created_at, suspended, basic_auth, www_redirect, force_https, custom, docroot, engine).
-# The encrypted apps.json keeps webhook tokens and git IDs safe.
+# only non-sensitive fields. Secrets (webhook tokens, git IDs, DNS tokens) stay encrypted.
 _update_apps_public() {
     [[ -f "${CIPI_CONFIG}/apps.json" ]] || return 0
     _cipi_config_writable || return 0
     local json
     json=$(vault_read apps.json) || return 0
     echo "$json" | jq '
-        with_entries(.value |= {domain, aliases, php, branch, repository, user, created_at, suspended, basic_auth, www_redirect, force_https, custom, docroot, engine})
+        with_entries(.value |= {
+            domain, aliases, php, branch, repository, user, created_at, suspended,
+            basic_auth, www_redirect, force_https, custom, docroot, engine,
+            octane, octane_port, reverb, reverb_port, horizon, schedule, node_build,
+            cloned_from, predeploy_snapshot, limits, health_url, health_expect,
+            ssl_dns_provider
+        })
     ' > "${CIPI_CONFIG}/apps-public.json" 2>/dev/null || return 0
     _cipi_safe_chmod 640 "${CIPI_CONFIG}/apps-public.json"
     chgrp cipi-api "${CIPI_CONFIG}/apps-public.json" 2>/dev/null || true
@@ -222,6 +226,82 @@ ensure_cipi_api_permissions() {
 app_set() {
     vault_read apps.json | jq --arg a "$1" --arg k "$2" --arg v "$3" '.[$a][$k] = $v' | vault_write apps.json
     ensure_apps_json_api_access
+}
+
+# Delete a key from an app entry (e.g. clear octane after convert to FPM).
+app_unset() {
+    vault_read apps.json | jq --arg a "$1" --arg k "$2" 'del(.[$a][$k])' | vault_write apps.json
+    ensure_apps_json_api_access
+}
+
+# Set a JSON value (object/array/bool/number) on an app entry.
+app_set_json() {
+    vault_read apps.json | jq --arg a "$1" --arg k "$2" --argjson v "$3" '.[$a][$k] = $v' | vault_write apps.json
+    ensure_apps_json_api_access
+}
+
+# Read a numeric/string limit from apps.json .limits.<key>, with default + hard cap.
+# Usage: _app_limit <app> <key> <default> [max]
+_app_limit() {
+    local app="$1" key="$2" default="$3" max="${4:-}"
+    local val
+    val=$(vault_read apps.json | jq -r --arg a "$app" --arg k "$key" \
+        '.[$a].limits[$k] // empty' 2>/dev/null || true)
+    [[ -z "$val" || "$val" == "null" ]] && val="$default"
+    if [[ -n "$max" && "$val" =~ ^[0-9]+$ && "$max" =~ ^[0-9]+$ ]]; then
+        (( val > max )) && val="$max"
+    fi
+    echo "$val"
+}
+
+# Remove a [program:…] block from an app's supervisor conf.
+_supervisor_remove_program() {
+    local app="$1" prog="$2"
+    local conf="/etc/supervisor/conf.d/${app}.conf"
+    [[ -f "$conf" ]] || return 0
+    local tmp; tmp=$(mktemp)
+    awk -v p="[program:${prog}]" '$0==p{s=1;next}/^\[program:/{s=0}!s' "$conf" >"$tmp"
+    mv "$tmp" "$conf"
+    [[ ! -s "$conf" ]] && rm -f "$conf"
+}
+
+# Validate node build command (fail-closed). Allows npm/npx/yarn/pnpm/bun/node only.
+_validate_node_build_cmd() {
+    local cmd="$1"
+    [[ -z "$cmd" ]] && return 0
+    [[ ${#cmd} -gt 200 ]] && return 1
+    # Reject shell metacharacters that enable injection
+    [[ "$cmd" == *'|'* || "$cmd" == *'<'* || "$cmd" == *'>'* ]] && return 1
+    [[ "$cmd" == *'`'* || "$cmd" == *'$('* ]] && return 1
+    # Allow alnum, spaces, &&, ;, quotes, and common npm path chars
+    if ! printf '%s' "$cmd" | grep -Eq '^[a-zA-Z0-9_./= :&;'\''"-]+$'; then
+        return 1
+    fi
+    case "$cmd" in
+        npm|npm\ *|npx|npx\ *|yarn|yarn\ *|pnpm|pnpm\ *|bun|bun\ *|node|node\ *) return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Write /home/<app>/.deployer/node-build.sh from apps.json node_build (or remove it).
+_sync_node_build_script() {
+    local app="$1"
+    local cmd home
+    cmd=$(app_get "$app" node_build)
+    home="/home/${app}"
+    mkdir -p "${home}/.deployer"
+    if [[ -z "$cmd" ]]; then
+        rm -f "${home}/.deployer/node-build.sh"
+        return 0
+    fi
+    cat > "${home}/.deployer/node-build.sh" <<EOF
+#!/bin/bash
+set -euo pipefail
+cd "\${1:-\$(pwd)}"
+${cmd}
+EOF
+    chown "${app}:${app}" "${home}/.deployer/node-build.sh"
+    chmod 750 "${home}/.deployer/node-build.sh"
 }
 
 app_save() {
@@ -406,7 +486,8 @@ ensure_app_logs_permissions() {
 }
 
 _create_supervisor_worker() {
-    local app="$1" v="$2" queue="${3:-default}" procs="${4:-1}" tries="${5:-3}" timeout="${6:-3600}"
+    local app="$1" v="$2" queue="${3:-default}" procs="${4:-}" tries="${5:-3}" timeout="${6:-3600}"
+    [[ -z "$procs" ]] && procs=$(_app_limit "$app" worker_procs 1 20)
     cat >> "/etc/supervisor/conf.d/${app}.conf" <<EOF
 [program:${app}-worker-${queue}]
 process_name=%(program_name)s_%(process_num)02d
@@ -423,6 +504,141 @@ redirect_stderr=true
 stdout_logfile=/home/${app}/logs/worker-${queue}.log
 stdout_logfile_maxbytes=10MB
 stopwaitsecs=${timeout}
+EOF
+}
+
+# Normalize --octane / --octane=frankenphp → "frankenphp" or "".
+# Returns 0 and prints value; returns 1 on unsupported server.
+_normalize_octane_arg() {
+    local v="${1:-}"
+    case "$v" in
+        ""|false|0|no|off) echo ""; return 0 ;;
+        true|1|yes|on|frankenphp) echo "frankenphp"; return 0 ;;
+        *) return 1 ;;
+    esac
+}
+
+# Allocate a free localhost port in [lo, hi], skipping ports listed by jq_expr on apps.json.
+_allocate_localhost_port() {
+    local lo="$1" hi="$2" jq_expr="$3"
+    local used p
+    used=$(vault_read apps.json 2>/dev/null | jq -r "$jq_expr" 2>/dev/null || true)
+    for p in $(seq "$lo" "$hi"); do
+        if echo "$used" | grep -qx "$p"; then
+            continue
+        fi
+        if command -v ss &>/dev/null; then
+            if ss -ltn 2>/dev/null | grep -qE ":${p}\\s"; then
+                continue
+            fi
+        elif command -v lsof &>/dev/null; then
+            if lsof -iTCP:"$p" -sTCP:LISTEN &>/dev/null; then
+                continue
+            fi
+        fi
+        echo "$p"
+        return 0
+    done
+    return 1
+}
+
+# Allocate a free localhost port for Octane (8100–8999).
+_octane_allocate_port() {
+    _allocate_localhost_port 8100 8999 '.[].octane_port // empty'
+}
+
+# Allocate a free localhost port for Reverb (9000–9099).
+_reverb_allocate_port() {
+    _allocate_localhost_port 9000 9099 '.[].reverb_port // empty'
+}
+
+# Supervisor program for Laravel Octane (FrankenPHP). Same conf file as queue workers
+# so cipi-worker stop/restart covers Octane on deploy.
+_create_supervisor_octane() {
+    local app="$1" v="$2" port="$3"
+    local workers
+    workers=$(_app_limit "$app" octane_workers 2 16)
+    cat >> "/etc/supervisor/conf.d/${app}.conf" <<EOF
+[program:${app}-octane]
+process_name=%(program_name)s
+command=/usr/bin/php${v} /home/${app}/current/artisan octane:start --server=frankenphp --host=127.0.0.1 --port=${port} --workers=${workers} --max-requests=500
+autostart=true
+autorestart=true
+startretries=10
+startsecs=3
+stopasgroup=true
+killasgroup=true
+user=${app}
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/home/${app}/logs/octane.log
+stdout_logfile_maxbytes=10MB
+stopwaitsecs=3600
+EOF
+}
+
+# Supervisor program for Laravel Reverb (WebSockets).
+_create_supervisor_reverb() {
+    local app="$1" v="$2" port="$3"
+    cat >> "/etc/supervisor/conf.d/${app}.conf" <<EOF
+[program:${app}-reverb]
+process_name=%(program_name)s
+command=/usr/bin/php${v} /home/${app}/current/artisan reverb:start --host=127.0.0.1 --port=${port}
+autostart=true
+autorestart=true
+startretries=10
+startsecs=3
+stopasgroup=true
+killasgroup=true
+user=${app}
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/home/${app}/logs/reverb.log
+stdout_logfile_maxbytes=10MB
+stopwaitsecs=3600
+EOF
+}
+
+# Supervisor program for Laravel Horizon (mutually exclusive with queue:work workers).
+_create_supervisor_horizon() {
+    local app="$1" v="$2"
+    cat >> "/etc/supervisor/conf.d/${app}.conf" <<EOF
+[program:${app}-horizon]
+process_name=%(program_name)s
+command=/usr/bin/php${v} /home/${app}/current/artisan horizon
+autostart=true
+autorestart=true
+startretries=10
+startsecs=3
+stopasgroup=true
+killasgroup=true
+user=${app}
+numprocs=1
+redirect_stderr=true
+stdout_logfile=/home/${app}/logs/horizon.log
+stdout_logfile_maxbytes=10MB
+stopwaitsecs=3600
+EOF
+}
+
+# Ensure map $http_upgrade $connection_upgrade exists (needed for Octane proxy).
+# Prefer conf.d snippet on existing servers so we never patch nginx.conf with sed.
+_ensure_nginx_octane_map() {
+    local snippet="/etc/nginx/conf.d/cipi-octane-map.conf"
+    if grep -qE 'map\s+\$http_upgrade\s+\$connection_upgrade' /etc/nginx/nginx.conf 2>/dev/null; then
+        # Avoid duplicate map when the main template already defines it
+        rm -f "$snippet" 2>/dev/null || true
+        return 0
+    fi
+    if [[ -f "$snippet" ]] && grep -qE 'map\s+\$http_upgrade\s+\$connection_upgrade' "$snippet" 2>/dev/null; then
+        return 0
+    fi
+    mkdir -p /etc/nginx/conf.d 2>/dev/null || true
+    cat > "$snippet" <<'EOF'
+map $http_upgrade $connection_upgrade {
+    default upgrade;
+    ''      close;
+}
 EOF
 }
 

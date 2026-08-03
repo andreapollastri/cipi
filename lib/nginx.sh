@@ -81,6 +81,11 @@ http {
 
     limit_req_zone \$binary_remote_addr zone=global:10m rate=30r/s;
 
+    map \$http_upgrade \$connection_upgrade {
+        default upgrade;
+        ''      close;
+    }
+
     include /etc/nginx/conf.d/*.conf;
     include /etc/nginx/sites-enabled/*;
 }

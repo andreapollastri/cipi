@@ -11,6 +11,10 @@ write_cipi_api_sudoers() {
 www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi app edit *, \
                                /usr/local/bin/cipi app delete *, \
+                               /usr/local/bin/cipi app convert *, \
+                               /usr/local/bin/cipi app clone *, \
+                               /usr/local/bin/cipi app reverb *, \
+                               /usr/local/bin/cipi app limits *, \
                                /usr/local/bin/cipi app logs read *, \
                                /usr/local/bin/cipi app suspend *, \
                                /usr/local/bin/cipi app unsuspend *, \
@@ -18,6 +22,9 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi basicauth disable *, \
                                /usr/local/bin/cipi basicauth status *, \
                                /usr/local/bin/cipi deploy *, \
+                               /usr/local/bin/cipi worker horizon *, \
+                               /usr/local/bin/cipi schedule *, \
+                               /usr/local/bin/cipi health *, \
                                /usr/local/bin/cipi alias add *, \
                                /usr/local/bin/cipi alias remove *, \
                                /usr/local/bin/cipi www add *, \
@@ -27,6 +34,7 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi www status *, \
                                /usr/local/bin/cipi ssl install *, \
                                /usr/local/bin/cipi ssl force *, \
+                               /usr/local/bin/cipi ssl dns *, \
                                /usr/local/bin/cipi db list, \
                                /usr/local/bin/cipi db list *, \
                                /usr/local/bin/cipi db engines, \

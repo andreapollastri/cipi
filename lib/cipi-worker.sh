@@ -14,7 +14,8 @@ _restart_workers() {
     supervisorctl reread 2>/dev/null || true
     supervisorctl update 2>/dev/null || true
     for group in $(grep '^\[program:' "$conf" 2>/dev/null | sed 's/\[program://;s/\]//'); do
-        supervisorctl restart "${group}:*" 2>/dev/null || true
+        supervisorctl restart "${group}:*" 2>/dev/null || \
+            supervisorctl restart "${group}" 2>/dev/null || true
     done
 }
 
@@ -22,13 +23,25 @@ _stop_workers() {
     local conf="/etc/supervisor/conf.d/${APP}.conf"
     [[ ! -f "$conf" ]] && return 0
     for group in $(grep '^\[program:' "$conf" 2>/dev/null | sed 's/\[program://;s/\]//'); do
-        supervisorctl stop "${group}:*" 2>/dev/null || true
+        supervisorctl stop "${group}:*" 2>/dev/null || \
+            supervisorctl stop "${group}" 2>/dev/null || true
     done
 }
 
 case "$ACTION" in
     restart) _restart_workers ;;
     stop)    _stop_workers ;;
-    status)  supervisorctl status "${APP}-worker-"* 2>/dev/null || echo "No workers" ;;
+    status)
+        supervisorctl status "${APP}-worker-"* 2>/dev/null || true
+        supervisorctl status "${APP}-octane" 2>/dev/null || true
+        supervisorctl status "${APP}-reverb" 2>/dev/null || true
+        supervisorctl status "${APP}-horizon" 2>/dev/null || true
+        if ! supervisorctl status "${APP}-worker-"* &>/dev/null \
+           && ! supervisorctl status "${APP}-octane" &>/dev/null \
+           && ! supervisorctl status "${APP}-reverb" &>/dev/null \
+           && ! supervisorctl status "${APP}-horizon" &>/dev/null; then
+            echo "No workers"
+        fi
+        ;;
     *) echo "Use: restart|stop|status"; exit 1 ;;
 esac

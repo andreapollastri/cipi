@@ -12,14 +12,99 @@ worker_command() {
         stop)    _worker_stop "$@" ;;
         restart) _worker_restart "$@" ;;
         edit)    _worker_edit "$@" ;;
-        *) error "Use: add list remove stop restart edit"; exit 1 ;;
+        horizon) _worker_horizon "$@" ;;
+        *) error "Use: add list remove stop restart edit horizon"; exit 1 ;;
     esac
+}
+
+_worker_horizon() {
+    local action="${1:-}"; shift || true
+    case "$action" in
+        enable)  _horizon_enable "$@" ;;
+        disable) _horizon_disable "$@" ;;
+        status)  _horizon_status "$@" ;;
+        *) error "Usage: cipi worker horizon enable|disable|status <app>"; exit 1 ;;
+    esac
+}
+
+_horizon_enable() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi worker horizon enable <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+    [[ "$(app_get "$app" custom)" == "true" ]] && { error "Horizon is only for Laravel apps"; exit 1; }
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        info "Horizon already enabled for '${app}'"
+        return 0
+    fi
+
+    local php_ver conf
+    php_ver=$(app_get "$app" php)
+    conf="/etc/supervisor/conf.d/${app}.conf"
+    [[ -f "$conf" ]] || echo "" > "$conf"
+
+    step "Enabling Horizon for '${app}' (replaces queue:work workers)..."
+    # Stop and remove all queue:work programs
+    local prog
+    for prog in $(grep '^\[program:' "$conf" 2>/dev/null | sed 's/\[program://;s/\]//' | grep -- "-worker-" || true); do
+        supervisorctl stop "${prog}:"* 2>/dev/null || true
+        _supervisor_remove_program "$app" "$prog"
+    done
+    _supervisor_remove_program "$app" "${app}-horizon"
+    _create_supervisor_horizon "$app" "$php_ver"
+    # Keep octane/reverb programs intact (they are separate)
+    reload_supervisor
+    supervisorctl start "${app}-horizon" 2>/dev/null || true
+    app_set "$app" horizon "true"
+    log_action "HORIZON ENABLE: $app"
+    success "Horizon enabled for '${app}'"
+    info "Use QUEUE_CONNECTION=redis (Valkey) in .env. Require laravel/horizon in the app."
+}
+
+_horizon_disable() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi worker horizon disable <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+    if [[ "$(app_get "$app" horizon)" != "true" ]]; then
+        info "Horizon already disabled for '${app}'"
+        return 0
+    fi
+
+    local php_ver
+    php_ver=$(app_get "$app" php)
+    step "Disabling Horizon for '${app}'..."
+    supervisorctl stop "${app}-horizon" 2>/dev/null || true
+    _supervisor_remove_program "$app" "${app}-horizon"
+    # Restore default queue:work worker
+    if ! grep -q "\[program:${app}-worker-default\]" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null; then
+        [[ -f "/etc/supervisor/conf.d/${app}.conf" ]] || echo "" > "/etc/supervisor/conf.d/${app}.conf"
+        _create_supervisor_worker "$app" "$php_ver" "default"
+    fi
+    reload_supervisor
+    app_unset "$app" horizon
+    log_action "HORIZON DISABLE: $app"
+    success "Horizon disabled — default queue worker restored"
+}
+
+_horizon_status() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi worker horizon status <app>"; exit 1; }
+    app_exists "$app" || { error "Not found"; exit 1; }
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        echo -e "  Horizon: ${GREEN}enabled${NC}"
+        supervisorctl status "${app}-horizon" 2>/dev/null || true
+    else
+        echo -e "  Horizon: ${DIM}disabled${NC}"
+    fi
 }
 
 _worker_add() {
     local app="${1:-}"; shift||true
     [[ -z "$app" ]] && { error "Usage: cipi worker add <app> [--queue=Q] [--processes=N]"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        error "Horizon is enabled for '${app}'. Disable it first: cipi worker horizon disable ${app}"
+        exit 1
+    fi
     parse_args "$@"
     local queue="${ARG_queue:-}" procs="${ARG_processes:-1}" tries="${ARG_tries:-3}" timeout="${ARG_timeout:-3600}"
     [[ -z "$queue" ]] && read_input "Queue name" "" queue
@@ -44,12 +129,25 @@ _worker_list() {
     local conf="/etc/supervisor/conf.d/${app}.conf"
     [[ ! -f "$conf" ]] && { info "No workers"; return; }
     echo -e "\n${BOLD}Workers for '${app}'${NC}"
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        echo -e "  ${CYAN}Mode: Horizon${NC}"
+    fi
     printf "  ${BOLD}%-28s %-10s %-6s %s${NC}\n" "PROGRAM" "QUEUE" "PROCS" "STATUS"
     grep "^\[program:" "$conf" | sed 's/\[program://;s/\]//' | while read -r prog; do
-        local q; q=$(echo "$prog"|sed "s/${app}-worker-//")
-        local np; np=$(grep -A20 "\[program:${prog}\]" "$conf"|grep numprocs|head -1|cut -d= -f2)
-        local st; st=$(supervisorctl status "${prog}:*" 2>/dev/null|head -1|awk '{print $2}'||echo "?")
-        local c="${GREEN}"; [[ "$st" != "RUNNING" ]] && c="${RED}"
+        local q np st c
+        if [[ "$prog" == "${app}-horizon" ]]; then
+            q="horizon"
+        elif [[ "$prog" == "${app}-octane" ]]; then
+            q="octane"
+        elif [[ "$prog" == "${app}-reverb" ]]; then
+            q="reverb"
+        else
+            q=$(echo "$prog"|sed "s/${app}-worker-//")
+        fi
+        np=$(grep -A20 "\[program:${prog}\]" "$conf"|grep numprocs|head -1|cut -d= -f2)
+        st=$(supervisorctl status "${prog}:*" 2>/dev/null|head -1|awk '{print $2}'||echo "?")
+        [[ -z "$st" || "$st" == "?" ]] && st=$(supervisorctl status "${prog}" 2>/dev/null|awk '{print $2}'||echo "?")
+        c="${GREEN}"; [[ "$st" != "RUNNING" ]] && c="${RED}"
         printf "  %-28s %-10s %-6s ${c}%s${NC}\n" "$prog" "$q" "${np:-1}" "$st"
     done; echo ""
 }
@@ -58,14 +156,16 @@ _worker_remove() {
     local app="${1:-}"; shift||true
     [[ -z "$app" ]] && { error "Usage: cipi worker remove <app> <queue>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        error "Horizon is enabled. Use: cipi worker horizon disable ${app}"
+        exit 1
+    fi
     parse_args "$@"
     local queue="${ARG_queue:-${1:-}}"
     [[ -z "$queue" ]] && { error "Queue name required"; exit 1; }
     [[ "$queue" == "default" ]] && confirm "Remove default worker?" || { [[ "$queue" == "default" ]] && return; }
     supervisorctl stop "${app}-worker-${queue}:*" 2>/dev/null||true
-    local conf="/etc/supervisor/conf.d/${app}.conf" tmp; tmp=$(mktemp)
-    awk -v p="[program:${app}-worker-${queue}]" '$0==p{s=1;next}/^\[program:/{s=0}!s' "$conf">"$tmp"
-    mv "$tmp" "$conf"; [[ ! -s "$conf" ]] && rm -f "$conf"
+    _supervisor_remove_program "$app" "${app}-worker-${queue}"
     reload_supervisor
     log_action "WORKER REMOVE: $app queue=$queue"
     cipi_notify \
@@ -78,14 +178,22 @@ _worker_remove() {
 _worker_stop() {
     local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi worker stop <app>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
-    supervisorctl stop "${app}-worker-*" 2>/dev/null||true
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        supervisorctl stop "${app}-horizon" 2>/dev/null||true
+    else
+        supervisorctl stop "${app}-worker-*" 2>/dev/null||true
+    fi
     success "Workers stopped for '${app}'"
 }
 
 _worker_restart() {
     local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi worker restart <app>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
-    supervisorctl restart "${app}-worker-*" 2>/dev/null||true
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        supervisorctl restart "${app}-horizon" 2>/dev/null||true
+    else
+        supervisorctl restart "${app}-worker-*" 2>/dev/null||true
+    fi
     success "Workers restarted for '${app}'"
 }
 

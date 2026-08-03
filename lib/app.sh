@@ -13,10 +13,23 @@ app_create() {
     local branch="${ARG_branch:-main}" php_ver="${ARG_php:-8.5}"
     local is_custom="${ARG_custom:-false}"
     local db_engine="${ARG_engine:-}"
+    local octane_server="" octane_port=""
 
     # App type: laravel (default) or custom
     local app_type="laravel"
     [[ "$is_custom" == "true" ]] && app_type="custom"
+
+    # Optional Laravel Octane (FrankenPHP) — parallel to PHP-FPM apps
+    if [[ -n "${ARG_octane+x}" ]]; then
+        octane_server=$(_normalize_octane_arg "${ARG_octane}") || {
+            error "Invalid --octane value. Use: frankenphp (or --octane with no value)"
+            exit 1
+        }
+    fi
+    if [[ -n "$octane_server" && "$app_type" == "custom" ]]; then
+        error "Octane is only available for Laravel apps (not --custom)"
+        exit 1
+    fi
 
     # Interactive prompts for missing fields
     [[ -z "$app_user" ]]    && read_input "App username (lowercase, min 3 chars)" "" app_user
@@ -79,7 +92,14 @@ app_create() {
     id "$app_user" &>/dev/null     && { error "User '${app_user}' already exists"; exit 1; }
     domain_is_used_by_other_app "$domain" && { error "Domain '${domain}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
 
-    echo ""; info "Creating '${app_user}' (${app_type})..."; echo ""
+    if [[ -n "$octane_server" ]]; then
+        octane_port=$(_octane_allocate_port) || {
+            error "No free Octane port available in range 8100–8999"
+            exit 1
+        }
+    fi
+
+    echo ""; info "Creating '${app_user}' (${app_type}${octane_server:+, octane=${octane_server}})..."; echo ""
 
     local user_pass db_pass webhook_token app_key home
     user_pass=$(generate_password 40)
@@ -265,31 +285,30 @@ CIPI_WEBHOOK_TOKEN=${webhook_token}
 CIPI_APP_USER=${app_user}
 CIPI_PHP_VERSION=${php_ver}
 ENV
+        if [[ -n "$octane_server" ]]; then
+            cat >> "${home}/shared/.env" <<ENV
+
+OCTANE_SERVER=${octane_server}
+OCTANE_HTTPS=true
+ENV
+        fi
         chown "${app_user}:${app_user}" "${home}/shared/.env"
         chmod 640 "${home}/shared/.env"
         success ".env with DB + webhook"
     fi
 
-    # 6. PHP-FPM pool (Laravel and custom)
-    if [[ "$app_type" == "laravel" || "$app_type" == "custom" ]]; then
+    # 6. PHP-FPM pool (Laravel and custom) — skipped for Octane apps
+    if [[ -n "$octane_server" ]]; then
+        step "PHP-FPM pool..."
+        success "Skipped (Octane)"
+    elif [[ "$app_type" == "laravel" || "$app_type" == "custom" ]]; then
         step "PHP-FPM pool..."
         _create_fpm_pool "$app_user" "$php_ver"
         reload_php_fpm "$php_ver"
         success "PHP-FPM ${php_ver}"
     fi
 
-    # 7. Nginx vhost
-    step "Nginx vhost..."
-    if [[ "$app_type" == "custom" ]]; then
-        _create_nginx_vhost "$app_user" "$domain" "$php_ver" "" "custom" "$docroot"
-    else
-        _create_nginx_vhost "$app_user" "$domain" "$php_ver" ""
-    fi
-    ln -sf "/etc/nginx/sites-available/${app_user}" "/etc/nginx/sites-enabled/${app_user}"
-    reload_nginx
-    success "Nginx → ${domain}"
-
-    # 8. Save config early (so app is registered even if later steps fail)
+    # 7. Save config early (needed before nginx so Octane vhost reads octane_port)
     if [[ "$app_type" == "custom" ]]; then
         app_save "$app_user" "$(cat <<JSON
 {
@@ -305,6 +324,24 @@ ENV
 }
 JSON
 )"
+    elif [[ -n "$octane_server" ]]; then
+        app_save "$app_user" "$(cat <<JSON
+{
+    "user": "${app_user}",
+    "domain": "${domain}",
+    "aliases": [],
+    "repository": "${repository}",
+    "branch": "${branch}",
+    "php": "${php_ver}",
+    "engine": "${db_engine}",
+    "octane": "${octane_server}",
+    "octane_port": "${octane_port}",
+    "schedule": "on",
+    "webhook_token": "${webhook_token}",
+    "created_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
+}
+JSON
+)"
     else
         app_save "$app_user" "$(cat <<JSON
 {
@@ -315,6 +352,7 @@ JSON
     "branch": "${branch}",
     "php": "${php_ver}",
     "engine": "${db_engine}",
+    "schedule": "on",
     "webhook_token": "${webhook_token}",
     "created_at": "$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
 }
@@ -325,7 +363,7 @@ JSON
     if [[ -n "${GIT_PROVIDER:-}" ]]; then
         git_save_app_data "$app_user" "$GIT_PROVIDER" "${GIT_DEPLOY_KEY_ID:-}" "${GIT_WEBHOOK_ID:-}"
     fi
-    log_action "APP CREATED: $app_user domain=$domain php=$php_ver engine=${db_engine:-none}"
+    log_action "APP CREATED: $app_user domain=$domain php=$php_ver engine=${db_engine:-none} octane=${octane_server:-none}"
 
     # Email notification
     local _notify_repo _notify_branch
@@ -337,16 +375,36 @@ JSON
     fi
     cipi_notify \
         "Cipi app created: ${app_user} on $(hostname)" \
-        "A new app was created.\n\nServer: $(hostname)\nApp: ${app_user}\nDomain: ${domain}\nPHP: ${php_ver}\nBranch: ${_notify_branch}\nRepository: ${_notify_repo}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+        "A new app was created.\n\nServer: $(hostname)\nApp: ${app_user}\nDomain: ${domain}\nPHP: ${php_ver}\nBranch: ${_notify_branch}\nRepository: ${_notify_repo}\nOctane: ${octane_server:-no}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
         app_create
 
-    # 9. Supervisor (Laravel only)
+    # 8. Nginx vhost
+    step "Nginx vhost..."
+    if [[ -n "$octane_server" ]]; then
+        _ensure_nginx_octane_map
+    fi
+    if [[ "$app_type" == "custom" ]]; then
+        _create_nginx_vhost "$app_user" "$domain" "$php_ver" "" "custom" "$docroot"
+    else
+        _create_nginx_vhost "$app_user" "$domain" "$php_ver" ""
+    fi
+    ln -sf "/etc/nginx/sites-available/${app_user}" "/etc/nginx/sites-enabled/${app_user}"
+    reload_nginx
+    success "Nginx → ${domain}"
+
+    # 9. Supervisor (Laravel only; Octane program when enabled)
     step "Queue worker..."
     echo "" > "/etc/supervisor/conf.d/${app_user}.conf"
     if [[ "$app_type" == "laravel" ]]; then
         _create_supervisor_worker "$app_user" "$php_ver" "default"
-        reload_supervisor
-        success "Worker (default queue)"
+        if [[ -n "$octane_server" ]]; then
+            _create_supervisor_octane "$app_user" "$php_ver" "$octane_port"
+            reload_supervisor
+            success "Worker + Octane (:${octane_port})"
+        else
+            reload_supervisor
+            success "Worker (default queue)"
+        fi
     else
         reload_supervisor
         success "Skipped"
@@ -369,7 +427,11 @@ CRON
 
     # 11. Deployer config (dedicated template per app type)
     step "Deployer..."
-    _create_deployer_config_from_template "$app_type" "$app_user" "$repository" "$branch" "$php_ver"
+    if [[ -n "$octane_server" ]]; then
+        _create_deployer_config_from_template "laravel-octane" "$app_user" "$repository" "$branch" "$php_ver"
+    else
+        _create_deployer_config_from_template "$app_type" "$app_user" "$repository" "$branch" "$php_ver"
+    fi
     success "Deployer"
 
     # 12. Sudoers (worker restart only)
@@ -392,6 +454,11 @@ SUDO
     echo -e "  Domain:     ${CYAN}${domain}${NC}"
     echo -e "  IP:         ${CYAN}${server_ip}${NC}"
     echo -e "  PHP:        ${CYAN}${php_ver}${NC}"
+    if [[ -n "$octane_server" ]]; then
+        echo -e "  Runtime:    ${CYAN}Octane (${octane_server}) :${octane_port}${NC}"
+    else
+        echo -e "  Runtime:    ${CYAN}PHP-FPM${NC}"
+    fi
     echo -e "  Home:       ${CYAN}${home}${NC}"
     [[ "$app_type" == "custom" ]] && echo -e "  Docroot:    ${CYAN}/${docroot:-}${NC}"
     echo ""
@@ -438,9 +505,17 @@ SUDO
             fi
         fi
         echo ""
-        echo -e "  ${BOLD}Next:${NC} composer require cipi/agent  (in your Laravel project)"
-        echo -e "        cipi deploy ${app_user}"
-        echo -e "        cipi ssl install ${app_user}"
+        if [[ -n "$octane_server" ]]; then
+            echo -e "  ${BOLD}Next:${NC} composer require laravel/octane cipi/agent  (in your Laravel project)"
+            echo -e "        php artisan octane:install --server=frankenphp"
+            echo -e "        cipi deploy ${app_user}"
+            echo -e "        cipi ssl install ${app_user}"
+            echo -e "  ${DIM}Octane starts after the first successful deploy (Supervisor).${NC}"
+        else
+            echo -e "  ${BOLD}Next:${NC} composer require cipi/agent  (in your Laravel project)"
+            echo -e "        cipi deploy ${app_user}"
+            echo -e "        cipi ssl install ${app_user}"
+        fi
     fi
     echo ""
     echo -e "  ${YELLOW}${BOLD}⚠ SAVE THESE CREDENTIALS — shown only once${NC}"
@@ -454,15 +529,20 @@ app_list() {
     if [[ $(echo "$_aj" | jq 'length') -eq 0 ]]; then
         info "No apps. Create one: cipi app create"; return
     fi
-    printf "\n${BOLD}%-14s %-28s %-6s %s${NC}\n" "APP" "DOMAIN" "PHP" "CREATED"
-    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-    echo "$_aj" | jq -r 'to_entries[]|"\(.key)\t\(.value.domain)\t\(.value.php)\t\(.value.created_at)\t\(.value.suspended // "false")"' \
-        | while IFS=$'\t' read -r a d p c s; do
+    printf "\n${BOLD}%-14s %-28s %-6s %-10s %s${NC}\n" "APP" "DOMAIN" "PHP" "RUNTIME" "CREATED"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo "$_aj" | jq -r 'to_entries[]|"\(.key)\t\(.value.domain)\t\(.value.php)\t\(.value.created_at)\t\(.value.suspended // "false")\t\(.value.octane // "")"' \
+        | while IFS=$'\t' read -r a d p c s o; do
         local st="${GREEN}●${NC}"
-        systemctl is-active --quiet "php${p}-fpm" 2>/dev/null || st="${RED}●${NC}"
+        if [[ -n "$o" ]]; then
+            supervisorctl status "${a}-octane" 2>/dev/null | grep -q RUNNING || st="${RED}●${NC}"
+        else
+            systemctl is-active --quiet "php${p}-fpm" 2>/dev/null || st="${RED}●${NC}"
+        fi
         [[ "$s" == "true" ]] && st="${YELLOW}●${NC}"
         local suffix=""; [[ "$s" == "true" ]] && suffix=" ${YELLOW}(suspended)${NC}"
-        printf "  ${st} %-12s %-28s %-6s %s${suffix}\n" "$a" "$d" "$p" "${c:0:10}"
+        local runtime="fpm"; [[ -n "$o" ]] && runtime="octane"
+        printf "  ${st} %-12s %-28s %-6s %-10s %s${suffix}\n" "$a" "$d" "$p" "$runtime" "${c:0:10}"
     done; echo ""
 }
 
@@ -498,9 +578,29 @@ app_show() {
     printf "  %-14s ${CYAN}%s${NC}\n" "Repository" "$repo"
     printf "  %-14s ${CYAN}%s${NC}\n" "Branch" "$b"
     printf "  %-14s ${CYAN}%s${NC}\n" "PHP" "$p"
+    local octane_show octane_port_show
+    octane_show=$(app_get "$app" octane)
+    octane_port_show=$(app_get "$app" octane_port)
+    if [[ -n "$octane_show" ]]; then
+        printf "  %-14s ${CYAN}%s${NC} ${DIM}(127.0.0.1:%s)${NC}\n" "Runtime" "Octane (${octane_show})" "${octane_port_show:-?}"
+    else
+        printf "  %-14s ${CYAN}%s${NC}\n" "Runtime" "PHP-FPM"
+    fi
     if [[ "$is_custom" != "true" ]]; then
         local eng; eng=$(app_get "$app" engine); [[ -z "$eng" ]] && eng="mariadb"
         printf "  %-14s ${CYAN}%s${NC}\n" "DB engine" "$eng"
+        local sch; sch=$(app_get "$app" schedule); [[ -z "$sch" ]] && sch="on"
+        printf "  %-14s ${CYAN}%s${NC}\n" "Schedule" "$sch"
+        [[ "$(app_get "$app" horizon)" == "true" ]] && printf "  %-14s ${CYAN}%s${NC}\n" "Queue" "Horizon"
+        local rev; rev=$(app_get "$app" reverb)
+        [[ -n "$rev" ]] && printf "  %-14s ${CYAN}%s${NC} ${DIM}(127.0.0.1:%s)${NC}\n" "Reverb" "enabled" "$(app_get "$app" reverb_port)"
+        local nb; nb=$(app_get "$app" node_build)
+        [[ -n "$nb" ]] && printf "  %-14s ${CYAN}%s${NC}\n" "Node build" "$nb"
+        [[ "$(app_get "$app" predeploy_snapshot)" == "true" ]] && printf "  %-14s ${CYAN}%s${NC}\n" "DB snapshot" "pre-deploy on"
+        local hu; hu=$(app_get "$app" health_url)
+        [[ -n "$hu" ]] && printf "  %-14s ${CYAN}%s${NC} ${DIM}(expect %s)${NC}\n" "Health" "$hu" "$(app_get "$app" health_expect)"
+        local cloned; cloned=$(app_get "$app" cloned_from)
+        [[ -n "$cloned" ]] && printf "  %-14s ${CYAN}%s${NC}\n" "Cloned from" "$cloned"
     fi
     printf "  %-14s ${CYAN}%s${NC}\n" "Created" "$ca"
     if [[ "$(app_get "$app" suspended)" == "true" ]]; then
@@ -535,6 +635,24 @@ app_show() {
         echo "$workers" | sed 's/^/  /'
     else
         echo "  none"
+    fi
+    if [[ -n "$octane_show" ]]; then
+        echo -e "\n  ${BOLD}Octane${NC}"
+        local octane_st
+        octane_st=$(supervisorctl status "${app}-octane" 2>/dev/null || true)
+        if [[ -n "$octane_st" ]]; then
+            echo "$octane_st" | sed 's/^/  /'
+        else
+            echo "  not configured"
+        fi
+    fi
+    if [[ -n "$(app_get "$app" reverb)" ]]; then
+        echo -e "\n  ${BOLD}Reverb${NC}"
+        supervisorctl status "${app}-reverb" 2>/dev/null | sed 's/^/  /' || echo "  not running"
+    fi
+    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+        echo -e "\n  ${BOLD}Horizon${NC}"
+        supervisorctl status "${app}-horizon" 2>/dev/null | sed 's/^/  /' || echo "  not running"
     fi
     echo ""
 }
@@ -601,7 +719,7 @@ _app_change_domain() {
 
 app_edit() {
     local app="${1:-}"; shift || true
-    [[ -z "$app" ]] && { error "Usage: cipi app edit <app> [--domain=D] [--php=X.Y] [--branch=B] [--repository=URL]"; exit 1; }
+    [[ -z "$app" ]] && { error "Usage: cipi app edit <app> [--domain=D] [--php=X.Y] [--branch=B] [--repository=URL] [--node-build=CMD|--no-node-build] [--predeploy-snapshot|--no-predeploy-snapshot]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     parse_args "$@"
     local changed=false cur_php domain_change_from=""
@@ -625,8 +743,13 @@ app_edit() {
         validate_php_version "$np" || { error "Invalid PHP: $np"; exit 1; }
         php_is_installed "$np" || { error "PHP $np not installed"; exit 1; }
         step "PHP ${cur_php} → ${np}..."
-        rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
-        _create_fpm_pool "$app" "$np"; reload_php_fpm "$cur_php"; reload_php_fpm "$np"
+        if [[ -n "$(app_get "$app" octane)" ]]; then
+            # Octane apps have no FPM pool — only CLI paths in supervisor/cron/deployer
+            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf" 2>/dev/null || true
+        else
+            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
+            _create_fpm_pool "$app" "$np"; reload_php_fpm "$cur_php"; reload_php_fpm "$np"
+        fi
         sed -i "s|/usr/bin/php[0-9]\.[0-9]|/usr/bin/php${np}|g" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null
         reload_supervisor
         crontab -u "$app" -l 2>/dev/null | sed "s|php${cur_php}|php${np}|g" | crontab -u "$app" -
@@ -668,7 +791,30 @@ app_edit() {
 
         success "Repository updated"; changed=true
     fi
-    [[ "$changed" == false ]] && info "Nothing changed. Use --domain, --php, --branch, or --repository"
+    if [[ -n "${ARG_node_build+x}" || "${ARG_no_node_build:-}" == "true" ]]; then
+        if [[ "${ARG_no_node_build:-}" == "true" || -z "${ARG_node_build:-}" ]]; then
+            app_unset "$app" node_build
+            _sync_node_build_script "$app"
+            success "Node build disabled"; changed=true
+        else
+            _validate_node_build_cmd "${ARG_node_build}" || {
+                error "Invalid --node-build. Use npm/npx/yarn/pnpm/bun/node and safe characters only."
+                exit 1
+            }
+            app_set "$app" node_build "${ARG_node_build}"
+            _sync_node_build_script "$app"
+            _create_deployer_config_for_app "$app"
+            success "Node build → ${ARG_node_build}"; changed=true
+        fi
+    fi
+    if [[ "${ARG_predeploy_snapshot:-}" == "true" ]]; then
+        app_set "$app" predeploy_snapshot "true"
+        success "Pre-deploy DB snapshot enabled"; changed=true
+    elif [[ "${ARG_no_predeploy_snapshot:-}" == "true" ]]; then
+        app_unset "$app" predeploy_snapshot
+        success "Pre-deploy DB snapshot disabled"; changed=true
+    fi
+    [[ "$changed" == false ]] && info "Nothing changed. Use --domain, --php, --branch, --repository, --node-build, or --predeploy-snapshot"
     if [[ "$changed" == true ]]; then
         log_action "APP EDITED: $app $*"
 
@@ -679,6 +825,8 @@ app_edit() {
         [[ -n "${ARG_php:-}" ]] && edit_details="${edit_details}PHP: ${cur_php} → ${ARG_php}\n"
         [[ -n "${ARG_branch:-}" ]] && edit_details="${edit_details}Branch: ${ARG_branch}\n"
         [[ -n "${ARG_repository:-}" ]] && edit_details="${edit_details}Repository: ${ARG_repository}\n"
+        [[ -n "${ARG_node_build+x}" || "${ARG_no_node_build:-}" == "true" ]] && edit_details="${edit_details}Node build updated\n"
+        [[ "${ARG_predeploy_snapshot:-}" == "true" || "${ARG_no_predeploy_snapshot:-}" == "true" ]] && edit_details="${edit_details}Predeploy snapshot updated\n"
         cipi_notify \
             "Cipi app modified: ${app} on $(hostname)" \
             "An app was modified.\n\nServer: $(hostname)\nApp: ${app}\nDomain: $(app_get "$app" domain)\n\nChanges:\n${edit_details}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
@@ -707,7 +855,7 @@ app_delete() {
         git_cleanup_repo "$app" "$repo"
     fi
 
-    step "Workers...";     supervisorctl stop "${app}-worker-*" 2>/dev/null||true; rm -f "/etc/supervisor/conf.d/${app}.conf"; reload_supervisor
+    step "Workers...";     supervisorctl stop "${app}-worker-"* 2>/dev/null||true; supervisorctl stop "${app}-octane" 2>/dev/null||true; supervisorctl stop "${app}-reverb" 2>/dev/null||true; supervisorctl stop "${app}-horizon" 2>/dev/null||true; rm -f "/etc/supervisor/conf.d/${app}.conf"; reload_supervisor
     step "Nginx...";       rm -f "/etc/nginx/sites-enabled/${app}" "/etc/nginx/sites-available/${app}"; reload_nginx
     step "PHP-FPM...";     rm -f "/etc/php/${p}/fpm/pool.d/${app}.conf"; reload_php_fpm "$p" 2>/dev/null||true
     local skip_db; skip_db=false
@@ -1175,6 +1323,13 @@ domains_command() {
 
 _create_fpm_pool() {
     local app="$1" v="$2"
+    local max_children memory_limit start_servers
+    max_children=$(_app_limit "$app" fpm_max_children 5 50)
+    memory_limit=$(_app_limit "$app" memory_limit 256M)
+    # Derive start_servers from max_children (keep pool small when capped low)
+    start_servers=2
+    (( max_children < 3 )) && start_servers=1
+    (( max_children >= 10 )) && start_servers=3
     cat > "/etc/php/${v}/fpm/pool.d/${app}.conf" <<EOF
 [${app}]
 user = ${app}
@@ -1184,19 +1339,44 @@ listen.owner = ${app}
 listen.group = www-data
 listen.mode = 0660
 pm = dynamic
-pm.max_children = 5
-pm.start_servers = 2
+pm.max_children = ${max_children}
+pm.start_servers = ${start_servers}
 pm.min_spare_servers = 1
-pm.max_spare_servers = 3
+pm.max_spare_servers = ${start_servers}
 pm.max_requests = 500
 request_terminate_timeout = 300
 php_admin_value[open_basedir] = /home/${app}/:/tmp/:/proc/
 php_admin_value[upload_max_filesize] = 256M
 php_admin_value[post_max_size] = 256M
-php_admin_value[memory_limit] = 256M
+php_admin_value[memory_limit] = ${memory_limit}
 php_admin_value[max_execution_time] = 300
 php_admin_value[error_log] = /home/${app}/logs/php-fpm-error.log
 php_admin_flag[log_errors] = on
+EOF
+}
+
+# Nginx location block for Laravel Reverb (WebSockets) when enabled.
+_nginx_reverb_location_block() {
+    local app="$1"
+    local port
+    port=$(app_get "$app" reverb_port)
+    [[ -z "$port" ]] && return 0
+    _ensure_nginx_octane_map
+    cat <<EOF
+    location /app {
+        proxy_http_version 1.1;
+        proxy_set_header Host \$http_host;
+        proxy_set_header Scheme \$scheme;
+        proxy_set_header SERVER_PORT \$server_port;
+        proxy_set_header REMOTE_ADDR \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_pass http://127.0.0.1:${port};
+        proxy_read_timeout 60s;
+        proxy_send_timeout 60s;
+    }
 EOF
 }
 
@@ -1390,6 +1570,12 @@ EOF
         [[ -n "$docroot" ]] && root_path="${root_path}/${docroot}"
     fi
 
+    local octane_server octane_port
+    octane_server=$(app_get "$app" octane)
+    octane_port=$(app_get "$app" octane_port)
+    local reverb_block=""
+    reverb_block=$(_nginx_reverb_location_block "$app")
+
     if [[ "$vhost_type" == "custom" ]]; then
         cat > "/etc/nginx/sites-available/${app}" <<EOF
 ${www_redirect_block}server {
@@ -1404,7 +1590,7 @@ ${www_redirect_block}server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     client_max_body_size 256M;
-    location / {
+${reverb_block}    location / {
 ${auth_block}        try_files \$uri \$uri/ /index.php?\$args;
     }
     location ~ \.php$ {
@@ -1418,6 +1604,50 @@ ${auth_block}        fastcgi_pass unix:/run/php/${app}.sock;
     location = /favicon.ico { access_log off; log_not_found off; }
     location = /robots.txt  { access_log off; log_not_found off; }
     error_page 404 /404.html;
+}
+EOF
+    elif [[ -n "$octane_server" && -n "$octane_port" ]]; then
+        _ensure_nginx_octane_map
+        cat > "/etc/nginx/sites-available/${app}" <<EOF
+${www_redirect_block}server {
+    listen 80;
+    listen [::]:80;
+    server_name ${names};
+    root /home/${app}/current/public;
+    index index.php;
+    access_log /home/${app}/logs/nginx-access.log;
+    error_log /home/${app}/logs/nginx-error.log;
+    add_header X-Frame-Options "SAMEORIGIN" always;
+    add_header X-Content-Type-Options "nosniff" always;
+    add_header Referrer-Policy "strict-origin-when-cross-origin" always;
+    client_max_body_size 256M;
+${reverb_block}    location /index.php {
+${auth_block}        try_files /not_exists @octane;
+    }
+    location / {
+${auth_block}        try_files \$uri \$uri/ @octane;
+    }
+    location @octane {
+${auth_block}        set \$suffix "";
+        if (\$uri = /index.php) {
+            set \$suffix ?\$query_string;
+        }
+        proxy_http_version 1.1;
+        proxy_set_header Host \$http_host;
+        proxy_set_header Scheme \$scheme;
+        proxy_set_header SERVER_PORT \$server_port;
+        proxy_set_header REMOTE_ADDR \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection \$connection_upgrade;
+        proxy_pass http://127.0.0.1:${octane_port}\$suffix;
+        proxy_read_timeout 300;
+    }
+    location ~ /\.(?!well-known) { deny all; }
+    location = /favicon.ico { access_log off; log_not_found off; }
+    location = /robots.txt  { access_log off; log_not_found off; }
+    error_page 404 /index.php;
 }
 EOF
     else
@@ -1434,7 +1664,7 @@ ${www_redirect_block}server {
     add_header X-Content-Type-Options "nosniff" always;
     add_header Referrer-Policy "strict-origin-when-cross-origin" always;
     client_max_body_size 256M;
-    location / {
+${reverb_block}    location / {
 ${auth_block}        try_files \$uri \$uri/ /index.php?\$query_string;
     }
     location ~ \.php$ {
@@ -1480,9 +1710,11 @@ _create_deployer_config_for_app() {
     branch=$(app_get "$app" branch)
     php_ver=$(app_get "$app" php)
     if [[ "$(app_get "$app" custom)" == "true" ]]; then type="custom"
+    elif [[ -n "$(app_get "$app" octane)" ]]; then type="laravel-octane"
     else type="laravel"
     fi
     _create_deployer_config_from_template "$type" "$app" "$repo" "${branch:-main}" "$php_ver"
+    _sync_node_build_script "$app"
 }
 
 # ── AUTH ──────────────────────────────────────────────────────
@@ -1842,6 +2074,421 @@ app_reset_db_password() {
     echo ""
 }
 
+# ── CONVERT FPM ↔ Octane ──────────────────────────────────────
+
+_reapply_ssl_if_present() {
+    local app="$1" d
+    d=$(app_get "$app" domain)
+    [[ -n "$d" && -d "/etc/letsencrypt/live/${d}" ]] || return 0
+    certbot install --nginx --cert-name "$d" --non-interactive --redirect 2>&1 || true
+    if nginx -t &>/dev/null; then
+        systemctl reload nginx 2>/dev/null || true
+    fi
+}
+
+_env_set_or_add() {
+    local file="$1" key="$2" val="$3"
+    [[ -f "$file" ]] || return 0
+    if grep -qE "^${key}=" "$file" 2>/dev/null; then
+        sed -i "s|^${key}=.*|${key}=${val}|" "$file"
+    else
+        printf '\n%s=%s\n' "$key" "$val" >> "$file"
+    fi
+}
+
+_env_remove_keys() {
+    local file="$1"; shift
+    [[ -f "$file" ]] || return 0
+    local k
+    for k in "$@"; do
+        sed -i "/^${k}=/d" "$file" 2>/dev/null || true
+    done
+}
+
+app_convert() {
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi app convert <app> --to=octane|fpm"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    parse_args "$@"
+    local to="${ARG_to:-}"
+    [[ -z "$to" && "${ARG_octane:-}" == "true" ]] && to="octane"
+    [[ -z "$to" && "${ARG_no_octane:-}" == "true" ]] && to="fpm"
+    [[ -z "$to" ]] && { error "Usage: cipi app convert <app> --to=octane|fpm"; exit 1; }
+
+    [[ "$(app_get "$app" custom)" == "true" ]] && {
+        error "Octane convert is only available for Laravel apps (not custom)"
+        exit 1
+    }
+
+    local php_ver domain cur_octane
+    php_ver=$(app_get "$app" php)
+    domain=$(app_get "$app" domain)
+    cur_octane=$(app_get "$app" octane)
+    local envf="/home/${app}/shared/.env"
+    local conf="/etc/supervisor/conf.d/${app}.conf"
+    [[ -f "$conf" ]] || echo "" > "$conf"
+
+    case "$to" in
+        octane|frankenphp)
+            if [[ -n "$cur_octane" ]]; then
+                info "App '${app}' is already on Octane (${cur_octane})"
+                return 0
+            fi
+            local port
+            port=$(_octane_allocate_port) || { error "No free Octane port in 8100–8999"; exit 1; }
+            step "Converting '${app}' → Octane (FrankenPHP) :${port}..."
+            app_set "$app" octane "frankenphp"
+            app_set "$app" octane_port "$port"
+            rm -f "/etc/php/${php_ver}/fpm/pool.d/${app}.conf"
+            reload_php_fpm "$php_ver" 2>/dev/null || true
+            _supervisor_remove_program "$app" "${app}-octane"
+            _create_supervisor_octane "$app" "$php_ver" "$port"
+            reload_supervisor
+            _ensure_nginx_octane_map
+            _create_nginx_vhost "$app" "$domain" "$php_ver"
+            reload_nginx || exit 1
+            _reapply_ssl_if_present "$app"
+            _env_set_or_add "$envf" "OCTANE_SERVER" "frankenphp"
+            _env_set_or_add "$envf" "OCTANE_HTTPS" "true"
+            chown "${app}:${app}" "$envf" 2>/dev/null || true
+            _create_deployer_config_for_app "$app"
+            log_action "APP CONVERT: $app → octane port=$port"
+            success "Converted to Octane (FrankenPHP) on 127.0.0.1:${port}"
+            info "Ensure the app has laravel/octane + octane:install --server=frankenphp, then: cipi deploy ${app}"
+            ;;
+        fpm|php-fpm|phpfpm)
+            if [[ -z "$cur_octane" ]]; then
+                info "App '${app}' is already on PHP-FPM"
+                return 0
+            fi
+            step "Converting '${app}' → PHP-FPM..."
+            supervisorctl stop "${app}-octane" 2>/dev/null || true
+            _supervisor_remove_program "$app" "${app}-octane"
+            reload_supervisor
+            app_unset "$app" octane
+            app_unset "$app" octane_port
+            _create_fpm_pool "$app" "$php_ver"
+            reload_php_fpm "$php_ver" || exit 1
+            _create_nginx_vhost "$app" "$domain" "$php_ver"
+            reload_nginx || exit 1
+            _reapply_ssl_if_present "$app"
+            _env_remove_keys "$envf" OCTANE_SERVER OCTANE_HTTPS
+            chown "${app}:${app}" "$envf" 2>/dev/null || true
+            _create_deployer_config_for_app "$app"
+            log_action "APP CONVERT: $app → fpm"
+            success "Converted to PHP-FPM"
+            ;;
+        *)
+            error "Invalid --to value. Use: octane|fpm"
+            exit 1
+            ;;
+    esac
+}
+
+# ── REVERB ────────────────────────────────────────────────────
+
+app_reverb() {
+    local sub="${1:-}"; shift || true
+    case "$sub" in
+        enable)  _app_reverb_enable "$@" ;;
+        disable) _app_reverb_disable "$@" ;;
+        status)  _app_reverb_status "$@" ;;
+        *) error "Usage: cipi app reverb enable|disable|status <app>"; exit 1 ;;
+    esac
+}
+
+_app_reverb_enable() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi app reverb enable <app>"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    [[ "$(app_get "$app" custom)" == "true" ]] && { error "Reverb is only for Laravel apps"; exit 1; }
+    if [[ -n "$(app_get "$app" reverb)" ]]; then
+        info "Reverb already enabled for '${app}' (port $(app_get "$app" reverb_port))"
+        return 0
+    fi
+    local port php_ver domain
+    port=$(_reverb_allocate_port) || { error "No free Reverb port in 9000–9099"; exit 1; }
+    php_ver=$(app_get "$app" php)
+    domain=$(app_get "$app" domain)
+    step "Enabling Reverb for '${app}' :${port}..."
+    app_set "$app" reverb "true"
+    app_set "$app" reverb_port "$port"
+    local conf="/etc/supervisor/conf.d/${app}.conf"
+    [[ -f "$conf" ]] || echo "" > "$conf"
+    _supervisor_remove_program "$app" "${app}-reverb"
+    _create_supervisor_reverb "$app" "$php_ver" "$port"
+    reload_supervisor
+    _create_nginx_vhost "$app" "$domain" "$php_ver"
+    reload_nginx || exit 1
+    _reapply_ssl_if_present "$app"
+    local envf="/home/${app}/shared/.env"
+    _env_set_or_add "$envf" "BROADCAST_CONNECTION" "reverb"
+    _env_set_or_add "$envf" "REVERB_SERVER_HOST" "127.0.0.1"
+    _env_set_or_add "$envf" "REVERB_SERVER_PORT" "$port"
+    _env_set_or_add "$envf" "REVERB_HOST" "$domain"
+    _env_set_or_add "$envf" "REVERB_PORT" "443"
+    _env_set_or_add "$envf" "REVERB_SCHEME" "https"
+    chown "${app}:${app}" "$envf" 2>/dev/null || true
+    log_action "REVERB ENABLE: $app port=$port"
+    success "Reverb enabled on 127.0.0.1:${port} (nginx /app)"
+    info "Require laravel/reverb in the app, then: cipi deploy ${app}"
+}
+
+_app_reverb_disable() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi app reverb disable <app>"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    [[ -z "$(app_get "$app" reverb)" ]] && { info "Reverb already disabled for '${app}'"; return 0; }
+    local php_ver domain
+    php_ver=$(app_get "$app" php)
+    domain=$(app_get "$app" domain)
+    step "Disabling Reverb for '${app}'..."
+    supervisorctl stop "${app}-reverb" 2>/dev/null || true
+    _supervisor_remove_program "$app" "${app}-reverb"
+    reload_supervisor
+    app_unset "$app" reverb
+    app_unset "$app" reverb_port
+    _create_nginx_vhost "$app" "$domain" "$php_ver"
+    reload_nginx || exit 1
+    _reapply_ssl_if_present "$app"
+    _env_remove_keys "/home/${app}/shared/.env" REVERB_SERVER_HOST REVERB_SERVER_PORT
+    log_action "REVERB DISABLE: $app"
+    success "Reverb disabled for '${app}'"
+}
+
+_app_reverb_status() {
+    local app="${1:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi app reverb status <app>"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    local r p
+    r=$(app_get "$app" reverb)
+    p=$(app_get "$app" reverb_port)
+    if [[ -n "$r" ]]; then
+        echo -e "  Reverb: ${GREEN}enabled${NC} 127.0.0.1:${p}"
+        supervisorctl status "${app}-reverb" 2>/dev/null || true
+    else
+        echo -e "  Reverb: ${DIM}disabled${NC}"
+    fi
+}
+
+# ── SCHEDULE ──────────────────────────────────────────────────
+
+schedule_command() {
+    local sub="${1:-}"; shift || true
+    case "$sub" in
+        status|on|off) _schedule_set "$sub" "$@" ;;
+        *) error "Usage: cipi schedule status|on|off <app>"; exit 1 ;;
+    esac
+}
+
+_schedule_crontab_write() {
+    local app="$1" php_ver="$2" schedule_on="$3"
+    local home="/home/${app}"
+    local schedule_line=""
+    if [[ "$schedule_on" == "on" ]]; then
+        schedule_line="# Laravel Scheduler
+* * * * * /usr/bin/php${php_ver} ${home}/current/artisan schedule:run >> /dev/null 2>&1
+"
+    else
+        schedule_line="# Laravel Scheduler (disabled by cipi schedule off)
+"
+    fi
+    cat <<CRON | crontab -u "$app" -
+${schedule_line}# Cipi deploy trigger (written by cipi/agent webhook)
+* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && { /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1 || sudo /usr/local/bin/cipi-app-notify ${app} deploy \$? ${home}/logs/deploy.log; }
+CRON
+}
+
+_schedule_set() {
+    local mode="$1" app="${2:-}"
+    [[ -z "$app" ]] && { error "Usage: cipi schedule ${mode} <app>"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    [[ "$(app_get "$app" custom)" == "true" ]] && { error "Scheduler is only for Laravel apps"; exit 1; }
+    local php_ver cur
+    php_ver=$(app_get "$app" php)
+    cur=$(app_get "$app" schedule)
+    [[ -z "$cur" ]] && cur="on"
+
+    if [[ "$mode" == "status" ]]; then
+        local cron_has="no"
+        crontab -u "$app" -l 2>/dev/null | grep -q 'schedule:run' && cron_has="yes"
+        echo -e "  Schedule: ${CYAN}${cur}${NC}  (crontab schedule:run: ${cron_has})"
+        return 0
+    fi
+
+    _schedule_crontab_write "$app" "$php_ver" "$mode"
+    app_set "$app" schedule "$mode"
+    log_action "SCHEDULE ${mode}: $app"
+    success "Scheduler ${mode} for '${app}'"
+}
+
+# ── LIMITS ────────────────────────────────────────────────────
+
+app_limits() {
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi app limits <app> [--fpm-max-children=N] [--memory-limit=256M] [--octane-workers=N] [--worker-procs=N]"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    parse_args "$@"
+
+    local changed=false
+    local limits
+    limits=$(vault_read apps.json | jq -c --arg a "$app" '.[$a].limits // {}')
+
+    if [[ -n "${ARG_fpm_max_children:-}" ]]; then
+        [[ "${ARG_fpm_max_children}" =~ ^[0-9]+$ ]] || { error "--fpm-max-children must be a number"; exit 1; }
+        (( ARG_fpm_max_children > 50 )) && ARG_fpm_max_children=50
+        (( ARG_fpm_max_children < 1 )) && ARG_fpm_max_children=1
+        limits=$(echo "$limits" | jq -c --argjson n "${ARG_fpm_max_children}" '.fpm_max_children = $n')
+        changed=true
+    fi
+    if [[ -n "${ARG_memory_limit:-}" ]]; then
+        [[ "${ARG_memory_limit}" =~ ^[0-9]+[MmGg]?$ ]] || { error "Invalid --memory-limit"; exit 1; }
+        limits=$(echo "$limits" | jq -c --arg v "${ARG_memory_limit}" '.memory_limit = $v')
+        changed=true
+    fi
+    if [[ -n "${ARG_octane_workers:-}" ]]; then
+        [[ "${ARG_octane_workers}" =~ ^[0-9]+$ ]] || { error "--octane-workers must be a number"; exit 1; }
+        (( ARG_octane_workers > 16 )) && ARG_octane_workers=16
+        (( ARG_octane_workers < 1 )) && ARG_octane_workers=1
+        limits=$(echo "$limits" | jq -c --argjson n "${ARG_octane_workers}" '.octane_workers = $n')
+        changed=true
+    fi
+    if [[ -n "${ARG_worker_procs:-}" ]]; then
+        [[ "${ARG_worker_procs}" =~ ^[0-9]+$ ]] || { error "--worker-procs must be a number"; exit 1; }
+        (( ARG_worker_procs > 20 )) && ARG_worker_procs=20
+        (( ARG_worker_procs < 1 )) && ARG_worker_procs=1
+        limits=$(echo "$limits" | jq -c --argjson n "${ARG_worker_procs}" '.worker_procs = $n')
+        changed=true
+    fi
+
+    if [[ "$changed" == false ]]; then
+        echo -e "\n${BOLD}Limits — ${app}${NC}"
+        echo "$limits" | jq -r 'to_entries[] | "  \(.key): \(.value)"' 2>/dev/null || echo "  (defaults)"
+        echo -e "  ${DIM}fpm_max_children default 5 (max 50)${NC}"
+        echo -e "  ${DIM}memory_limit default 256M${NC}"
+        echo -e "  ${DIM}octane_workers default 2 (max 16)${NC}"
+        echo -e "  ${DIM}worker_procs default 1 (max 20)${NC}"
+        echo ""
+        return 0
+    fi
+
+    app_set_json "$app" limits "$limits"
+    local php_ver domain
+    php_ver=$(app_get "$app" php)
+    domain=$(app_get "$app" domain)
+
+    if [[ -z "$(app_get "$app" octane)" ]]; then
+        _create_fpm_pool "$app" "$php_ver"
+        reload_php_fpm "$php_ver" || true
+    fi
+
+    # Rebuild octane / default worker procs when relevant
+    if [[ -n "$(app_get "$app" octane)" ]]; then
+        local port; port=$(app_get "$app" octane_port)
+        supervisorctl stop "${app}-octane" 2>/dev/null || true
+        _supervisor_remove_program "$app" "${app}-octane"
+        _create_supervisor_octane "$app" "$php_ver" "$port"
+    fi
+    if [[ "$(app_get "$app" horizon)" != "true" ]] && grep -q "\[program:${app}-worker-default\]" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null; then
+        supervisorctl stop "${app}-worker-default:"* 2>/dev/null || true
+        _supervisor_remove_program "$app" "${app}-worker-default"
+        _create_supervisor_worker "$app" "$php_ver" "default"
+    fi
+    reload_supervisor
+    log_action "APP LIMITS: $app $limits"
+    success "Limits updated for '${app}'"
+}
+
+# ── CLONE / STAGING ───────────────────────────────────────────
+
+app_clone() {
+    local src="${1:-}"; shift || true
+    [[ -z "$src" ]] && { error "Usage: cipi app clone <src> --domain=D [--name=] [--branch=] [--with-db|--no-db]"; exit 1; }
+    app_exists "$src" || { error "Source app '$src' not found"; exit 1; }
+    parse_args "$@"
+
+    local domain="${ARG_domain:-}"
+    [[ -z "$domain" ]] && { error "--domain is required"; exit 1; }
+    validate_domain "$domain" || { error "Invalid domain '${domain}'"; exit 1; }
+    domain_is_used_by_other_app "$domain" && { error "Domain '${domain}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
+
+    local name="${ARG_name:-}"
+    if [[ -z "$name" ]]; then
+        name=$(echo "$domain" | sed 's/[^a-z0-9]//g' | cut -c1-16)
+        [[ ${#name} -lt 3 ]] && name="stg${RANDOM}"
+    fi
+    validate_username "$name" || { error "Invalid username '${name}'"; exit 1; }
+    app_exists "$name" && { error "App '${name}' already exists"; exit 1; }
+    id "$name" &>/dev/null && { error "User '${name}' already exists"; exit 1; }
+
+    [[ "$(app_get "$src" custom)" == "true" ]] && { error "Cloning custom apps is not supported"; exit 1; }
+
+    local branch php_ver engine repo with_db="true"
+    branch="${ARG_branch:-$(app_get "$src" branch)}"
+    php_ver=$(app_get "$src" php)
+    engine=$(app_get "$src" engine); [[ -z "$engine" ]] && engine="mariadb"
+    repo=$(app_get "$src" repository)
+    [[ "${ARG_no_db:-}" == "true" ]] && with_db="false"
+    [[ "${ARG_with_db:-}" == "true" ]] && with_db="true"
+
+    local create_args=(--user="$name" --domain="$domain" --repository="$repo" --branch="$branch" --php="$php_ver" --engine="$engine")
+    if [[ -n "$(app_get "$src" octane)" ]]; then
+        create_args+=(--octane=frankenphp)
+    fi
+
+    info "Cloning '${src}' → '${name}' (${domain})..."
+    app_create "${create_args[@]}"
+
+    app_set "$name" cloned_from "$src"
+
+    # Copy non-secret env keys from source (keep new APP_KEY / DB_* / CIPI_*)
+    local src_env="/home/${src}/shared/.env"
+    local dst_env="/home/${name}/shared/.env"
+    if [[ -f "$src_env" && -f "$dst_env" ]]; then
+        local line key
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
+            key="${line%%=*}"
+            case "$key" in
+                APP_KEY|APP_URL|DB_*|DATABASE_URL|CIPI_*|OCTANE_*|REVERB_SERVER_*) continue ;;
+            esac
+            _env_set_or_add "$dst_env" "$key" "${line#*=}"
+        done < "$src_env"
+        _env_set_or_add "$dst_env" "APP_URL" "https://${domain}"
+        chown "${name}:${name}" "$dst_env"
+    fi
+
+    if [[ "$with_db" == "true" ]]; then
+        # shellcheck source=/dev/null
+        source "${CIPI_LIB}/db.sh"
+        local dump="/var/log/cipi/backups/${engine}_${src}_clone_$(date +%Y%m%d_%H%M%S).sql.gz"
+        mkdir -p /var/log/cipi/backups
+        step "Copying database ${src} → ${name}..."
+        if db_dump_database "$engine" "$src" "$dump"; then
+            if db_restore_database "$engine" "$name" "$dump"; then
+                success "Database cloned"
+            else
+                warn "DB restore failed — empty DB left in place"
+            fi
+        else
+            warn "DB dump failed — empty DB left in place"
+        fi
+    fi
+
+    # Optional: copy node_build / schedule / limits / predeploy_snapshot
+    local nb sch snap
+    nb=$(app_get "$src" node_build)
+    [[ -n "$nb" ]] && app_set "$name" node_build "$nb" && _sync_node_build_script "$name"
+    sch=$(app_get "$src" schedule); [[ -n "$sch" ]] && app_set "$name" schedule "$sch"
+    snap=$(app_get "$src" predeploy_snapshot); [[ -n "$snap" ]] && app_set "$name" predeploy_snapshot "$snap"
+    local lim
+    lim=$(vault_read apps.json | jq -c --arg a "$src" '.[$a].limits // empty')
+    [[ -n "$lim" && "$lim" != "null" ]] && app_set_json "$name" limits "$lim"
+
+    log_action "APP CLONE: $src → $name domain=$domain"
+    success "Cloned '${src}' → '${name}'. Deploy when ready: cipi deploy ${name}"
+}
+
 # ── ROUTERS ───────────────────────────────────────────────────
 
 app_command() {
@@ -1852,6 +2499,10 @@ app_command() {
         show)    app_show "$@" ;;
         edit)    app_edit "$@" ;;
         delete)  app_delete "$@" ;;
+        convert) app_convert "$@" ;;
+        clone)   app_clone "$@" ;;
+        reverb)  app_reverb "$@" ;;
+        limits)  app_limits "$@" ;;
         env)     app_env "$@" ;;
         logs)
             if [[ "${1:-}" == "read" ]]; then
@@ -1867,7 +2518,7 @@ app_command() {
         unsuspend) app_unsuspend "$@" ;;
         reset-password)    app_reset_password "$@" ;;
         reset-db-password) app_reset_db_password "$@" ;;
-        *) error "Unknown: $sub"; echo "Use: create list show edit delete env logs tinker artisan suspend unsuspend reset-password reset-db-password"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; exit 1 ;;
+        *) error "Unknown: $sub"; echo "Use: create list show edit delete convert clone reverb limits env logs tinker artisan suspend unsuspend reset-password reset-db-password"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; exit 1 ;;
     esac
 }
 

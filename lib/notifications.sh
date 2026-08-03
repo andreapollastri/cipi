@@ -30,6 +30,8 @@ basicauth_disable|Basic auth|HTTP basic auth disabled
 deploy_success|Deploy|Deploy succeeded
 deploy_fail|Deploy|Deploy failed
 deploy_rollback|Deploy|Deploy rollback
+deploy_snapshot_fail|Deploy|Pre-deploy DB snapshot failed
+health_fail|Health|HTTP healthcheck failed
 ssl_install|SSL|SSL certificate installed
 ssl_force|SSL|HTTP → HTTPS redirect forced
 ssl_renew|SSL|SSL certificates renewed
