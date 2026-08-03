@@ -56,12 +56,13 @@ task('workers:restart', function () {
     run('sudo /usr/local/bin/cipi-worker restart __CIPI_APP_USER__');
 });
 
-// No-op when Horizon is not installed / not running.
+// No-op when Horizon is not installed / not running, or on first deploy (no current yet).
+// Use deploy_path/current — {{current_path}} runs readlink and aborts when the symlink is missing.
 task('horizon:terminate', function () {
-    run('{{bin/php}} {{current_path}}/artisan horizon:terminate 2>/dev/null || true');
+    run('[ ! -L {{deploy_path}}/current ] || {{bin/php}} {{deploy_path}}/current/artisan horizon:terminate 2>/dev/null || true');
 });
 
 // Graceful Octane worker reload after symlink (no-op if Octane is not running yet).
 task('octane:reload', function () {
-    run('{{bin/php}} {{current_path}}/artisan octane:reload 2>/dev/null || true');
+    run('[ ! -L {{deploy_path}}/current ] || {{bin/php}} {{deploy_path}}/current/artisan octane:reload 2>/dev/null || true');
 });

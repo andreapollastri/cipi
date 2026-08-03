@@ -113,7 +113,7 @@ grep -q 'schedule)' "${ROOT}/cipi" && pass "main routes schedule" || fail "main 
 grep -q 'health)' "${ROOT}/cipi" && pass "main routes health" || fail "main health"
 grep -q 'cipi-health-check' "${ROOT}/setup.sh" && pass "setup installs health-check" || fail "setup health"
 grep -q 'cipi app convert' "${LIB}/cipi-api-sudoers.sh" && pass "sudoers convert" || fail "sudoers convert"
-[[ "$(cat "${ROOT}/version.md")" == "5.0.0" ]] && pass "version.md is 5.0.0" || fail "version.md"
+[[ -f "${LIB}/migrations/5.0.0.sh" ]] && pass "migration 5.0.0 present" || fail "migration 5.0.0"
 
 # ── cleanup ─────────────────────────────────────────────────────
 rm -rf "$TMP"
