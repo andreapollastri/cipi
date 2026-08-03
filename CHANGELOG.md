@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [4.8.1] — 2026-08-03
+
+### Fixed
+
+- **`cipi self-update` stuck on Migration 4.7.16** — the historical migration used `|` as the `sed` delimiter while the replacement contained `|| true`, so `sed` aborted with `unknown option to s` and left the server at the previous version (files already copied). **4.7.16** now no-ops when `common.sh` has no bare init `chmod`, and uses `#` delimiters when patching. Unblocks upgrades from versions below 4.7.16 (e.g. 4.7.14 → 4.8.x).
+
+---
+
 ## [4.8.0] — 2026-08-02
 
 ### Added

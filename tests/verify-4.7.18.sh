@@ -137,12 +137,15 @@ fi
     && pass "no migration 4.7.19 (fix lives in 4.7.18 only)" \
     || fail "lib/migrations/4.7.19.sh should not exist"
 
-# 4.7.16 must stay historical (chmod-only patch, no _cipi_config_writable skip)
+# 4.7.16 stays a chmod-only historical step (no _cipi_config_writable retrofit).
+# Sed delimiters must be `#` — `|` + `||` in the replacement breaks self-update.
 if [[ -f "${LIB}/migrations/4.7.16.sh" ]] \
-    && ! grep -q 'already includes read-only /etc/cipi guards' "${LIB}/migrations/4.7.16.sh"; then
-    pass "migration 4.7.16 unchanged (historical chmod-only step)"
+    && ! grep -q 'already includes read-only /etc/cipi guards' "${LIB}/migrations/4.7.16.sh" \
+    && grep -q "s#\\^chmod 700" "${LIB}/migrations/4.7.16.sh" \
+    && grep -q 'has no bare init chmod' "${LIB}/migrations/4.7.16.sh"; then
+    pass "migration 4.7.16 is chmod-only with safe sed delimiters"
 else
-    fail "migration 4.7.16 was retro-edited — fix belongs in 4.7.18 only"
+    fail "migration 4.7.16 missing sed fix or was retrofitted with 4.7.18 guards"
 fi
 
 # ── Summary ─────────────────────────────────────────────────────
