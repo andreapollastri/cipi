@@ -55,8 +55,10 @@ task('workers:restart', function () {
     run('sudo /usr/local/bin/cipi-worker restart __CIPI_APP_USER__');
 });
 
-// No-op when Horizon is not installed / not running, or on first deploy (no current yet).
+// Skip when no current symlink yet, or laravel/horizon is not in the current release.
+// Do not call artisan unless the package exists — otherwise Symfony throws NamespaceNotFoundException
+// (deploy still succeeds via || true, but app exception trackers report it).
 // Use deploy_path/current — {{current_path}} runs readlink and aborts when the symlink is missing.
 task('horizon:terminate', function () {
-    run('[ ! -L {{deploy_path}}/current ] || {{bin/php}} {{deploy_path}}/current/artisan horizon:terminate 2>/dev/null || true');
+    run('[ ! -L {{deploy_path}}/current ] || [ ! -f {{deploy_path}}/current/vendor/laravel/horizon/composer.json ] || {{bin/php}} {{deploy_path}}/current/artisan horizon:terminate 2>/dev/null || true');
 });

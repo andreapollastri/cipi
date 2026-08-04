@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.2] — 2026-08-05
+
+### Fixed
+
+- **`horizon:terminate` reports `NamespaceNotFoundException` when Horizon is not installed** — Deploy templates always ran `php artisan horizon:terminate` before symlink. With `|| true` the deploy still succeeded, but apps without `laravel/horizon` threw Symfony’s “no commands defined in the horizon namespace”, which exception digests (Flare/Sentry/etc.) reported. Templates now skip artisan unless `vendor/laravel/horizon/composer.json` exists (same guard for `octane:reload` + `laravel/octane`). **Migration 5.0.2** regenerates existing `deploy.php` files.
+
+---
+
 ## [5.0.1] — 2026-08-04
 
 ### Fixed
