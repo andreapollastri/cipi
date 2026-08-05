@@ -14,6 +14,15 @@ _cipi_config_writable() {
     return 0
 }
 
+# For *mutating* ops only: if /etc/cipi is not writable, try remounting / rw
+# (same recovery as migration 4.7.18). Read paths must keep using
+# _cipi_config_writable alone — never call this from vault_init / source init.
+_cipi_ensure_config_writable() {
+    _cipi_config_writable && return 0
+    mount -o remount,rw / 2>/dev/null || true
+    _cipi_config_writable
+}
+
 # Best-effort chmod: no-op when /etc/cipi is read-only (never abort the caller).
 _cipi_safe_chmod() {
     _cipi_config_writable || return 0
@@ -46,7 +55,10 @@ vault_read() {
 vault_write() {
     local file="${CIPI_CONFIG}/$1"
     local perms="${2:-600}"
-    _cipi_config_writable || { echo "vault: cannot write $1 (read-only ${CIPI_CONFIG})" >&2; return 1; }
+    if ! _cipi_ensure_config_writable; then
+        echo "vault: cannot write $1 (read-only ${CIPI_CONFIG})" >&2
+        return 1
+    fi
     local tmp; tmp=$(mktemp)
     openssl enc -"${VAULT_CIPHER}" -salt -pbkdf2 -pass "file:${VAULT_KEY}" -out "$tmp"
     mv "$tmp" "$file"

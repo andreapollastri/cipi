@@ -4,6 +4,15 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.4] — 2026-08-05
+
+### Fixed
+
+- **`cipi app run` always failed with `/usr/bin/env: '--': No such file or directory`** — GNU `env` treats a bare `--` *after* `NAME=VALUE` assignments as the command to execute (not an option terminator). `app_run` was invoking `/usr/bin/env -C … VAR=1 -- cmd`, so every whitelisted command (including GUI “App commands”) exec’d `--`. Now: `/usr/bin/env -C "$workdir" VAR=… cmd args…`.
+- **`cipi basicauth enable` / vault writes on remount-ro root** — when the kernel remounted `/` read-only, `mkdir /etc/nginx/cipi-basicauth` and `vault_write apps.json` failed (`Read-only file system`), while `_basicauth_set_user` still returned success because trailing `chown`/`chmod` used `|| true`. **`lib/vault.sh`**: mutating writes call **`_cipi_ensure_config_writable`** (probe → best-effort `mount -o remount,rw /` → re-probe); read paths keep using **`_cipi_config_writable`** only (no remount on `source` / `db list`). **`lib/app.sh`**: basicauth credential writes fail closed with a clear error if the filesystem stays read-only. **Migration 5.0.4** remounts on `cipi self-update` when `/etc/cipi` is still RO.
+
+---
+
 ## [5.0.3] — 2026-08-05
 
 ### Added

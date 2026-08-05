@@ -1407,9 +1407,10 @@ app_run() {
 
     _app_run_build_argv "$cmd" "$@"
 
-    # Force non-interactive environment (no pagers, no prompts)
+    # Force non-interactive environment (no pagers, no prompts).
+    # GNU env: options (-C) first, then NAME=VALUE, then COMMAND.
+    # Do NOT put `--` after assignments — env would try to exec `--` itself.
     local -a env_vars=(
-        -C "$workdir"
         CI=true
         DEBIAN_FRONTEND=noninteractive
         GIT_TERMINAL_PROMPT=0
@@ -1429,7 +1430,7 @@ app_run() {
     fi
 
     # Run without a login shell so aliases/profile cannot inject code.
-    sudo -u "$app" -H -- /usr/bin/env "${env_vars[@]}" -- "${_APP_RUN_ARGV[@]}"
+    sudo -u "$app" -H -- /usr/bin/env -C "$workdir" "${env_vars[@]}" "${_APP_RUN_ARGV[@]}"
 }
 
 # ── ALIAS ─────────────────────────────────────────────────────
@@ -2552,15 +2553,28 @@ _nginx_reapply_ssl() {
 _basicauth_set_user() {
     local app="$1" user="$2" password="$3"
     local file; file=$(_basicauth_file "$app")
-    mkdir -p "$BASICAUTH_DIR"
+    # htpasswd lives under /etc/nginx (same root mount as /etc/cipi). Recover
+    # remount-ro before mkdir; fail closed so callers never think auth was set.
+    if ! _cipi_ensure_config_writable; then
+        error "Cannot write credentials: filesystem is read-only (${BASICAUTH_DIR})"
+        return 1
+    fi
+    mkdir -p "$BASICAUTH_DIR" || {
+        error "Cannot create ${BASICAUTH_DIR}"
+        return 1
+    }
     chown root:www-data "$BASICAUTH_DIR" 2>/dev/null || true
     chmod 750 "$BASICAUTH_DIR" 2>/dev/null || true
     local hash; hash=$(openssl passwd -apr1 "$password" 2>/dev/null)
     [[ -z "$hash" ]] && { error "Failed to hash password"; return 1; }
     [[ -f "$file" ]] && sed -i "/^${user}:/d" "$file" 2>/dev/null || true
-    echo "${user}:${hash}" >> "$file"
+    echo "${user}:${hash}" >> "$file" || {
+        error "Cannot write ${file}"
+        return 1
+    }
     chown root:www-data "$file" 2>/dev/null || true
     chmod 640 "$file" 2>/dev/null || true
+    return 0
 }
 
 basicauth_enable() {
