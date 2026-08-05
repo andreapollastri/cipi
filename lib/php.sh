@@ -135,6 +135,32 @@ POOLEOF
     success "PHP ${v} installed"
 }
 
+# update-alternatives + FPM pool moves need a writable /etc (same remount-ro
+# class as smtp / basicauth / vault).
+_php_ensure_etc_writable() {
+    if ! _cipi_ensure_config_writable; then
+        error "Cannot write config (read-only filesystem)"
+        [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && error "Remount failed: ${_CIPI_REMOUNT_ERR}"
+        error "Try as root: mount -n -o remount,rw / && cipi php switch <ver>"
+        return 1
+    fi
+    if ! _cipi_path_writable /etc; then
+        _cipi_remount_rw /etc || _cipi_remount_rw / || true
+    fi
+    if ! _cipi_path_writable /etc; then
+        error "Cannot write /etc (read-only file system)"
+        [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && error "Remount failed: ${_CIPI_REMOUNT_ERR}"
+        error "Try as root: mount -n -o remount,rw / && cipi php switch <ver>"
+        return 1
+    fi
+    # Stale atomic-swap leftovers from a previous RO failure block --set.
+    rm -f /etc/alternatives/php.dpkg-tmp \
+          /etc/alternatives/phar.dpkg-tmp \
+          /etc/alternatives/phar.phar.dpkg-tmp \
+          /etc/alternatives/phpdbg.dpkg-tmp 2>/dev/null || true
+    return 0
+}
+
 # Move cipi-api FPM pool onto PHP $1 when it still lives under another version.
 _php_migrate_api_pool() {
     local v="$1"
@@ -150,6 +176,8 @@ _php_migrate_api_pool() {
         fi
     done
     [[ -n "$old_pool" ]] || return 0
+
+    _php_ensure_etc_writable || return 1
 
     step "Migrating API FPM pool..."
     mv "$old_pool" "$new_pool"
@@ -173,28 +201,42 @@ _php_switch() {
 
     if [[ "$already" == "true" ]]; then
         info "PHP $v is already the system default"
-        # A previous attempt may have switched CLI then aborted on a false
-        # update-alternatives failure before migrating the API pool.
-        _php_migrate_api_pool "$v"
+        # A previous attempt may have switched CLI then aborted before
+        # migrating the API pool — finish that work if needed.
+        _php_migrate_api_pool "$v" || exit 1
         return 0
     fi
 
     local alt_bin="/usr/bin/php${v}"
     [[ -x "$alt_bin" ]] || { error "PHP binary not found: ${alt_bin}"; exit 1; }
 
+    # Kernel may have remounted / read-only; update-alternatives needs to
+    # rewrite /etc/alternatives/* (fails with php.dpkg-tmp on RO root).
+    _php_ensure_etc_writable || exit 1
+
     step "Switching system PHP CLI to ${v}..."
-    # update-alternatives may print "using …" for the master link then still
-    # exit non-zero when a slave (phar/phpdbg/…) is missing or broken.
-    # Trust the resolved /usr/bin/php target, not only the exit code.
+    # Prefer exit code, but also verify the resolved /usr/bin/php target
+    # (slave-link warnings can leave a non-zero status after a good master set).
     local alt_out="" alt_rc=0
     alt_out=$(/usr/bin/update-alternatives --set php "$alt_bin" 2>&1) && alt_rc=0 || alt_rc=$?
     [[ -n "$alt_out" ]] && echo "$alt_out"
+
+    # If RO aborted mid-swap, remount + clean tmp and retry once.
+    if [[ "$alt_rc" -ne 0 ]] && echo "$alt_out" | grep -qiE 'Read-only file system|php\.dpkg-tmp'; then
+        info "Retrying php switch after remount..."
+        _php_ensure_etc_writable || exit 1
+        alt_out=$(/usr/bin/update-alternatives --set php "$alt_bin" 2>&1) && alt_rc=0 || alt_rc=$?
+        [[ -n "$alt_out" ]] && echo "$alt_out"
+    fi
 
     local now resolved
     now=$(readlink -f /usr/bin/php 2>/dev/null || true)
     resolved=$(readlink -f "$alt_bin" 2>/dev/null || true)
     if [[ -z "$resolved" || "$now" != "$resolved" ]]; then
         error "Failed to switch system PHP to ${v} (php → ${now:-unknown}, want ${resolved:-$alt_bin})"
+        if echo "$alt_out" | grep -qi 'Read-only file system'; then
+            error "Root filesystem is read-only. As root: mount -n -o remount,rw / && cipi php switch ${v}"
+        fi
         exit 1
     fi
     if [[ "$alt_rc" -ne 0 ]]; then
@@ -202,7 +244,7 @@ _php_switch() {
     fi
     success "CLI: php → ${alt_bin}"
 
-    _php_migrate_api_pool "$v"
+    _php_migrate_api_pool "$v" || exit 1
 
     # Restart cipi-queue (uses /usr/bin/php which is now the new version)
     if systemctl is-active --quiet cipi-queue 2>/dev/null; then

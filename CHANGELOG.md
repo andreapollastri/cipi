@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.11] — 2026-08-06
+
+### Fixed
+
+- **`cipi php switch` failed with `unable to remove '/etc/alternatives/php.dpkg-tmp': Read-only file system`** — same remount-ro class as SMTP/basicauth/vault. Switch now remounts `/`/`/etc` writable before `update-alternatives`, clears stale `*.dpkg-tmp` leftovers, retries once on RO errors, and prints an actionable recovery hint.
+
+---
+
 ## [5.0.10] — 2026-08-06
 
 ### Fixed
