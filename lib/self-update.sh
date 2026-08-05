@@ -94,6 +94,14 @@ selfupdate_command() {
         done
     fi
 
+    # Record the new version before panel package updates. Composer/migrate for
+    # cipi/api can take minutes or hang; core files and migrations are already done.
+    if declare -f _cipi_ensure_config_writable >/dev/null 2>&1; then
+        _cipi_ensure_config_writable || true
+    fi
+    echo "$nv" > "${CIPI_CONFIG}/version"
+    step "Core updated to v${nv}"
+
     # Auto-update cipi-api package in installed API app
     if [[ -f "${CIPI_API_ROOT:-/opt/cipi/api}/artisan" ]]; then
         step "Updating cipi-api in Laravel app..."
@@ -102,6 +110,9 @@ selfupdate_command() {
             # shellcheck source=/dev/null
             source /opt/cipi/lib/api.sh
         fi
+        # Same as `cipi api update`: stop the queue before composer/migrate so the
+        # panel SQLite DB is not locked (migrate can hang forever otherwise).
+        systemctl stop cipi-queue 2>/dev/null || true
         if [[ -d /opt/cipi/cipi-api ]]; then
             (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
         else
@@ -110,8 +121,13 @@ selfupdate_command() {
             (cd "$api_root" && composer config prefer-stable true 2>/dev/null) || true
         fi
         _api_composer_prepare_github "$api_root" || true
-        (cd "$api_root" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
+        step "Composer update cipi/api (GitHub VCS — may take a few minutes)..."
+        export GIT_TERMINAL_PROMPT=0
+        if ! (cd "$api_root" && composer update cipi/api --no-interaction --prefer-dist); then
+            warn "Composer update cipi/api failed — panel API package unchanged (run: cipi api update)"
+        fi
         # Composer runs as root; reclaim ownership before migrate (SQLite/logs must be www-data-writable).
+        step "Reclaiming API permissions & running migrations..."
         chown -R www-data:www-data "$api_root"
         (cd "$api_root" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
         (cd "$api_root" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
@@ -132,7 +148,6 @@ selfupdate_command() {
         success "cipi/gui package updated in Laravel app"
     fi
 
-    echo "$nv" > "${CIPI_CONFIG}/version"
     rm -rf "$tmp"
     _selfupdate_prune_backups
 
