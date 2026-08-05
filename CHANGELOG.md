@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.7] — 2026-08-06
+
+### Fixed
+
+- **`cipi smtp test` / send failed with `/etc/msmtprc: Read-only file system`** — every send rewrites system `/etc/msmtprc`; when the kernel remounted `/` read-only that redirect aborted (same remount-ro class as basicauth/vault). **`lib/smtp.sh`**: `_smtp_write_rc` and `_smtp_delete` now call **`_cipi_ensure_config_writable`** + probe `/etc` (with `mount -n` remount) and print a clear recovery hint. **Migration 5.0.7** remounts on `cipi self-update` and regenerates `/etc/msmtprc` when SMTP is already configured.
+
+---
+
 ## [5.0.6] — 2026-08-06
 
 ### Added

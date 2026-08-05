@@ -49,6 +49,25 @@ _smtp_write_rc() {
     _smtp_drop_setgid
     rm -f "$SMTP_RC_LEGACY" 2>/dev/null || true
 
+    # /etc/msmtprc is on the root mount (same remount-ro failure mode as
+    # basicauth / vault). Recover before redirect — bash otherwise prints
+    # "Read-only file system" with a useless line number.
+    if ! _cipi_ensure_config_writable; then
+        echo "smtp: cannot write ${SMTP_RC} (read-only filesystem)" >&2
+        [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && echo "smtp: remount failed: ${_CIPI_REMOUNT_ERR}" >&2
+        echo "smtp: try as root: mount -n -o remount,rw / && cipi smtp test" >&2
+        return 1
+    fi
+    if ! _cipi_path_writable /etc; then
+        _cipi_remount_rw /etc || _cipi_remount_rw / || true
+        if ! _cipi_path_writable /etc; then
+            echo "smtp: cannot write ${SMTP_RC} (read-only /etc)" >&2
+            [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && echo "smtp: remount failed: ${_CIPI_REMOUNT_ERR}" >&2
+            echo "smtp: try as root: mount -n -o remount,rw / && cipi smtp test" >&2
+            return 1
+        fi
+    fi
+
     local _sj host port user pass from tls starttls trust_file pass_q
     _sj=$(vault_read smtp.json) || return 1
     host=$(echo "$_sj" | jq -r '.host // ""')
@@ -90,7 +109,10 @@ _smtp_write_rc() {
         echo "tls_starttls   ${starttls}"
         echo ""
         echo "account default : cipi"
-    } > "$SMTP_RC" || return 1
+    } > "$SMTP_RC" || {
+        echo "smtp: failed writing ${SMTP_RC}" >&2
+        return 1
+    }
 
     # System config: no "user secrets" chmod-600 check. Group msmtp for setgid hosts.
     if getent group msmtp &>/dev/null; then
@@ -298,6 +320,15 @@ _smtp_delete() {
     elif [[ "${ARG_force:-}" != "true" ]] && [[ ! -t 0 ]]; then
         error "Pass --force to delete SMTP config without a TTY"
         exit 1
+    fi
+    if ! _cipi_ensure_config_writable; then
+        error "Cannot delete SMTP config: filesystem is read-only"
+        [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && error "Remount failed: ${_CIPI_REMOUNT_ERR}"
+        error "Try as root: mount -n -o remount,rw / && cipi smtp delete --force"
+        exit 1
+    fi
+    if ! _cipi_path_writable /etc; then
+        _cipi_remount_rw /etc || _cipi_remount_rw / || true
     fi
     rm -f "$SMTP_CFG" "$SMTP_RC" "$SMTP_RC_LEGACY"
     log_action "SMTP DELETED"
