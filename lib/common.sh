@@ -223,6 +223,24 @@ ensure_cipi_api_permissions() {
     fi
 }
 
+# Composer panel updates (self-update, api/gui update) run as root. Package metadata
+# may use git@github.com source URLs; without github.com in /root/.ssh/known_hosts
+# git blocks on "Are you sure you want to continue connecting (yes/no)?".
+_cipi_composer_prepare_github() {
+    local dir="${1:-}"
+    [[ -n "$dir" && -d "$dir" ]] || return 0
+    local ssh_dir="/root/.ssh" kh="${ssh_dir}/known_hosts"
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
+        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
+    fi
+    chmod 600 "$kh" 2>/dev/null || true
+    export GIT_TERMINAL_PROMPT=0
+    (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
+    (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
+}
+
 app_set() {
     vault_read apps.json | jq --arg a "$1" --arg k "$2" --arg v "$3" '.[$a][$k] = $v' | vault_write apps.json
     ensure_apps_json_api_access

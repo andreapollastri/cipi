@@ -22,6 +22,7 @@ fi
 _gui_composer_vcs_repo() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
+    _cipi_composer_prepare_github "$dir"
     (cd "$dir" && composer config repositories.cipi-gui \
         "{\"type\":\"vcs\",\"url\":\"${CIPI_GUI_REPO}\"}" 2>/dev/null) || true
 }
@@ -272,7 +273,8 @@ _gui_refresh_theme() {
 
 _gui_update_package() {
     _gui_composer_vcs_repo "${CIPI_GUI_ROOT}"
-    (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction 2>/dev/null) || true
+    _cipi_composer_prepare_github "${CIPI_GUI_ROOT}"
+    (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction --prefer-dist 2>/dev/null) || true
     chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
     (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force 2>/dev/null) || true
     (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true

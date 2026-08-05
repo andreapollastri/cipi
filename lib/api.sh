@@ -24,6 +24,7 @@ fi
 _api_composer_vcs_repo() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
+    _cipi_composer_prepare_github "$dir"
     (cd "$dir" && composer config repositories.cipi-api \
         "{\"type\":\"vcs\",\"url\":\"${CIPI_API_REPO}\"}" 2>/dev/null) || true
 }
@@ -431,7 +432,8 @@ _api_update_package() {
         (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
         (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
     fi
-    (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction 2>/dev/null) || true
+    _cipi_composer_prepare_github "${CIPI_API_ROOT}"
+    (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
     chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true
     (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
     (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
@@ -774,7 +776,8 @@ api_update() {
 
     # Update all packages (Laravel framework + cipi-api + dependencies)
     step "Composer update..."
-    (cd "${CIPI_API_ROOT}" && composer update --no-interaction 2>/dev/null) || {
+    _cipi_composer_prepare_github "${CIPI_API_ROOT}"
+    (cd "${CIPI_API_ROOT}" && composer update --no-interaction --prefer-dist 2>/dev/null) || {
         error "Composer update failed. Try: cipi api upgrade"
         systemctl start cipi-queue 2>/dev/null || true
         exit 1
