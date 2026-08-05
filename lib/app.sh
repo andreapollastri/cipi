@@ -2557,7 +2557,19 @@ _basicauth_set_user() {
     # remount-ro before mkdir; fail closed so callers never think auth was set.
     if ! _cipi_ensure_config_writable; then
         error "Cannot write credentials: filesystem is read-only (${BASICAUTH_DIR})"
+        [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && error "Remount failed: ${_CIPI_REMOUNT_ERR}"
+        error "Try as root: mount -n -o remount,rw / && cipi basicauth enable ${app}"
+        error "If remount fails, check disk health: dmesg | tail -30; findmnt /"
         return 1
+    fi
+    # Same FS as /etc/cipi usually — remount nginx path if probe still fails.
+    if ! _cipi_path_writable "$BASICAUTH_DIR"; then
+        _cipi_remount_rw /etc/nginx || _cipi_remount_rw / || true
+        if ! _cipi_path_writable "$BASICAUTH_DIR"; then
+            error "Cannot write credentials: filesystem is read-only (${BASICAUTH_DIR})"
+            [[ -n "${_CIPI_REMOUNT_ERR:-}" ]] && error "Remount failed: ${_CIPI_REMOUNT_ERR}"
+            return 1
+        fi
     fi
     mkdir -p "$BASICAUTH_DIR" || {
         error "Cannot create ${BASICAUTH_DIR}"

@@ -6,20 +6,68 @@
 [[ -z "${VAULT_KEY:-}" ]]    && readonly VAULT_KEY="${CIPI_CONFIG}/.vault_key"
 [[ -z "${VAULT_CIPHER:-}" ]] && readonly VAULT_CIPHER="aes-256-cbc"
 
-# True when /etc/cipi accepts writes (false on remount-ro even if mode bits look writable).
-_cipi_config_writable() {
-    local probe="${CIPI_CONFIG}/.cipi-writable-$$"
+# True when a directory accepts writes (false on remount-ro even if mode bits look writable).
+_cipi_path_writable() {
+    local dir="$1" probe
+    [[ -n "$dir" ]] || return 1
+    [[ -d "$dir" ]] || mkdir -p "$dir" 2>/dev/null || return 1
+    probe="${dir}/.cipi-writable-$$"
     touch "$probe" 2>/dev/null || return 1
     rm -f "$probe" 2>/dev/null || true
     return 0
 }
 
-# For *mutating* ops only: if /etc/cipi is not writable, try remounting / rw
-# (same recovery as migration 4.7.18). Read paths must keep using
-# _cipi_config_writable alone — never call this from vault_init / source init.
+# True when /etc/cipi accepts writes.
+_cipi_config_writable() {
+    _cipi_path_writable "${CIPI_CONFIG}"
+}
+
+# Remount the filesystem backing $path as read-write.
+# Uses mount -n so util-linux does not need to rewrite /etc/mtab while still RO.
+# Prefers findmnt SOURCE+TARGET — bare `remount /` can fail on broken fstab UUIDs.
+# Sets _CIPI_REMOUNT_ERR on failure (best-effort message for callers).
+_cipi_remount_rw() {
+    local path="${1:-/}" target="/" source="" err
+    _CIPI_REMOUNT_ERR=""
+    err="/tmp/cipi-remount-err.$$"
+
+    if command -v findmnt >/dev/null 2>&1; then
+        target=$(findmnt -n -o TARGET --target "$path" 2>/dev/null || echo "/")
+        source=$(findmnt -n -o SOURCE --target "$path" 2>/dev/null || true)
+    fi
+    [[ -z "$target" ]] && target="/"
+
+    if mount -n -o remount,rw "$target" >"$err" 2>&1; then
+        rm -f "$err" 2>/dev/null || true
+        return 0
+    fi
+    if [[ -n "$source" ]] && mount -n -o remount,rw "$source" "$target" >"$err" 2>&1; then
+        rm -f "$err" 2>/dev/null || true
+        return 0
+    fi
+    if mount -n -o remount,rw / >"$err" 2>&1; then
+        rm -f "$err" 2>/dev/null || true
+        return 0
+    fi
+    if mount -o remount,rw / >"$err" 2>&1; then
+        rm -f "$err" 2>/dev/null || true
+        return 0
+    fi
+
+    _CIPI_REMOUNT_ERR=$(tr '\n' ' ' <"$err" 2>/dev/null | sed 's/[[:space:]]*$//')
+    rm -f "$err" 2>/dev/null || true
+    [[ -z "${_CIPI_REMOUNT_ERR:-}" ]] && _CIPI_REMOUNT_ERR="mount -n -o remount,rw ${target} failed"
+    return 1
+}
+
+# For *mutating* ops only: if /etc/cipi is not writable, try remounting rw.
+# Read paths must keep using _cipi_config_writable alone — never call this
+# from vault_init / source init.
 _cipi_ensure_config_writable() {
+    mkdir -p "${CIPI_CONFIG}" 2>/dev/null || true
     _cipi_config_writable && return 0
-    mount -o remount,rw / 2>/dev/null || true
+    _cipi_remount_rw "${CIPI_CONFIG}" || _cipi_remount_rw / || true
+    mkdir -p "${CIPI_CONFIG}" 2>/dev/null || true
     _cipi_config_writable
 }
 

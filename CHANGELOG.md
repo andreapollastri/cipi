@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.5] — 2026-08-05
+
+### Fixed
+
+- **`cipi basicauth enable` still failed after 5.0.4 with read-only `/etc/nginx/cipi-basicauth`** — plain `mount -o remount,rw /` often fails while root is still RO (mtab updates / broken fstab UUID lookup). **`lib/vault.sh`**: `_cipi_remount_rw` uses `mount -n` + `findmnt` SOURCE/TARGET, then re-creates `/etc/cipi`; basicauth also probes/remounts the nginx path and prints remount details on failure. **Migration 5.0.5** applies the same recovery on `cipi self-update`.
+
+---
+
 ## [5.0.4] — 2026-08-05
 
 ### Fixed
