@@ -1,18 +1,28 @@
 #!/bin/bash
 #############################################
-# Cipi Migration 5.0.6 — API sudoers for server mgmt + webhook recreate
+# Cipi Migration 5.0.6 — API sudoers + IP whitelist
 #
-# Whitelist for panel API:
-#   php list|install|remove, ssh list|add|remove,
-#   service list|restart, status, db install|default,
-#   app webhook recreate
+# - Default /etc/cipi/api-ip-whitelist (*)
+# - Regenerate panel API sudoers (php/ssh/service/db/status,
+#   app webhook recreate, smtp, api ip-whitelist)
 #############################################
 
 set -e
 
 CIPI_LIB="${CIPI_LIB:-/opt/cipi/lib}"
+CIPI_CONFIG="${CIPI_CONFIG:-/etc/cipi}"
+WL="${CIPI_CONFIG}/api-ip-whitelist"
 
-echo "Migration 5.0.6 — Regenerate cipi-api sudoers (php/ssh/service/webhook/db engines)..."
+echo "Migration 5.0.6 — API IP whitelist + cipi-api sudoers..."
+
+mkdir -p "${CIPI_CONFIG}"
+if [[ ! -f "$WL" ]]; then
+    printf '%s\n' '*' > "$WL"
+    chmod 644 "$WL" 2>/dev/null || true
+    echo "  Created ${WL} (allow all)"
+else
+    echo "  ${WL} already present"
+fi
 
 if [[ -f "${CIPI_LIB}/cipi-api-sudoers.sh" ]]; then
     # shellcheck source=/dev/null
