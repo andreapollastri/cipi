@@ -13,6 +13,20 @@ fi
 if [[ -z "${CIPI_API_IP_WHITELIST:-}" ]]; then
     readonly CIPI_API_IP_WHITELIST="${CIPI_CONFIG}/api-ip-whitelist"
 fi
+if [[ -z "${CIPI_API_REPO:-}" ]]; then
+    readonly CIPI_API_REPO="https://github.com/cipi-sh/api"
+fi
+if [[ -z "${CIPI_API_BRANCH:-}" ]]; then
+    readonly CIPI_API_BRANCH="main"
+fi
+
+# Composer VCS repository for cipi/api (https://github.com/cipi-sh/api).
+_api_composer_vcs_repo() {
+    local dir="$1"
+    [[ -d "$dir" ]] || return 0
+    (cd "$dir" && composer config repositories.cipi-api \
+        "{\"type\":\"vcs\",\"url\":\"${CIPI_API_REPO}\"}" 2>/dev/null) || true
+}
 
 # ability|description — sourced from the API package (token-abilities.txt / artisan)
 _api_ability_lines() {
@@ -412,6 +426,10 @@ _api_update_package() {
     [[ -d "${CIPI_LIB}/../cipi-api" ]] && pkg_dir="${CIPI_LIB}/../cipi-api"
     if [[ -d "$pkg_dir" ]]; then
         (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path "$pkg_dir" 2>/dev/null) || true
+    else
+        _api_composer_vcs_repo "${CIPI_API_ROOT}"
+        (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
+        (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
     fi
     (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction 2>/dev/null) || true
     chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true

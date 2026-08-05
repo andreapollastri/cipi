@@ -409,7 +409,11 @@ read_input() {
 parse_args() {
     for arg in "$@"; do
         case "$arg" in
-            --*=*) local k="${arg%%=*}"; k="${k#--}"; printf -v "ARG_${k//-/_}" '%s' "${arg#*=}" ;;
+            --*=*) local k="${arg%%=*}" v="${arg#*=}"; k="${k#--}"
+                # Panel API builds --key='value' via escapeshellarg(); keep the value, drop wrapping quotes.
+                if [[ "$v" == \'*\' && ${#v} -ge 2 ]]; then v="${v:1:${#v}-2}"; fi
+                if [[ "$v" == \"*\" && ${#v} -ge 2 ]]; then v="${v:1:${#v}-2}"; fi
+                printf -v "ARG_${k//-/_}" '%s' "$v" ;;
             --*)   local k="${arg#--}"; printf -v "ARG_${k//-/_}" '%s' "true" ;;
         esac
     done

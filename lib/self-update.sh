@@ -90,10 +90,18 @@ selfupdate_command() {
     fi
 
     # Auto-update cipi-api package in installed API app
-    if [[ -f "${CIPI_API_ROOT:-/opt/cipi/api}/artisan" ]] && [[ -d /opt/cipi/cipi-api ]]; then
+    if [[ -f "${CIPI_API_ROOT:-/opt/cipi/api}/artisan" ]]; then
         step "Updating cipi-api in Laravel app..."
         local api_root="${CIPI_API_ROOT:-/opt/cipi/api}"
-        (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
+        if [[ -d /opt/cipi/cipi-api ]]; then
+            (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
+        elif [[ -f /opt/cipi/lib/api.sh ]]; then
+            # shellcheck source=/dev/null
+            source /opt/cipi/lib/api.sh
+            _api_composer_vcs_repo "$api_root"
+            (cd "$api_root" && composer config minimum-stability dev 2>/dev/null) || true
+            (cd "$api_root" && composer config prefer-stable true 2>/dev/null) || true
+        fi
         (cd "$api_root" && composer update cipi/api --no-interaction 2>/dev/null) || true
         # Composer runs as root; reclaim ownership before migrate (SQLite/logs must be www-data-writable).
         chown -R www-data:www-data "$api_root"
