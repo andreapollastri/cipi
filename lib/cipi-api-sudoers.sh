@@ -33,6 +33,14 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi worker horizon *, \
                                /usr/local/bin/cipi schedule *, \
                                /usr/local/bin/cipi health *, \
+                               /usr/local/bin/cipi smtp status, \
+                               /usr/local/bin/cipi smtp status *, \
+                               /usr/local/bin/cipi smtp configure *, \
+                               /usr/local/bin/cipi smtp enable, \
+                               /usr/local/bin/cipi smtp disable, \
+                               /usr/local/bin/cipi smtp test, \
+                               /usr/local/bin/cipi smtp delete, \
+                               /usr/local/bin/cipi smtp delete *, \
                                /usr/local/bin/cipi alias add *, \
                                /usr/local/bin/cipi alias remove *, \
                                /usr/local/bin/cipi www add *, \
@@ -46,11 +54,28 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi db list, \
                                /usr/local/bin/cipi db list *, \
                                /usr/local/bin/cipi db engines, \
+                               /usr/local/bin/cipi db install *, \
+                               /usr/local/bin/cipi db default *, \
                                /usr/local/bin/cipi db create *, \
                                /usr/local/bin/cipi db delete *, \
                                /usr/local/bin/cipi db backup *, \
                                /usr/local/bin/cipi db restore *, \
                                /usr/local/bin/cipi db password *, \
+                               /usr/local/bin/cipi php list, \
+                               /usr/local/bin/cipi php list *, \
+                               /usr/local/bin/cipi php install *, \
+                               /usr/local/bin/cipi php remove *, \
+                               /usr/local/bin/cipi ssh list, \
+                               /usr/local/bin/cipi ssh list *, \
+                               /usr/local/bin/cipi ssh add *, \
+                               /usr/local/bin/cipi ssh remove *, \
+                               /usr/local/bin/cipi service list, \
+                               /usr/local/bin/cipi service list *, \
+                               /usr/local/bin/cipi service restart *, \
+                               /usr/local/bin/cipi status, \
+                               /usr/local/bin/cipi app webhook recreate *, \
+                               /usr/local/bin/cipi api ip-whitelist, \
+                               /usr/local/bin/cipi api ip-whitelist *, \
                                /usr/local/bin/cipi-read-app-logs *, \
                                /bin/cat /etc/cipi/apps.json
 SUDOEOF

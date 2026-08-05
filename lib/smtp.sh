@@ -117,7 +117,30 @@ _smtp_can_reach() {
     return 1
 }
 
+_smtp_bool_flag() {
+    local v="${1:-}"
+    case "$(echo "$v" | tr '[:upper:]' '[:lower:]')" in
+        1|true|on|yes) echo "on" ;;
+        0|false|off|no) echo "off" ;;
+        *) echo "" ;;
+    esac
+}
+
+_smtp_save_config() {
+    local host="$1" port="$2" user="$3" pass="$4" from="$5" to="$6" tls="$7" enabled="$8"
+    jq -n \
+        --arg h "$host" --arg p "$port" --arg u "$user" --arg s "$pass" \
+        --arg f "$from" --arg t "$to" \
+        --argjson tl "$([[ "$tls" == "on" ]] && echo true || echo false)" \
+        --argjson e "$([[ "$enabled" == "on" ]] && echo true || echo false)" \
+        '{host:$h,port:$p,user:$u,password:$s,from:$f,to:$t,tls:$tl,enabled:$e}' \
+        | vault_write smtp.json
+    _smtp_write_rc || { error "Failed to write /etc/msmtprc"; return 1; }
+    return 0
+}
+
 _smtp_configure() {
+    parse_args "$@"
     _smtp_ensure_msmtp
     local host="" port="587" user="" pass="" from="" to="" tls="on" enabled="on"
 
@@ -131,6 +154,63 @@ _smtp_configure() {
         to=$(echo "$_sj" | jq -r '.to // ""')
         [[ "$(echo "$_sj" | jq -r '.tls // true')" == "true" ]] && tls="on" || tls="off"
         [[ "$(echo "$_sj" | jq -r '.enabled // true')" == "true" ]] && enabled="on" || enabled="off"
+    fi
+
+    # Non-interactive when any required flag is present (API / scripts).
+    local noninteractive=false
+    if [[ -n "${ARG_host:-}" || -n "${ARG_user:-}" || -n "${ARG_password:-}" || -n "${ARG_from:-}" || -n "${ARG_to:-}" ]]; then
+        noninteractive=true
+    fi
+
+    if [[ "$noninteractive" == "true" ]]; then
+        [[ -n "${ARG_host:-}" ]] && host="${ARG_host}"
+        [[ -n "${ARG_port:-}" ]] && port="${ARG_port}"
+        [[ -n "${ARG_user:-}" ]] && user="${ARG_user}"
+        [[ -n "${ARG_password:-}" ]] && pass="${ARG_password}"
+        [[ -n "${ARG_from:-}" ]] && from="${ARG_from}"
+        [[ -n "${ARG_to:-}" ]] && to="${ARG_to}"
+        if [[ -n "${ARG_tls:-}" ]]; then
+            tls=$(_smtp_bool_flag "${ARG_tls}")
+            [[ -z "$tls" ]] && { error "--tls must be on/off (or true/false)"; exit 1; }
+        fi
+        if [[ -n "${ARG_enabled:-}" ]]; then
+            enabled=$(_smtp_bool_flag "${ARG_enabled}")
+            [[ -z "$enabled" ]] && { error "--enabled must be on/off (or true/false)"; exit 1; }
+        fi
+        # Allow omitting --password when updating an existing config (keep current secret).
+        [[ -z "$pass" && -f "$SMTP_CFG" ]] && pass=$(vault_read smtp.json | jq -r '.password // ""')
+        [[ -z "$host" || -z "$user" || -z "$pass" || -z "$from" || -z "$to" ]] && {
+            error "Usage: cipi smtp configure --host=H --port=587 --user=U --password=P --from=F --to=T [--tls=on|off] [--enabled=on|off] [--no-test]"
+            echo "      --password may be omitted when updating an existing configuration"
+            exit 1
+        }
+        [[ "$port" =~ ^[0-9]+$ ]] || { error "Invalid --port"; exit 1; }
+
+        _smtp_save_config "$host" "$port" "$user" "$pass" "$from" "$to" "$tls" "$enabled" || exit 1
+        log_action "SMTP CONFIGURED: host=$host port=$port to=$to enabled=$enabled"
+
+        if [[ "${ARG_no_test:-}" == "true" ]]; then
+            success "SMTP configured (test skipped)"
+            return 0
+        fi
+
+        step "Testing SMTP..."
+        if ! _smtp_can_reach "$host" "$port"; then
+            warn "SMTP saved but ${host}:${port} is unreachable from this server."
+            return 0
+        fi
+        local test_err="" test_rc=0
+        set +e
+        test_err=$(_smtp_send "Cipi SMTP test" "This is a test email from Cipi. Notifications are configured correctly." 2>&1)
+        test_rc=$?
+        set -e
+        if [[ $test_rc -eq 0 ]]; then
+            success "SMTP configured and test email sent to ${to}"
+        else
+            warn "SMTP saved but test send failed."
+            [[ -n "$test_err" ]] && echo -e "${DIM}${test_err}${NC}"
+        fi
+        return 0
     fi
 
     echo -e "\n${BOLD}SMTP — Email notifications${NC}"
@@ -147,14 +227,8 @@ _smtp_configure() {
     echo -e "  ${DIM}Enable notifications?${NC}"
     read_input "Enabled (on/off)" "$enabled" enabled
 
-    jq -n \
-        --arg h "$host" --arg p "$port" --arg u "$user" --arg s "$pass" \
-        --arg f "$from" --arg t "$to" --argjson tl "$([[ "$tls" == "on" ]] && echo true || echo false)" \
-        --argjson e "$([[ "$enabled" == "on" ]] && echo true || echo false)" \
-        '{host:$h,port:$p,user:$u,password:$s,from:$f,to:$t,tls:$tl,enabled:$e}' \
-        | vault_write smtp.json
-
-    _smtp_write_rc || { error "Failed to write /etc/msmtprc"; exit 1; }
+    _smtp_save_config "$host" "$port" "$user" "$pass" "$from" "$to" "$tls" "$enabled" || exit 1
+    log_action "SMTP CONFIGURED: host=$host port=$port to=$to enabled=$enabled"
 
     step "Testing SMTP..."
     if ! _smtp_can_reach "$host" "$port"; then
@@ -218,13 +292,38 @@ _smtp_enable() {
 }
 
 _smtp_delete() {
-    if confirm "Remove SMTP config and disable notifications?"; then
-        rm -f "$SMTP_CFG" "$SMTP_RC" "$SMTP_RC_LEGACY"
-        success "SMTP config removed"
+    parse_args "$@"
+    if [[ "${ARG_force:-}" != "true" ]] && [[ -t 0 ]]; then
+        confirm "Remove SMTP config and disable notifications?" || return
+    elif [[ "${ARG_force:-}" != "true" ]] && [[ ! -t 0 ]]; then
+        error "Pass --force to delete SMTP config without a TTY"
+        exit 1
     fi
+    rm -f "$SMTP_CFG" "$SMTP_RC" "$SMTP_RC_LEGACY"
+    log_action "SMTP DELETED"
+    success "SMTP config removed"
 }
 
 _smtp_status() {
+    parse_args "$@"
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        if [[ ! -f "$SMTP_CFG" ]]; then
+            jq -n '{configured:false,enabled:false,host:null,port:null,user:null,from:null,to:null,tls:null}'
+            return 0
+        fi
+        vault_read smtp.json | jq '{
+            configured: true,
+            enabled: (.enabled // false),
+            host: (.host // null),
+            port: ((.port // "587") | tostring),
+            user: (.user // null),
+            from: (.from // null),
+            to: (.to // null),
+            tls: (.tls // true)
+        } | del(.password)'
+        return 0
+    fi
+
     echo -e "\n${BOLD}SMTP / Email Notifications${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     if [[ ! -f "$SMTP_CFG" ]]; then
@@ -291,12 +390,12 @@ cipi_notify() {
 smtp_command() {
     local sub="${1:-}"; shift || true
     case "$sub" in
-        configure) _smtp_configure ;;
+        configure) _smtp_configure "$@" ;;
         disable)   _smtp_disable ;;
         enable)    _smtp_enable ;;
-        delete)    _smtp_delete ;;
-        status)    _smtp_status ;;
+        delete)    _smtp_delete "$@" ;;
+        status)    _smtp_status "$@" ;;
         test)      _smtp_test ;;
-        *) error "Use: configure disable enable delete status test"; exit 1 ;;
+        *) error "Use: configure disable enable delete status test"; echo "      configure --host= --port= --user= --password= --from= --to= [--tls=on|off] [--enabled=on|off] [--no-test]"; echo "      status --json | delete --force"; exit 1 ;;
     esac
 }

@@ -64,8 +64,32 @@ _resolve_services() {
 }
 
 service_status() {
-    local target="${1:-all}"
+    parse_args "$@"
+    local target="all"
+    for arg in "$@"; do
+        [[ "$arg" == --* ]] && continue
+        target="$arg"
+        break
+    done
     local services; services=$(_resolve_services "$target") || return 1
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        local items="[]"
+        for svc in $services; do
+            local st="not_installed"
+            local since=""
+            if systemctl is-active --quiet "$svc" 2>/dev/null; then
+                st="running"
+                since=$(systemctl show "$svc" --property=ActiveEnterTimestamp --value 2>/dev/null | sed 's/ [A-Z]*$//')
+            elif systemctl list-unit-files --quiet "${svc}.service" &>/dev/null; then
+                st="stopped"
+            fi
+            items=$(echo "$items" | jq -c --arg n "$svc" --arg s "$st" --arg since "$since" \
+                '. + [{name:$n, status:$s, since:(if $since == "" then null else $since end)}]')
+        done
+        jq -n --argjson services "$items" '{services: $services}'
+        return 0
+    fi
 
     echo -e "\n${BOLD}Services${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
@@ -140,13 +164,13 @@ service_command() {
     local subcmd="${1:-list}"; shift || true
 
     case "$subcmd" in
-        list|status)  service_status  "${1:-all}" ;;
+        list|status)  service_status  "$@" ;;
         restart)      service_restart "${1:-all}" ;;
         start)        service_start   "${1:-}" ;;
         stop)         service_stop    "${1:-}" ;;
         *)
             error "Unknown service subcommand: ${subcmd}"
-            echo -e "  Usage: ${CYAN}cipi service <list|restart|start|stop> [service]${NC}"
+            echo -e "  Usage: ${CYAN}cipi service <list|restart|start|stop> [service] [--json]${NC}"
             exit 1
             ;;
     esac

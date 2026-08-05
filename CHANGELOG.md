@@ -4,6 +4,42 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.8] — 2026-08-05
+
+### Added
+
+- **`cipi api ip-whitelist`** — restrict panel API / MCP clients by IP. Default file `/etc/cipi/api-ip-whitelist` is `*` (allow all). Subcommands: `show` (default), `add`, `remove`, `set`, `allow-all`. Entries: one IPv4/IPv6 or CIDR per line (or comma-separated `--ips=`). `--json` for automation. **Migration 5.0.8** creates the default file and regenerates `/etc/sudoers.d/cipi-api`.
+- **Panel API sudoers** — `api ip-whitelist` (+ args) for www-data.
+
+---
+
+## [5.0.7] — 2026-08-05
+
+### Added
+
+- **Non-interactive SMTP** — `cipi smtp configure --host= --port= --user= --password= --from= --to= [--tls=on|off] [--enabled=on|off] [--no-test]`; `cipi smtp status --json` (password never printed); `cipi smtp delete --force`.
+- **Healthcheck JSON** — `cipi health list --json`, `cipi health check <app> --json` (includes last state / failcount when present).
+- **Panel API sudoers** — `smtp status|configure|enable|disable|test|delete`. **Migration 5.0.7** regenerates `/etc/sudoers.d/cipi-api` on `cipi self-update`.
+
+---
+
+## [5.0.6] — 2026-08-05
+
+### Added
+
+- **`cipi app webhook recreate <app> [--rotate-secret]`** — recreate the GitHub/GitLab deploy webhook; optional secret rotation updates `apps.json` + `shared/.env` `CIPI_WEBHOOK_TOKEN`.
+- **`--json` on `cipi php list` / `cipi ssh list` / `cipi service list`** — structured output for the panel API.
+- **Panel API sudoers** — `php list|install|remove`, `ssh list|add|remove`, `service list|restart`, `status`, `db install|default`, `app webhook recreate`. **Migration 5.0.6** regenerates `/etc/sudoers.d/cipi-api` on `cipi self-update`.
+
+### Fixed
+
+- **`cipi app edit --repository=` recreated deploy key + webhook even when the URL was unchanged** — provider cleanup/setup now runs only when the repository actually changes (same for unchanged `--php` / `--branch`).
+- **GitHub/GitLab API `curl` could hang forever** — added `--connect-timeout 10 --max-time 30`.
+- **`cipi php remove` hung under the panel API** — confirmation is skipped without a TTY (or with `--force`), matching other non-interactive commands.
+- **Clearer error when editing to a PHP version that is not installed** — suggests `cipi php install <ver>`.
+
+---
+
 ## [5.0.5] — 2026-08-05
 
 ### Fixed

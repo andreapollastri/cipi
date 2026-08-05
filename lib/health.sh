@@ -13,8 +13,8 @@ health_command() {
         set)   _health_set "$@" ;;
         unset) _health_unset "$@" ;;
         check) _health_check_one "$@" ;;
-        list)  _health_list ;;
-        *) error "Usage: cipi health set|unset|check|list <app> [--url=] [--expect=200]"; exit 1 ;;
+        list)  _health_list "$@" ;;
+        *) error "Usage: cipi health set|unset|check|list <app> [--url=] [--expect=200] [--json]"; exit 1 ;;
     esac
 }
 
@@ -66,8 +66,9 @@ _health_unset() {
 }
 
 _health_check_one() {
-    local app="${1:-}"
-    [[ -z "$app" ]] && { error "Usage: cipi health check <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    parse_args "$@"
+    [[ -z "$app" ]] && { error "Usage: cipi health check <app> [--json]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     local url expect
     url=$(app_get "$app" health_url)
@@ -76,8 +77,17 @@ _health_check_one() {
     [[ -z "$expect" ]] && expect=200
 
     local code
-    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" 2>/dev/null || echo "000")
-    if [[ "$code" == "$expect" ]]; then
+    code=$(curl -sS -o /dev/null -w '%{http_code}' --connect-timeout 5 --max-time 15 -L "$url" 2>/dev/null || echo "000")
+    local ok=false
+    [[ "$code" == "$expect" ]] && ok=true
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        jq -n --arg app "$app" --arg url "$url" --argjson expect "$expect" --arg got "$code" --argjson ok "$ok" \
+            '{app:$app,url:$url,expect:$expect,got:$got,ok:$ok}'
+        [[ "$ok" == "true" ]] && return 0 || return 1
+    fi
+
+    if [[ "$ok" == "true" ]]; then
         success "OK ${code} ← ${url}"
         return 0
     fi
@@ -86,9 +96,28 @@ _health_check_one() {
 }
 
 _health_list() {
-    echo -e "\n${BOLD}Healthchecks${NC}"
-    local apps json
+    parse_args "$@"
+    local json
     json=$(vault_read apps.json)
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        local items="[]"
+        while IFS=$'\t' read -r app url expect; do
+            [[ -z "$app" ]] && continue
+            local state="" failcount=0
+            [[ -f "${HEALTH_STATE_DIR}/${app}.state" ]] && state=$(cat "${HEALTH_STATE_DIR}/${app}.state" 2>/dev/null || true)
+            [[ -f "${HEALTH_STATE_DIR}/${app}.failcount" ]] && failcount=$(cat "${HEALTH_STATE_DIR}/${app}.failcount" 2>/dev/null || echo 0)
+            [[ "$failcount" =~ ^[0-9]+$ ]] || failcount=0
+            items=$(echo "$items" | jq -c \
+                --arg app "$app" --arg url "$url" --argjson expect "${expect:-200}" \
+                --arg state "$state" --argjson fc "$failcount" \
+                '. + [{app:$app,url:$url,expect:$expect,state:(if $state=="" then null else $state end),failcount:$fc}]')
+        done < <(echo "$json" | jq -r 'to_entries[] | select(.value.health_url != null and .value.health_url != "") | "\(.key)\t\(.value.health_url)\t\(.value.health_expect // "200")"')
+        jq -n --argjson checks "$items" '{checks:$checks}'
+        return 0
+    fi
+
+    echo -e "\n${BOLD}Healthchecks${NC}"
     echo "$json" | jq -r 'to_entries[] | select(.value.health_url != null and .value.health_url != "") | "\(.key)\t\(.value.health_url)\t\(.value.health_expect // "200")"' \
         | while IFS=$'\t' read -r app url expect; do
             printf "  %-16s %-50s expect=%s\n" "$app" "$url" "$expect"

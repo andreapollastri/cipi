@@ -10,6 +10,9 @@ fi
 if [[ -z "${CIPI_API_CONFIG:-}" ]]; then
     readonly CIPI_API_CONFIG="${CIPI_CONFIG}/api.json"
 fi
+if [[ -z "${CIPI_API_IP_WHITELIST:-}" ]]; then
+    readonly CIPI_API_IP_WHITELIST="${CIPI_CONFIG}/api-ip-whitelist"
+fi
 
 # ability|description — sourced from the API package (token-abilities.txt / artisan)
 _api_ability_lines() {
@@ -267,6 +270,10 @@ api_setup() {
     fi
     echo "{\"domain\": \"${domain}\"}" | vault_write api.json
     success "Config saved"
+
+    # Default API IP whitelist (* = allow all) — readable by www-data
+    _api_ipwl_ensure_file
+    success "API IP whitelist ready (${CIPI_API_IP_WHITELIST})"
 
     # Ensure Laravel API app exists
     _api_ensure_laravel_app
@@ -1100,6 +1107,393 @@ api_token_revoke() {
     fi
 }
 
+# ── IP WHITELIST ───────────────────────────────────────────────
+# Plain file (not vault): www-data must read it on every API/MCP request.
+# Missing file or "*" = allow all (default / safe for upgrades).
+
+_api_ipwl_ensure_file() {
+    mkdir -p "${CIPI_CONFIG}"
+    if [[ ! -f "${CIPI_API_IP_WHITELIST}" ]]; then
+        printf '%s\n' '*' > "${CIPI_API_IP_WHITELIST}"
+        chmod 644 "${CIPI_API_IP_WHITELIST}" 2>/dev/null || true
+    fi
+}
+
+# Returns 0 if entry is * / valid IPv4 / IPv6 / CIDR.
+_api_ipwl_valid_entry() {
+    local e="${1:-}"
+    [[ -z "$e" ]] && return 1
+    [[ "$e" == "*" ]] && return 0
+    if command -v php >/dev/null 2>&1; then
+        php -r '
+$e = $argv[1];
+if ($e === "*") { exit(0); }
+if (str_contains($e, "/")) {
+    [$ip, $prefix] = explode("/", $e, 2);
+    if (!ctype_digit($prefix) && !(is_string($prefix) && preg_match("/^\d+$/", $prefix))) { exit(1); }
+    $prefix = (int) $prefix;
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV4)) { exit($prefix >= 0 && $prefix <= 32 ? 0 : 1); }
+    if (filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_IPV6)) { exit($prefix >= 0 && $prefix <= 128 ? 0 : 1); }
+    exit(1);
+}
+exit(filter_var($e, FILTER_VALIDATE_IP) ? 0 : 1);
+' "$e" 2>/dev/null
+        return $?
+    fi
+    # Fallback without PHP: IPv4 (+ optional /0-32) only
+    if [[ "$e" =~ ^([0-9]{1,3}\.){3}[0-9]{1,3}(/([0-9]|[12][0-9]|3[0-2]))?$ ]]; then
+        return 0
+    fi
+    # Loose IPv6 (hex + : + optional /prefix)
+    if [[ "$e" =~ ^[0-9a-fA-F:]+(/([0-9]|[1-9][0-9]|1[01][0-9]|12[0-8]))?$ ]] && [[ "$e" == *:* ]]; then
+        return 0
+    fi
+    return 1
+}
+
+# Print normalized entries (no comments/blanks), one per line.
+_api_ipwl_entries() {
+    _api_ipwl_ensure_file
+    local line
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        line="${line%%#*}"
+        line="$(echo "$line" | tr -d '[:space:]')"
+        [[ -z "$line" ]] && continue
+        echo "$line"
+    done < "${CIPI_API_IP_WHITELIST}"
+}
+
+_api_ipwl_is_allow_all() {
+    local e has=false
+    while IFS= read -r e; do
+        has=true
+        [[ "$e" == "*" ]] && return 0
+    done < <(_api_ipwl_entries)
+    # Missing / empty → allow all (safe default)
+    [[ "$has" == "false" ]] && return 0
+    return 1
+}
+
+_api_ipwl_write() {
+    local -a entries=("$@")
+    local tmp
+    tmp=$(mktemp)
+    {
+        echo "# Cipi API IP whitelist — managed by: cipi api ip-whitelist"
+        echo "# * = allow all | otherwise one IPv4/IPv6 or CIDR per line"
+        if [[ ${#entries[@]} -eq 0 ]]; then
+            echo '*'
+        else
+            local e
+            for e in "${entries[@]}"; do
+                echo "$e"
+            done
+        fi
+    } > "$tmp"
+    mv -f "$tmp" "${CIPI_API_IP_WHITELIST}"
+    chmod 644 "${CIPI_API_IP_WHITELIST}" 2>/dev/null || true
+}
+
+_api_ipwl_public_ip_hint() {
+    local ip=""
+    ip=$(curl -s --connect-timeout 3 --max-time 5 https://checkip.amazonaws.com 2>/dev/null | tr -d '[:space:]') || true
+    if [[ -n "$ip" ]] && _api_ipwl_valid_entry "$ip"; then
+        echo "$ip"
+    fi
+}
+
+api_ip_whitelist_show() {
+    parse_args "$@"
+    _api_ipwl_ensure_file
+
+    local -a entries=()
+    local e
+    while IFS= read -r e; do
+        entries+=("$e")
+    done < <(_api_ipwl_entries)
+
+    local allow_all=false
+    _api_ipwl_is_allow_all && allow_all=true
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        local json_entries
+        if [[ "$allow_all" == "true" ]]; then
+            json_entries='["*"]'
+        else
+            json_entries=$(printf '%s\n' "${entries[@]}" | jq -R . | jq -s .)
+        fi
+        jq -n \
+            --argjson allow_all "$allow_all" \
+            --argjson entries "$json_entries" \
+            --arg file "${CIPI_API_IP_WHITELIST}" \
+            '{allow_all:$allow_all, entries:$entries, file:$file}'
+        return 0
+    fi
+
+    echo ""
+    echo -e "${BOLD}API IP whitelist${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    echo -e "  File: ${DIM}${CIPI_API_IP_WHITELIST}${NC}"
+    if [[ "$allow_all" == "true" ]]; then
+        echo -e "  Mode: ${GREEN}allow all (*)${NC}"
+    else
+        echo -e "  Mode: ${YELLOW}restricted${NC} (${#entries[@]} entr$([[ ${#entries[@]} -eq 1 ]] && echo y || echo ies))"
+        local i=0
+        for e in "${entries[@]}"; do
+            (( i++ )) || true
+            echo -e "    ${CYAN}${i}${NC}  ${e}"
+        done
+    fi
+    echo ""
+    echo -e "  ${DIM}Add:    cipi api ip-whitelist add <ip|cidr>${NC}"
+    echo -e "  ${DIM}Remove: cipi api ip-whitelist remove <ip|cidr>${NC}"
+    echo -e "  ${DIM}Reset:  cipi api ip-whitelist allow-all${NC}"
+    local hint
+    hint=$(_api_ipwl_public_ip_hint)
+    if [[ -n "$hint" ]]; then
+        echo -e "  ${DIM}This server public IP (often needed for same-host GUI): ${hint}${NC}"
+    fi
+    echo ""
+}
+
+api_ip_whitelist_add() {
+    parse_args "$@"
+    _api_ipwl_ensure_file
+
+    local -a to_add=()
+    local a
+    for a in "$@"; do
+        [[ "$a" == --* ]] && continue
+        to_add+=("$a")
+    done
+    if [[ -n "${ARG_ips:-}" ]]; then
+        IFS=',' read -r -a _extra <<< "${ARG_ips}"
+        local x
+        for x in "${_extra[@]}"; do
+            x="$(echo "$x" | tr -d '[:space:]')"
+            [[ -n "$x" ]] && to_add+=("$x")
+        done
+    fi
+    [[ ${#to_add[@]} -eq 0 ]] && { error "Usage: cipi api ip-whitelist add <ip|cidr> [...] [--ips=a,b]"; exit 1; }
+
+    local -a current=()
+    local allow_all=false
+    _api_ipwl_is_allow_all && allow_all=true
+
+    if [[ "$allow_all" == "false" ]]; then
+        while IFS= read -r e; do
+            current+=("$e")
+        done < <(_api_ipwl_entries)
+    fi
+
+    local added=0
+    for a in "${to_add[@]}"; do
+        a="$(echo "$a" | tr -d '[:space:]')"
+        [[ -z "$a" ]] && continue
+        if ! _api_ipwl_valid_entry "$a"; then
+            error "Invalid IP or CIDR: ${a}"; exit 1
+        fi
+        if [[ "$a" == "*" ]]; then
+            _api_ipwl_write '*'
+            log_action "API IP WHITELIST: allow-all"
+            success "Whitelist set to allow all (*)"
+            return 0
+        fi
+        local exists=false
+        local c
+        for c in "${current[@]}"; do
+            [[ "$c" == "$a" ]] && exists=true && break
+        done
+        if [[ "$exists" == "false" ]]; then
+            current+=("$a")
+            (( added++ )) || true
+        fi
+    done
+
+    if [[ ${#current[@]} -eq 0 ]]; then
+        _api_ipwl_write '*'
+    else
+        _api_ipwl_write "${current[@]}"
+    fi
+    log_action "API IP WHITELIST ADD: ${to_add[*]}"
+    if [[ "$allow_all" == "true" && $added -gt 0 ]]; then
+        warn "Switched from allow-all (*) to restricted mode."
+        warn "Include the GUI server IP and any operator IPs, or you may lock yourself out."
+        warn "Escape hatch on the server: cipi api ip-whitelist allow-all"
+    fi
+    success "Added ${added} entr$([[ $added -eq 1 ]] && echo y || echo ies)"
+    api_ip_whitelist_show
+}
+
+api_ip_whitelist_remove() {
+    parse_args "$@"
+    _api_ipwl_ensure_file
+
+    local -a to_remove=()
+    local a
+    for a in "$@"; do
+        [[ "$a" == --* ]] && continue
+        to_remove+=("$a")
+    done
+    if [[ -n "${ARG_ips:-}" ]]; then
+        IFS=',' read -r -a _extra <<< "${ARG_ips}"
+        local x
+        for x in "${_extra[@]}"; do
+            x="$(echo "$x" | tr -d '[:space:]')"
+            [[ -n "$x" ]] && to_remove+=("$x")
+        done
+    fi
+    [[ ${#to_remove[@]} -eq 0 ]] && { error "Usage: cipi api ip-whitelist remove <ip|cidr> [...] [--ips=a,b]"; exit 1; }
+
+    if _api_ipwl_is_allow_all; then
+        warn "Already allow-all (*); nothing to remove."
+        exit 0
+    fi
+
+    local -a current=() next=()
+    while IFS= read -r e; do
+        current+=("$e")
+    done < <(_api_ipwl_entries)
+
+    local removed=0
+    local c r skip
+    for c in "${current[@]}"; do
+        skip=false
+        for r in "${to_remove[@]}"; do
+            r="$(echo "$r" | tr -d '[:space:]')"
+            if [[ "$c" == "$r" ]]; then
+                skip=true
+                (( removed++ )) || true
+                break
+            fi
+        done
+        [[ "$skip" == "false" ]] && next+=("$c")
+    done
+
+    if [[ ${#next[@]} -eq 0 ]]; then
+        _api_ipwl_write '*'
+        log_action "API IP WHITELIST: allow-all (last entry removed)"
+        success "Last entry removed — whitelist reset to allow all (*)"
+    else
+        _api_ipwl_write "${next[@]}"
+        log_action "API IP WHITELIST REMOVE: ${to_remove[*]}"
+        success "Removed ${removed} entr$([[ $removed -eq 1 ]] && echo y || echo ies)"
+    fi
+    api_ip_whitelist_show
+}
+
+api_ip_whitelist_set() {
+    parse_args "$@"
+    _api_ipwl_ensure_file
+
+    if [[ "${ARG_allow_all:-}" == "true" ]]; then
+        api_ip_whitelist_allow_all
+        return 0
+    fi
+
+    local -a entries=()
+    if [[ -n "${ARG_ips:-}" ]]; then
+        IFS=',' read -r -a _raw <<< "${ARG_ips}"
+        local x
+        for x in "${_raw[@]}"; do
+            x="$(echo "$x" | tr -d '[:space:]')"
+            [[ -n "$x" ]] && entries+=("$x")
+        done
+    else
+        # Positional IPs
+        local a
+        for a in "$@"; do
+            [[ "$a" == --* ]] && continue
+            entries+=("$a")
+        done
+    fi
+
+    # Interactive multiline when nothing provided and TTY
+    if [[ ${#entries[@]} -eq 0 ]]; then
+        if [[ ! -t 0 ]]; then
+            error "Usage: cipi api ip-whitelist set --ips=1.2.3.4,10.0.0.0/8 | --allow-all"
+            exit 1
+        fi
+        echo ""
+        echo -e "${BOLD}Set API IP whitelist${NC}"
+        echo -e "${DIM}Paste one IP or CIDR per line. Use * alone for allow all.${NC}"
+        echo -e "${DIM}Empty line to finish.${NC}"
+        local hint
+        hint=$(_api_ipwl_public_ip_hint)
+        [[ -n "$hint" ]] && echo -e "${DIM}Hint — this server public IP: ${hint}${NC}"
+        echo ""
+        local line
+        while true; do
+            read -r line || break
+            line="${line%%#*}"
+            line="$(echo "$line" | tr -d '[:space:]')"
+            [[ -z "$line" ]] && break
+            entries+=("$line")
+        done
+    fi
+
+    [[ ${#entries[@]} -eq 0 ]] && { error "No entries provided"; exit 1; }
+
+    local e
+    for e in "${entries[@]}"; do
+        if ! _api_ipwl_valid_entry "$e"; then
+            error "Invalid IP or CIDR: ${e}"; exit 1
+        fi
+    done
+
+    # If * is present, allow-all wins
+    for e in "${entries[@]}"; do
+        if [[ "$e" == "*" ]]; then
+            _api_ipwl_write '*'
+            log_action "API IP WHITELIST: allow-all"
+            success "Whitelist set to allow all (*)"
+            api_ip_whitelist_show
+            return 0
+        fi
+    done
+
+    # Deduplicate preserving order
+    local -a unique=()
+    local u seen
+    for e in "${entries[@]}"; do
+        seen=false
+        for u in "${unique[@]}"; do
+            [[ "$u" == "$e" ]] && seen=true && break
+        done
+        [[ "$seen" == "false" ]] && unique+=("$e")
+    done
+
+    _api_ipwl_write "${unique[@]}"
+    log_action "API IP WHITELIST SET: ${unique[*]}"
+    warn "Restricted mode — clients not on this list get HTTP 403."
+    warn "Escape hatch: cipi api ip-whitelist allow-all"
+    success "Whitelist updated (${#unique[@]} entries)"
+    api_ip_whitelist_show
+}
+
+api_ip_whitelist_allow_all() {
+    _api_ipwl_ensure_file
+    _api_ipwl_write '*'
+    log_action "API IP WHITELIST: allow-all"
+    success "Whitelist set to allow all (*)"
+    api_ip_whitelist_show
+}
+
+_api_ip_whitelist_command() {
+    local sub="${1:-show}"; shift || true
+    case "$sub" in
+        ""|show|list|status) api_ip_whitelist_show "$@" ;;
+        add)                 api_ip_whitelist_add "$@" ;;
+        remove|rm|delete)    api_ip_whitelist_remove "$@" ;;
+        set|replace)         api_ip_whitelist_set "$@" ;;
+        allow-all|reset|clear) api_ip_whitelist_allow_all "$@" ;;
+        *)
+            error "Usage: cipi api ip-whitelist show|add|remove|set|allow-all"
+            exit 1
+            ;;
+    esac
+}
+
 # ── ROUTER ─────────────────────────────────────────────────────
 
 api_fix_permissions() {
@@ -1119,11 +1513,12 @@ api_command() {
         status)  api_status ;;
         fix-permissions|fixperms) api_fix_permissions ;;
         token)   _api_token_command "$@" ;;
+        ip-whitelist|ipwhitelist|whitelist) _api_ip_whitelist_command "$@" ;;
         *)
             if validate_domain "$sub" 2>/dev/null; then
                 api_setup "$sub"
             else
-                error "Unknown: $sub"; echo "Use: <domain> | ssl | update | upgrade | status | fix-permissions | token list|create|revoke"; exit 1
+                error "Unknown: $sub"; echo "Use: <domain> | ssl | update | upgrade | status | fix-permissions | token list|create|revoke | ip-whitelist"; exit 1
             fi ;;
     esac
 }

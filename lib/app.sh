@@ -740,56 +740,69 @@ app_edit() {
 
     if [[ -n "${ARG_php:-}" ]]; then
         local np="${ARG_php}"
-        validate_php_version "$np" || { error "Invalid PHP: $np"; exit 1; }
-        php_is_installed "$np" || { error "PHP $np not installed"; exit 1; }
-        step "PHP ${cur_php} → ${np}..."
-        if [[ -n "$(app_get "$app" octane)" ]]; then
-            # Octane apps have no FPM pool — only CLI paths in supervisor/cron/deployer
-            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf" 2>/dev/null || true
+        if [[ "$np" == "$cur_php" ]]; then
+            info "PHP already '${np}'"
         else
-            rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
-            _create_fpm_pool "$app" "$np"; reload_php_fpm "$cur_php"; reload_php_fpm "$np"
+            validate_php_version "$np" || { error "Invalid PHP: $np"; exit 1; }
+            php_is_installed "$np" || { error "PHP $np not installed. Run: cipi php install $np"; exit 1; }
+            step "PHP ${cur_php} → ${np}..."
+            if [[ -n "$(app_get "$app" octane)" ]]; then
+                # Octane apps have no FPM pool — only CLI paths in supervisor/cron/deployer
+                rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf" 2>/dev/null || true
+            else
+                rm -f "/etc/php/${cur_php}/fpm/pool.d/${app}.conf"
+                _create_fpm_pool "$app" "$np"; reload_php_fpm "$cur_php"; reload_php_fpm "$np"
+            fi
+            sed -i "s|/usr/bin/php[0-9]\.[0-9]|/usr/bin/php${np}|g" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null
+            reload_supervisor
+            crontab -u "$app" -l 2>/dev/null | sed "s|php${cur_php}|php${np}|g" | crontab -u "$app" -
+            sed -i "s|php${cur_php}|php${np}|g" "/home/${app}/.bashrc" "/home/${app}/.deployer/deploy.php" 2>/dev/null
+            if ! grep -q "bin/composer" "/home/${app}/.deployer/deploy.php" 2>/dev/null; then
+                sed -i "/set('bin\/php'/a set('bin/composer', '/usr/bin/php${np} /usr/local/bin/composer');" "/home/${app}/.deployer/deploy.php" 2>/dev/null
+            fi
+            sed -i "s|^CIPI_PHP_VERSION=.*|CIPI_PHP_VERSION=${np}|" "/home/${app}/shared/.env"
+            app_set "$app" php "$np"; success "PHP → $np"; changed=true
         fi
-        sed -i "s|/usr/bin/php[0-9]\.[0-9]|/usr/bin/php${np}|g" "/etc/supervisor/conf.d/${app}.conf" 2>/dev/null
-        reload_supervisor
-        crontab -u "$app" -l 2>/dev/null | sed "s|php${cur_php}|php${np}|g" | crontab -u "$app" -
-        sed -i "s|php${cur_php}|php${np}|g" "/home/${app}/.bashrc" "/home/${app}/.deployer/deploy.php" 2>/dev/null
-        if ! grep -q "bin/composer" "/home/${app}/.deployer/deploy.php" 2>/dev/null; then
-            sed -i "/set('bin\/php'/a set('bin/composer', '/usr/bin/php${np} /usr/local/bin/composer');" "/home/${app}/.deployer/deploy.php" 2>/dev/null
-        fi
-        sed -i "s|^CIPI_PHP_VERSION=.*|CIPI_PHP_VERSION=${np}|" "/home/${app}/shared/.env"
-        app_set "$app" php "$np"; success "PHP → $np"; changed=true
     fi
     if [[ -n "${ARG_branch:-}" ]]; then
-        validate_git_branch "${ARG_branch}" || { error "Invalid branch name '${ARG_branch}'"; exit 1; }
-        app_set "$app" branch "${ARG_branch}"
-        local safe_branch; safe_branch=$(printf '%s' "${ARG_branch}" | sed 's/[&|\\\/]/\\&/g')
-        sed -i "s|set('branch', '.*')|set('branch', '${safe_branch}')|" "/home/${app}/.deployer/deploy.php"
-        success "Branch → ${ARG_branch}"; changed=true
+        local cur_branch; cur_branch=$(app_get "$app" branch)
+        if [[ "${ARG_branch}" == "$cur_branch" ]]; then
+            info "Branch already '${ARG_branch}'"
+        else
+            validate_git_branch "${ARG_branch}" || { error "Invalid branch name '${ARG_branch}'"; exit 1; }
+            app_set "$app" branch "${ARG_branch}"
+            local safe_branch; safe_branch=$(printf '%s' "${ARG_branch}" | sed 's/[&|\\\/]/\\&/g')
+            sed -i "s|set('branch', '.*')|set('branch', '${safe_branch}')|" "/home/${app}/.deployer/deploy.php"
+            success "Branch → ${ARG_branch}"; changed=true
+        fi
     fi
     if [[ -n "${ARG_repository:-}" ]]; then
         validate_git_repository "${ARG_repository}" || { error "Invalid repository URL '${ARG_repository}'"; exit 1; }
         local old_repo; old_repo=$(app_get "$app" repository)
-        app_set "$app" repository "${ARG_repository}"
-        local safe_repo; safe_repo=$(printf '%s' "${ARG_repository}" | sed 's/[&|\\\/]/\\&/g')
-        sed -i "s|set('repository', '.*')|set('repository', '${safe_repo}')|" "/home/${app}/.deployer/deploy.php"
+        if [[ "${ARG_repository}" == "$old_repo" ]]; then
+            info "Repository already '${ARG_repository}'"
+        else
+            app_set "$app" repository "${ARG_repository}"
+            local safe_repo; safe_repo=$(printf '%s' "${ARG_repository}" | sed 's/[&|\\\/]/\\&/g')
+            sed -i "s|set('repository', '.*')|set('repository', '${safe_repo}')|" "/home/${app}/.deployer/deploy.php"
 
-        # Migrate git provider integration
-        source "${CIPI_LIB}/git.sh"
-        git_cleanup_repo "$app" "$old_repo"
-        git_clear_app_data "$app"
-        local pub_key=""
-        [[ -f "/home/${app}/.ssh/id_ed25519.pub" ]] && pub_key=$(cat "/home/${app}/.ssh/id_ed25519.pub")
-        local wt; wt=$(app_get "$app" webhook_token)
-        local d; d=$(app_get "$app" domain)
-        if [[ -n "$pub_key" ]]; then
-            git_setup_repo "$app" "${ARG_repository}" "$d" "$wt" "$pub_key"
-            if [[ -n "${GIT_PROVIDER:-}" ]]; then
-                git_save_app_data "$app" "$GIT_PROVIDER" "${GIT_DEPLOY_KEY_ID:-}" "${GIT_WEBHOOK_ID:-}"
+            # Migrate git provider integration only when the URL actually changes
+            source "${CIPI_LIB}/git.sh"
+            git_cleanup_repo "$app" "$old_repo"
+            git_clear_app_data "$app"
+            local pub_key=""
+            [[ -f "/home/${app}/.ssh/id_ed25519.pub" ]] && pub_key=$(cat "/home/${app}/.ssh/id_ed25519.pub")
+            local wt; wt=$(app_get "$app" webhook_token)
+            local d; d=$(app_get "$app" domain)
+            if [[ -n "$pub_key" ]]; then
+                git_setup_repo "$app" "${ARG_repository}" "$d" "$wt" "$pub_key"
+                if [[ -n "${GIT_PROVIDER:-}" ]]; then
+                    git_save_app_data "$app" "$GIT_PROVIDER" "${GIT_DEPLOY_KEY_ID:-}" "${GIT_WEBHOOK_ID:-}"
+                fi
             fi
-        fi
 
-        success "Repository updated"; changed=true
+            success "Repository updated"; changed=true
+        fi
     fi
     if [[ -n "${ARG_node_build+x}" || "${ARG_no_node_build:-}" == "true" ]]; then
         if [[ "${ARG_no_node_build:-}" == "true" || -z "${ARG_node_build:-}" ]]; then
@@ -3233,6 +3246,16 @@ app_clone() {
     success "Cloned '${src}' → '${name}'. Deploy when ready: cipi deploy ${name}"
 }
 
+# Recreate GitHub/GitLab webhook (optionally rotate CIPI_WEBHOOK_TOKEN).
+# Usage: cipi app webhook recreate <app> [--rotate-secret]
+app_webhook_recreate() {
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi app webhook recreate <app> [--rotate-secret]"; exit 1; }
+    app_exists "$app" || { error "App '$app' not found"; exit 1; }
+    source "${CIPI_LIB}/git.sh"
+    git_recreate_webhook "$app" "$@" || exit 1
+}
+
 # ── ROUTERS ───────────────────────────────────────────────────
 
 app_command() {
@@ -3248,6 +3271,15 @@ app_command() {
         reverb)  app_reverb "$@" ;;
         limits)  app_limits "$@" ;;
         env)     app_env "$@" ;;
+        webhook)
+            if [[ "${1:-}" == "recreate" ]]; then
+                shift
+                app_webhook_recreate "$@"
+            else
+                error "Usage: cipi app webhook recreate <app> [--rotate-secret]"
+                exit 1
+            fi
+            ;;
         logs)
             if [[ "${1:-}" == "read" ]]; then
                 shift
@@ -3264,7 +3296,7 @@ app_command() {
         unsuspend) app_unsuspend "$@" ;;
         reset-password)    app_reset_password "$@" ;;
         reset-db-password) app_reset_db_password "$@" ;;
-        *) error "Unknown: $sub"; echo "Use: create list show edit delete convert clone reverb limits env logs tinker artisan run deploy-config suspend unsuspend reset-password reset-db-password"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; echo "      run --commands [--json]  (list whitelisted binaries)"; exit 1 ;;
+        *) error "Unknown: $sub"; echo "Use: create list show edit delete convert clone reverb limits env webhook logs tinker artisan run deploy-config suspend unsuspend reset-password reset-db-password"; echo "      webhook recreate <app> [--rotate-secret]"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; echo "      run --commands [--json]  (list whitelisted binaries)"; exit 1 ;;
     esac
 }
 

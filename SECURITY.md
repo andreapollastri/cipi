@@ -89,6 +89,7 @@ If you run Cipi in production:
 - Keep Cipi updated: `cipi self-update`
 - Configure SMTP notifications: `cipi smtp configure`
 - Restrict API access with scoped tokens: `cipi api token create`
+- Optionally lock the API to known IPs: `cipi api ip-whitelist` (GUI server + operator IPs; default `*` = allow all)
 - Review the [documentation](https://cipi.sh/docs) for hardening and isolation details
 
 Thank you for contributing to a safer Cipi ecosystem.

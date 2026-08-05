@@ -54,7 +54,7 @@ _github_api() {
     local token; token=$(_git_server_get "github_token")
     [[ -z "$token" ]] && return 1
 
-    local args=(-s -w "\n%{http_code}" -X "$method"
+    local args=(-sS --connect-timeout 10 --max-time 30 -w "\n%{http_code}" -X "$method"
         -H "Accept: application/vnd.github+json"
         -H "Authorization: Bearer ${token}"
         -H "X-GitHub-Api-Version: 2022-11-28")
@@ -124,7 +124,7 @@ _gitlab_api() {
     local base_url; base_url=$(_git_server_get "gitlab_url")
     [[ -z "$base_url" ]] && base_url="https://gitlab.com"
 
-    local args=(-s -w "\n%{http_code}" -X "$method"
+    local args=(-sS --connect-timeout 10 --max-time 30 -w "\n%{http_code}" -X "$method"
         -H "PRIVATE-TOKEN: ${token}")
     [[ -n "$data" ]] && args+=(-H "Content-Type: application/json" -d "$data")
 
@@ -298,6 +298,89 @@ git_clear_app_data() {
     local app="$1"
     vault_read apps.json | jq --arg a "$app" 'del(.[$a].git_provider, .[$a].git_deploy_key_id, .[$a].git_webhook_id)' | vault_write apps.json
     ensure_apps_json_api_access
+}
+
+# Recreate provider webhook (same or new secret). Deploy key unchanged.
+# Usage: git_recreate_webhook <app> [--rotate-secret]
+# Prints WEBHOOK_URL / WEBHOOK_TOKEN / WEBHOOK_ID lines for API parsers.
+git_recreate_webhook() {
+    local app="$1"
+    shift || true
+    parse_args "$@"
+    local rotate="${ARG_rotate_secret:-}"
+
+    local repository domain provider hook_id wt token webhook_url
+    repository=$(app_get "$app" repository 2>/dev/null || true)
+    domain=$(app_get "$app" domain 2>/dev/null || true)
+    provider=$(app_get "$app" git_provider 2>/dev/null || true)
+    hook_id=$(app_get "$app" git_webhook_id 2>/dev/null || true)
+    wt=$(app_get "$app" webhook_token 2>/dev/null || true)
+
+    [[ -z "$repository" ]] && { error "App '${app}' has no repository"; return 1; }
+    [[ -z "$domain" ]] && { error "App '${app}' has no domain"; return 1; }
+    [[ -z "$wt" ]] && { error "App '${app}' has no webhook token (custom/SFTP apps have no webhook)"; return 1; }
+
+    provider="${provider:-$(_git_detect_provider "$repository")}"
+    [[ -z "$provider" ]] && { error "Unsupported git provider for ${repository}"; return 1; }
+
+    token=$(_git_server_get "${provider}_token")
+    [[ -z "$token" ]] && {
+        error "No ${provider} token — set with: cipi git ${provider}-token <token>"
+        return 1
+    }
+
+    if [[ "$rotate" == "true" ]]; then
+        step "Rotating webhook secret..."
+        wt=$(generate_token)
+        app_set "$app" webhook_token "$wt"
+        if [[ -f "/home/${app}/shared/.env" ]]; then
+            if grep -q '^CIPI_WEBHOOK_TOKEN=' "/home/${app}/shared/.env" 2>/dev/null; then
+                sed -i "s|^CIPI_WEBHOOK_TOKEN=.*|CIPI_WEBHOOK_TOKEN=${wt}|" "/home/${app}/shared/.env"
+            else
+                echo "CIPI_WEBHOOK_TOKEN=${wt}" >> "/home/${app}/shared/.env"
+            fi
+            success "CIPI_WEBHOOK_TOKEN updated in shared/.env"
+        fi
+    fi
+
+    webhook_url="https://${domain}/cipi/webhook"
+    step "Recreating ${provider} webhook..."
+
+    local new_hook_id=""
+    if [[ "$provider" == "github" ]]; then
+        local owner_repo; owner_repo=$(_git_parse_github_repo "$repository")
+        [[ -n "$hook_id" ]] && _github_remove_webhook "$owner_repo" "$hook_id" 2>/dev/null || true
+        new_hook_id=$(_github_add_webhook "$owner_repo" "$webhook_url" "$wt" 2>&1) || {
+            error "Could not recreate GitHub webhook: ${new_hook_id}"
+            return 1
+        }
+    elif [[ "$provider" == "gitlab" ]]; then
+        local project_id; project_id=$(_git_parse_gitlab_project "$repository")
+        [[ -n "$hook_id" ]] && _gitlab_remove_webhook "$project_id" "$hook_id" 2>/dev/null || true
+        new_hook_id=$(_gitlab_add_webhook "$project_id" "$webhook_url" "$wt" 2>&1) || {
+            error "Could not recreate GitLab webhook: ${new_hook_id}"
+            return 1
+        }
+    else
+        error "Unsupported provider: ${provider}"
+        return 1
+    fi
+
+    if [[ -z "$new_hook_id" || "$new_hook_id" == "null" ]]; then
+        error "Webhook recreate failed — empty hook id"
+        return 1
+    fi
+
+    app_set "$app" git_provider "$provider"
+    vault_read apps.json | jq --arg a "$app" --argjson v "$new_hook_id" '.[$a].git_webhook_id = $v' | vault_write apps.json
+    ensure_apps_json_api_access
+
+    log_action "WEBHOOK RECREATED: $app provider=$provider rotate=${rotate:-false}"
+    success "Webhook recreated for ${app}"
+    echo "WEBHOOK_URL: ${webhook_url}"
+    echo "WEBHOOK_TOKEN: ${wt}"
+    echo "WEBHOOK_ID: ${new_hook_id}"
+    echo "WEBHOOK_ROTATED: ${rotate:-false}"
 }
 
 # Recreate the provider webhook after a primary domain change (deploy key unchanged).

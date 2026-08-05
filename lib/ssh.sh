@@ -8,7 +8,7 @@ AUTHORIZED_KEYS="/home/cipi/.ssh/authorized_keys"
 ssh_command() {
     local sub="${1:-}"; shift||true
     case "$sub" in
-        list)   _ssh_list ;;
+        list)   _ssh_list "$@" ;;
         add)    _ssh_add "$@" ;;
         remove) _ssh_remove "$@" ;;
         rename) _ssh_rename "$@" ;;
@@ -37,13 +37,35 @@ _get_session_fingerprint() {
 # ── LIST ─────────────────────────────────────────────────────
 
 _ssh_list() {
+    parse_args "$@"
+    local session_fp
+    session_fp=$(_get_session_fingerprint)
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        local items="[]"
+        local i=0
+        if [[ -f "$AUTHORIZED_KEYS" ]] && [[ -s "$AUTHORIZED_KEYS" ]]; then
+            while IFS= read -r line; do
+                [[ -z "$line" || "$line" == \#* ]] && continue
+                (( i++ )) || true
+                local key_type comment fingerprint current=false
+                key_type=$(echo "$line" | awk '{print $1}')
+                comment=$(echo "$line" | awk '{$1=$2=""; print}' | xargs)
+                [[ -z "$comment" ]] && comment="(no comment)"
+                fingerprint=$(echo "$line" | ssh-keygen -lf - 2>/dev/null | awk '{print $2}') || fingerprint="?"
+                [[ -n "$session_fp" && "$fingerprint" == "$session_fp" ]] && current=true
+                items=$(echo "$items" | jq -c --argjson id "$i" --arg t "$key_type" --arg c "$comment" --arg f "$fingerprint" --argjson cur "$current" \
+                    '. + [{id:$id, type:$t, comment:$c, fingerprint:$f, current_session:$cur}]')
+            done < "$AUTHORIZED_KEYS"
+        fi
+        jq -n --argjson keys "$items" '{keys: $keys}'
+        return 0
+    fi
+
     if [[ ! -f "$AUTHORIZED_KEYS" ]] || [[ ! -s "$AUTHORIZED_KEYS" ]]; then
         warn "No SSH keys configured for cipi user"
         exit 0
     fi
-
-    local session_fp
-    session_fp=$(_get_session_fingerprint)
 
     echo ""
     echo -e "  ${BOLD}SSH Keys (cipi user)${NC}"

@@ -285,7 +285,9 @@ show_help_topic() {
             _help_cmd "cipi api upgrade"               "Full rebuild (fresh Laravel + package)"
             _help_cmd "cipi api status"                "Show API versions and status"
             _help_cmd "cipi api token list|create|revoke" "API token management"
+            _help_cmd "cipi api ip-whitelist"          "API client IP allowlist  ${DIM}show|add|remove|set|allow-all${NC}"
             _help_cmd "cipi api fix-permissions"       "Fix panel API ownership (SQLite/logs)"
+            _help_note "ip-whitelist default * (all IPs); add GUI server + operator IPs before locking down"
             echo ""
             ;;
 

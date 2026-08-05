@@ -12,7 +12,7 @@ php_command() {
         remove)  _php_remove "$@" ;;
         switch)  _php_switch "$@" ;;
         upgrade) _php_upgrade "$@" ;;
-        list|ls) _php_list ;;
+        list|ls) _php_list "$@" ;;
         *) error "Use: install remove switch upgrade list"; exit 1 ;;
     esac
 }
@@ -192,8 +192,9 @@ _php_switch() {
 }
 
 _php_remove() {
-    local v="${1:-}"
-    [[ -z "$v" ]] && { error "Usage: cipi php remove <ver>"; exit 1; }
+    local v="${1:-}"; shift || true
+    parse_args "$@"
+    [[ -z "$v" ]] && { error "Usage: cipi php remove <ver> [--force]"; exit 1; }
     validate_php_version_known "$v" || { error "Invalid: $v"; exit 1; }
     local sys_ver; sys_ver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "")
     [[ "$v" == "$sys_ver" ]] && { error "PHP $v is the system default. Switch first: cipi php switch <other-ver>"; exit 1; }
@@ -201,7 +202,9 @@ _php_remove() {
         local using; using=$(vault_read apps.json | jq -r --arg v "$v" 'to_entries[]|select(.value.php==$v)|.key' 2>/dev/null)
         [[ -n "$using" ]] && { error "In use by: $using"; exit 1; }
     fi
-    confirm "Remove PHP ${v}?" || return
+    if [[ "${ARG_force:-}" != "true" ]] && [[ -t 0 ]]; then
+        confirm "Remove PHP ${v}?" || return
+    fi
     systemctl stop "php${v}-fpm" 2>/dev/null; systemctl disable "php${v}-fpm" 2>/dev/null
     apt-get purge -y "php${v}-*" &>/dev/null; apt-get autoremove -y &>/dev/null
     log_action "PHP REMOVED: $v"
@@ -213,7 +216,31 @@ _php_remove() {
 }
 
 _php_list() {
+    parse_args "$@"
     local sys_ver; sys_ver=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "")
+
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        local items="[]"
+        for v in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+            if php_is_installed "$v"; then
+                local st="stopped"
+                systemctl is-active --quiet "php${v}-fpm" 2>/dev/null && st="running"
+                local n=0
+                [[ -f "${CIPI_CONFIG}/apps.json" ]] && n=$(vault_read apps.json | jq --arg v "$v" '[to_entries[]|select(.value.php==$v)]|length' 2>/dev/null || echo 0)
+                n=${n:-0}
+                [[ "$n" =~ ^[0-9]+$ ]] || n=0
+                local is_default=false
+                [[ "$v" == "$sys_ver" ]] && is_default=true
+                items=$(echo "$items" | jq -c --arg v "$v" --arg s "$st" --argjson n "$n" --argjson d "$is_default" \
+                    '. + [{version:$v, status:$s, apps:$n, default:$d}]')
+            fi
+        done
+        jq -n --argjson versions "$items" --arg default "$sys_ver" \
+            --argjson installable '["8.3","8.4","8.5"]' \
+            '{default: (if $default == "" then null else $default end), installable: $installable, versions: $versions}'
+        return 0
+    fi
+
     echo -e "\n${BOLD}PHP Versions${NC}"
     for v in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
         if php_is_installed "$v"; then
