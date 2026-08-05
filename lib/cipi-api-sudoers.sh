@@ -65,6 +65,7 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi php list *, \
                                /usr/local/bin/cipi php install *, \
                                /usr/local/bin/cipi php remove *, \
+                               /usr/local/bin/cipi php switch *, \
                                /usr/local/bin/cipi ssh list, \
                                /usr/local/bin/cipi ssh list *, \
                                /usr/local/bin/cipi ssh add *, \
