@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.10] — 2026-08-06
+
+### Fixed
+
+- **`cipi php switch` false failure after a successful CLI switch** — `update-alternatives --set php` often prints `using /usr/bin/phpX.Y …` then exits non-zero when a slave alternative (phar/phpdbg/…) is missing or broken. The panel API treated that as hard failure even though `/usr/bin/php` already pointed at the new version. Switch now verifies the resolved binary and continues when the master link is correct. Re-running switch when CLI is already on the target version still migrates a leftover API FPM pool.
+
+---
+
 ## [5.0.9] — 2026-08-06
 
 ### Fixed
