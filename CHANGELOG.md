@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.9] — 2026-08-06
+
+### Fixed
+
+- **Panel API `PUT /api/php/default` failed with `sudo: a terminal is required to read the password`** — `/etc/sudoers.d/cipi-api` allowed `php list|install|remove` but not **`php switch`**, so `www-data` could not set the system default PHP without a TTY. Added `cipi php switch *` to the whitelist. **Migration 5.0.9** regenerates sudoers on `cipi self-update`.
+
+---
+
 ## [5.0.8] — 2026-08-06
 
 ### Fixed
