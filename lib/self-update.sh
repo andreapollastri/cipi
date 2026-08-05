@@ -53,6 +53,11 @@ selfupdate_command() {
     [[ -d "${tmp}/cipi-api" ]] && rm -rf /opt/cipi/cipi-api && cp -a "${tmp}/cipi-api" /opt/cipi/cipi-api
     chown -R root:root /usr/local/bin/cipi /opt/cipi
 
+    # This process started with pre-update common.sh; reload lib helpers copied above
+    # so migrations and composer steps see functions added in this release.
+    # shellcheck source=/dev/null
+    source /opt/cipi/lib/common.sh
+
     # Run migrations — child bash processes need CIPI_* in the environment.
     # The main cipi binary sets CIPI_LIB/CONFIG/LOG readonly; export by name only (no reassignment).
     export CIPI_LIB CIPI_CONFIG CIPI_LOG
@@ -93,16 +98,18 @@ selfupdate_command() {
     if [[ -f "${CIPI_API_ROOT:-/opt/cipi/api}/artisan" ]]; then
         step "Updating cipi-api in Laravel app..."
         local api_root="${CIPI_API_ROOT:-/opt/cipi/api}"
-        if [[ -d /opt/cipi/cipi-api ]]; then
-            (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
-        elif [[ -f /opt/cipi/lib/api.sh ]]; then
+        if [[ -f /opt/cipi/lib/api.sh ]]; then
             # shellcheck source=/dev/null
             source /opt/cipi/lib/api.sh
+        fi
+        if [[ -d /opt/cipi/cipi-api ]]; then
+            (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
+        else
             _api_composer_vcs_repo "$api_root"
             (cd "$api_root" && composer config minimum-stability dev 2>/dev/null) || true
             (cd "$api_root" && composer config prefer-stable true 2>/dev/null) || true
         fi
-        _cipi_composer_prepare_github "$api_root"
+        _api_composer_prepare_github "$api_root"
         (cd "$api_root" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
         # Composer runs as root; reclaim ownership before migrate (SQLite/logs must be www-data-writable).
         chown -R www-data:www-data "$api_root"

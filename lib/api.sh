@@ -21,10 +21,30 @@ if [[ -z "${CIPI_API_BRANCH:-}" ]]; then
 fi
 
 # Composer VCS repository for cipi/api (https://github.com/cipi-sh/api).
+_api_composer_prepare_github() {
+    if declare -f _cipi_composer_prepare_github >/dev/null 2>&1; then
+        _cipi_composer_prepare_github "$@"
+        return
+    fi
+    # Self-update may source this file before common.sh is reloaded (v5.0.7 → 5.0.8).
+    local dir="$1"
+    [[ -n "$dir" && -d "$dir" ]] || return 0
+    local ssh_dir="/root/.ssh" kh="${ssh_dir}/known_hosts"
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
+        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
+    fi
+    chmod 600 "$kh" 2>/dev/null || true
+    export GIT_TERMINAL_PROMPT=0
+    (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
+    (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
+}
+
 _api_composer_vcs_repo() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
-    _cipi_composer_prepare_github "$dir"
+    _api_composer_prepare_github "$dir"
     (cd "$dir" && composer config repositories.cipi-api \
         "{\"type\":\"vcs\",\"url\":\"${CIPI_API_REPO}\"}" 2>/dev/null) || true
 }
@@ -432,7 +452,7 @@ _api_update_package() {
         (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
         (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
     fi
-    _cipi_composer_prepare_github "${CIPI_API_ROOT}"
+    _api_composer_prepare_github "${CIPI_API_ROOT}"
     (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
     chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true
     (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
@@ -776,7 +796,7 @@ api_update() {
 
     # Update all packages (Laravel framework + cipi-api + dependencies)
     step "Composer update..."
-    _cipi_composer_prepare_github "${CIPI_API_ROOT}"
+    _api_composer_prepare_github "${CIPI_API_ROOT}"
     (cd "${CIPI_API_ROOT}" && composer update --no-interaction --prefer-dist 2>/dev/null) || {
         error "Composer update failed. Try: cipi api upgrade"
         systemctl start cipi-queue 2>/dev/null || true
