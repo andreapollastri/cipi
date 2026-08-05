@@ -135,40 +135,74 @@ POOLEOF
     success "PHP ${v} installed"
 }
 
+# Move cipi-api FPM pool onto PHP $1 when it still lives under another version.
+_php_migrate_api_pool() {
+    local v="$1"
+    [[ -f "${CIPI_CONFIG}/api.json" ]] || return 0
+
+    local old_pool="" new_pool="/etc/php/${v}/fpm/pool.d/cipi-api.conf"
+    local pv
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        [[ "$pv" == "$v" ]] && continue
+        if [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-api.conf" ]]; then
+            old_pool="/etc/php/${pv}/fpm/pool.d/cipi-api.conf"
+            break
+        fi
+    done
+    [[ -n "$old_pool" ]] || return 0
+
+    step "Migrating API FPM pool..."
+    mv "$old_pool" "$new_pool"
+    local old_ver; old_ver=$(echo "$old_pool" | grep -oP '/php/\K[0-9]+\.[0-9]+')
+    reload_php_fpm "$old_ver" 2>/dev/null || true
+    reload_php_fpm "$v"
+    success "API FPM pool → PHP ${v}"
+}
+
 _php_switch() {
     local v="${1:-}"
+    # Panel API builds args with escapeshellarg; strip leftover wrapping quotes.
+    v="${v#\'}"; v="${v%\'}"; v="${v#\"}"; v="${v%\"}"
     [[ -z "$v" ]] && { error "Usage: cipi php switch <8.3|8.4|8.5>"; exit 1; }
     validate_php_version "$v" || { error "Invalid PHP version: $v (use 8.3, 8.4 or 8.5)"; exit 1; }
     php_is_installed "$v" || { error "PHP $v not installed. Run: cipi php install $v"; exit 1; }
 
     local cur; cur=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "")
-    [[ "$cur" == "$v" ]] && { info "PHP $v is already the system default"; return; }
+    local already=false
+    [[ "$cur" == "$v" ]] && already=true
+
+    if [[ "$already" == "true" ]]; then
+        info "PHP $v is already the system default"
+        # A previous attempt may have switched CLI then aborted on a false
+        # update-alternatives failure before migrating the API pool.
+        _php_migrate_api_pool "$v"
+        return 0
+    fi
+
+    local alt_bin="/usr/bin/php${v}"
+    [[ -x "$alt_bin" ]] || { error "PHP binary not found: ${alt_bin}"; exit 1; }
 
     step "Switching system PHP CLI to ${v}..."
-    update-alternatives --set php "/usr/bin/php${v}" 2>/dev/null || {
-        error "update-alternatives failed"; exit 1;
-    }
-    success "CLI: php → /usr/bin/php${v}"
+    # update-alternatives may print "using …" for the master link then still
+    # exit non-zero when a slave (phar/phpdbg/…) is missing or broken.
+    # Trust the resolved /usr/bin/php target, not only the exit code.
+    local alt_out="" alt_rc=0
+    alt_out=$(/usr/bin/update-alternatives --set php "$alt_bin" 2>&1) && alt_rc=0 || alt_rc=$?
+    [[ -n "$alt_out" ]] && echo "$alt_out"
 
-    # Migrate Cipi API FPM pool to new PHP version (if API is configured)
-    if [[ -f "${CIPI_CONFIG}/api.json" ]]; then
-        local old_pool="" new_pool="/etc/php/${v}/fpm/pool.d/cipi-api.conf"
-        for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
-            [[ "$pv" == "$v" ]] && continue
-            if [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-api.conf" ]]; then
-                old_pool="/etc/php/${pv}/fpm/pool.d/cipi-api.conf"
-                break
-            fi
-        done
-        if [[ -n "$old_pool" ]]; then
-            step "Migrating API FPM pool..."
-            mv "$old_pool" "$new_pool"
-            local old_ver; old_ver=$(echo "$old_pool" | grep -oP '/php/\K[0-9]+\.[0-9]+')
-            reload_php_fpm "$old_ver" 2>/dev/null || true
-            reload_php_fpm "$v"
-            success "API FPM pool → PHP ${v}"
-        fi
+    local now resolved
+    now=$(readlink -f /usr/bin/php 2>/dev/null || true)
+    resolved=$(readlink -f "$alt_bin" 2>/dev/null || true)
+    if [[ -z "$resolved" || "$now" != "$resolved" ]]; then
+        error "Failed to switch system PHP to ${v} (php → ${now:-unknown}, want ${resolved:-$alt_bin})"
+        exit 1
     fi
+    if [[ "$alt_rc" -ne 0 ]]; then
+        info "update-alternatives exited ${alt_rc} (slave link warning); CLI already points to PHP ${v}"
+    fi
+    success "CLI: php → ${alt_bin}"
+
+    _php_migrate_api_pool "$v"
 
     # Restart cipi-queue (uses /usr/bin/php which is now the new version)
     if systemctl is-active --quiet cipi-queue 2>/dev/null; then
