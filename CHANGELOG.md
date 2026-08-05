@@ -11,6 +11,7 @@ All notable changes to Cipi are documented in this file.
 - **Panel API `cipi/api` updates** — `cipi self-update` / `cipi api update` now pull **`cipi/api`** from **[GitHub](https://github.com/cipi-sh/api)** via Composer VCS when no bundled `/opt/cipi/cipi-api` copy exists (same model as **`cipi/gui`**). Only runs if the panel API is already installed (`/opt/cipi/api/artisan`); it never installs the API on servers that do not use it. Fixes servers stuck on Packagist while GitHub already has **1.16+**.
 - **Non-interactive CLI flags** — `parse_args` strips wrapping quotes from `--key='value'` arguments built by the panel API (`escapeshellarg`), so `cipi smtp configure --host=…` and similar commands receive clean values.
 - **Migration 5.0.8** — reduced to a noop (the previous script duplicated self-update and could abort with `ensure_cipi_api_permissions: command not found`).
+- **`ssh_dir: unbound variable` during self-update** — `_cipi_composer_prepare_github` / `_api_composer_prepare_github` used `local ssh_dir=… kh="${ssh_dir}/…"`, which under `set -u` expands `ssh_dir` before it is assigned and aborted the API/GUI composer step.
 
 ---
 

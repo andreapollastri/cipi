@@ -29,7 +29,9 @@ _api_composer_prepare_github() {
     # Self-update may source this file before common.sh is reloaded (v5.0.7 → 5.0.8).
     local dir="$1"
     [[ -n "$dir" && -d "$dir" ]] || return 0
-    local ssh_dir="/root/.ssh" kh="${ssh_dir}/known_hosts"
+    # Split locals: with set -u, `local a=x b=$a` expands $a before a is set.
+    local ssh_dir="/root/.ssh"
+    local kh="${ssh_dir}/known_hosts"
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
     if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then

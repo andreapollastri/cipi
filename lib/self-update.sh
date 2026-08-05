@@ -109,7 +109,7 @@ selfupdate_command() {
             (cd "$api_root" && composer config minimum-stability dev 2>/dev/null) || true
             (cd "$api_root" && composer config prefer-stable true 2>/dev/null) || true
         fi
-        _api_composer_prepare_github "$api_root"
+        _api_composer_prepare_github "$api_root" || true
         (cd "$api_root" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
         # Composer runs as root; reclaim ownership before migrate (SQLite/logs must be www-data-writable).
         chown -R www-data:www-data "$api_root"
