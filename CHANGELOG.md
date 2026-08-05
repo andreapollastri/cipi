@@ -10,6 +10,7 @@ All notable changes to Cipi are documented in this file.
 
 - **Panel API `cipi/api` updates** — `cipi self-update` / `cipi api update` now pull **`cipi/api`** from **[GitHub](https://github.com/cipi-sh/api)** via Composer VCS when no bundled `/opt/cipi/cipi-api` copy exists (same model as **`cipi/gui`**). Fixes servers stuck on Packagist while GitHub already has **1.16+** (PHP install / SMTP no longer return bare **Server Error** from open_basedir crashes).
 - **Non-interactive CLI flags** — `parse_args` strips wrapping quotes from `--key='value'` arguments built by the panel API (`escapeshellarg`), so `cipi smtp configure --host=…` and similar commands receive clean values.
+- **Migration 5.0.8 crash** — migrations run in a fresh bash subprocess; the script now sources **`common.sh`** before calling **`ensure_cipi_api_permissions`** (was only sourcing `api.sh`, so self-update aborted with `command not found` and left servers on v5.0.7).
 
 ### Changed
 

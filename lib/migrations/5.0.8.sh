@@ -26,10 +26,28 @@ if [[ ! -f "${CIPI_LIB}/api.sh" ]]; then
     exit 0
 fi
 
+# Migrations run in a fresh bash subprocess — source helpers explicitly.
+if [[ -f "${CIPI_LIB}/common.sh" ]]; then
+    # shellcheck source=/dev/null
+    source "${CIPI_LIB}/common.sh"
+fi
 # shellcheck source=/dev/null
 source "${CIPI_LIB}/api.sh"
 
-ensure_cipi_api_permissions
+_mig_508_api_perms() {
+    if type ensure_cipi_api_permissions &>/dev/null; then
+        ensure_cipi_api_permissions
+    else
+        mkdir -p "${CIPI_API_ROOT}/storage/logs" "${CIPI_API_ROOT}/database" "${CIPI_API_ROOT}/bootstrap/cache" 2>/dev/null || true
+        chown -R www-data:www-data "${CIPI_API_ROOT}/storage" "${CIPI_API_ROOT}/database" "${CIPI_API_ROOT}/bootstrap/cache" 2>/dev/null || true
+        if [[ -f "${CIPI_API_ROOT}/.env" ]]; then
+            chown www-data:www-data "${CIPI_API_ROOT}/.env" 2>/dev/null || true
+            chmod 640 "${CIPI_API_ROOT}/.env" 2>/dev/null || true
+        fi
+    fi
+}
+
+_mig_508_api_perms
 
 if [[ -d /opt/cipi/cipi-api ]]; then
     (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
@@ -46,7 +64,7 @@ systemctl stop cipi-queue 2>/dev/null || true
 (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction 2>/dev/null) || {
     echo "  WARN: composer update cipi/api failed — try: cipi api update"
 }
-ensure_cipi_api_permissions
+_mig_508_api_perms
 (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
 (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
 systemctl restart cipi-queue 2>/dev/null || true
