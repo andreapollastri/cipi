@@ -4,6 +4,18 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.3] — 2026-08-05
+
+### Added
+
+- **Non-interactive `.env` management** — `cipi app env <app>` still opens nano by default; API/scripts can use `--show` / `--get=KEY` / `--set=KEY=VALUE` / `--unset=KEY` with optional `--json`.
+- **Non-interactive Composer `auth.json`** — `cipi auth create|delete <app> [--force]` (skips confirm when no TTY); `cipi auth edit <app> --file=PATH`; `cipi auth show <app> --json`.
+- **`cipi app run <app> <cmd> [args…]`** — whitelisted **non-interactive** binaries as the app user (`composer`, `npm`/`npx`/`yarn`/`pnpm`, `ls`/`ll`, `cat`/`head`/`tail`, filesystem helpers, archives, `git`, `php`, `node`, `find`). List with `cipi app run --commands [--json]`. No editors/pagers/shells/REPLs (`nano`, `vim`, `less`, `bash`, `tinker`, …); interactive flags blocked.
+- **Structured deploy config** — `cipi app deploy-config <app>` show/edit durable recipe options in `apps.json` (regenerates `deploy.php` — safe alternative to free-form PHP): `--keep-releases=N`, `--migrate`/`--no-migrate`, `--optimize`/`--no-optimize`, `--storage-link`/`--no-storage-link`, `--queue-restart`/`--no-queue-restart`, `--horizon-terminate`/`--no-horizon-terminate`, `--extra-artisan=cmd1,cmd2`, `--node-build` / `--predeploy-snapshot` (and clear flags).
+- **Panel API sudoers** — `app env`, `app artisan`, `app run`, `auth create|edit|show|delete` in `/etc/sudoers.d/cipi-api`. **Migration 5.0.3** regenerates sudoers + Laravel/Octane `deploy.php` on `cipi self-update`.
+
+---
+
 ## [5.0.2] — 2026-08-05
 
 ### Fixed

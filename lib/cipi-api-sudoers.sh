@@ -16,8 +16,16 @@ www-data ALL=(root) NOPASSWD: /usr/local/bin/cipi app create *, \
                                /usr/local/bin/cipi app reverb *, \
                                /usr/local/bin/cipi app limits *, \
                                /usr/local/bin/cipi app logs read *, \
+                               /usr/local/bin/cipi app env *, \
+                               /usr/local/bin/cipi app artisan *, \
+                               /usr/local/bin/cipi app run *, \
+                               /usr/local/bin/cipi app deploy-config *, \
                                /usr/local/bin/cipi app suspend *, \
                                /usr/local/bin/cipi app unsuspend *, \
+                               /usr/local/bin/cipi auth create *, \
+                               /usr/local/bin/cipi auth edit *, \
+                               /usr/local/bin/cipi auth show *, \
+                               /usr/local/bin/cipi auth delete *, \
                                /usr/local/bin/cipi basicauth enable *, \
                                /usr/local/bin/cipi basicauth disable *, \
                                /usr/local/bin/cipi basicauth status *, \

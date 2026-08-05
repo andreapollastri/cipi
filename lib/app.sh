@@ -896,13 +896,218 @@ app_delete() {
 
 # ── ENV / LOGS / TINKER / ARTISAN ─────────────────────────────
 
+# Validate .env key name: [A-Za-z_][A-Za-z0-9_]*
+_env_valid_key() {
+    [[ "$1" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]
+}
+
+# Escape a value for .env (double-quote when needed).
+_env_escape_value() {
+    local v="$1"
+    if [[ "$v" == *" "* || "$v" == *$'\t'* || "$v" == *"#"* || "$v" == *"\""* || "$v" == *"'"* || "$v" == *"\\"* || "$v" == *'$'* || "$v" == *'`'* || "$v" == *"="* ]]; then
+        v="${v//\\/\\\\}"
+        v="${v//\"/\\\"}"
+        printf '"%s"' "$v"
+    else
+        printf '%s' "$v"
+    fi
+}
+
+# Read KEY from .env file into stdout (unquoted). Exit 1 if missing.
+_env_read_key() {
+    local file="$1" key="$2" line raw
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line//[[:space:]]/}" ]] && continue
+        if [[ "$line" =~ ^[[:space:]]*export[[:space:]]+ ]]; then
+            line="${line#*export }"
+            line="${line#"${line%%[![:space:]]*}"}"
+        fi
+        if [[ "$line" == "${key}="* ]] || [[ "$line" == "${key} ="* ]]; then
+            raw="${line#*=}"
+            raw="${raw#"${raw%%[![:space:]]*}"}"
+            if [[ "$raw" =~ ^\"(.*)\"$ ]]; then
+                raw="${BASH_REMATCH[1]}"
+                raw="${raw//\\\"/\"}"
+                raw="${raw//\\\\/\\}"
+            elif [[ "$raw" =~ ^\'(.*)\'$ ]]; then
+                raw="${BASH_REMATCH[1]}"
+            fi
+            printf '%s' "$raw"
+            return 0
+        fi
+    done < "$file"
+    return 1
+}
+
+# Emit all KEY=VALUE pairs as a JSON object on stdout.
+_env_to_json() {
+    local file="$1"
+    local -a args=()
+    local line key raw
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        [[ "$line" =~ ^[[:space:]]*# ]] && continue
+        [[ -z "${line//[[:space:]]/}" ]] && continue
+        if [[ "$line" =~ ^[[:space:]]*export[[:space:]]+ ]]; then
+            line="${line#*export }"
+            line="${line#"${line%%[![:space:]]*}"}"
+        fi
+        [[ "$line" == *=* ]] || continue
+        key="${line%%=*}"
+        key="${key%"${key##*[![:space:]]}"}"
+        key="${key#"${key%%[![:space:]]*}"}"
+        _env_valid_key "$key" || continue
+        raw="${line#*=}"
+        raw="${raw#"${raw%%[![:space:]]*}"}"
+        if [[ "$raw" =~ ^\"(.*)\"$ ]]; then
+            raw="${BASH_REMATCH[1]}"
+            raw="${raw//\\\"/\"}"
+            raw="${raw//\\\\/\\}"
+        elif [[ "$raw" =~ ^\'(.*)\'$ ]]; then
+            raw="${BASH_REMATCH[1]}"
+        fi
+        args+=(--arg "$key" "$raw")
+    done < "$file"
+    if [[ ${#args[@]} -eq 0 ]]; then
+        echo '{}'
+    else
+        jq -n "${args[@]}" '$ARGS.named'
+    fi
+}
+
+# Set KEY=VALUE in .env (update in place or append). Preserves comments/other lines.
+_env_set_key() {
+    local file="$1" key="$2" value="$3"
+    local escaped tmp found=0 line
+    escaped=$(_env_escape_value "$value")
+    tmp=$(mktemp)
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" == "${key}="* ]] || [[ "$line" == "${key} ="* ]] || [[ "$line" == "export ${key}="* ]]; then
+            if [[ "$line" == export* ]]; then
+                echo "export ${key}=${escaped}" >> "$tmp"
+            else
+                echo "${key}=${escaped}" >> "$tmp"
+            fi
+            found=1
+        else
+            printf '%s\n' "$line" >> "$tmp"
+        fi
+    done < "$file"
+    if [[ $found -eq 0 ]]; then
+        echo "${key}=${escaped}" >> "$tmp"
+    fi
+    cat "$tmp" > "$file"
+    rm -f "$tmp"
+}
+
+# Remove KEY from .env.
+_env_unset_key() {
+    local file="$1" key="$2"
+    local tmp line
+    tmp=$(mktemp)
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" == "${key}="* ]] || [[ "$line" == "${key} ="* ]] || [[ "$line" == "export ${key}="* ]]; then
+            continue
+        fi
+        printf '%s\n' "$line" >> "$tmp"
+    done < "$file"
+    cat "$tmp" > "$file"
+    rm -f "$tmp"
+}
+
 app_env() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi app env <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi app env <app> [--show|--get=KEY|--set=K=V|--unset=KEY] [--json]"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
     local is_custom; is_custom=$(app_get "$app" custom)
     [[ "$is_custom" == "true" ]] && { error "Custom apps have no .env"; exit 1; }
-    ${EDITOR:-nano} "/home/${app}/shared/.env"
-    chown "${app}:${app}" "/home/${app}/shared/.env"; chmod 640 "/home/${app}/shared/.env"
+
+    local env_file="/home/${app}/shared/.env"
+    [[ -f "$env_file" ]] || { error ".env not found at ${env_file}"; exit 1; }
+
+    local want_show=false want_json=false get_key=""
+    local -a sets=() unsets=()
+    local arg
+
+    for arg in "$@"; do
+        case "$arg" in
+            --show)  want_show=true ;;
+            --json)  want_json=true ;;
+            --get=*) get_key="${arg#--get=}" ;;
+            --set=*) sets+=("${arg#--set=}") ;;
+            --unset=*) unsets+=("${arg#--unset=}") ;;
+            --*=*|--*)
+                error "Unknown flag: ${arg}"
+                echo "Use: cipi app env <app> [--show|--get=KEY|--set=K=V|--unset=KEY] [--json]"
+                exit 1
+                ;;
+            *)
+                error "Unexpected argument: ${arg}"
+                exit 1
+                ;;
+        esac
+    done
+
+    local noninteractive=false
+    [[ "$want_show" == "true" || -n "$get_key" || ${#sets[@]} -gt 0 || ${#unsets[@]} -gt 0 ]] && noninteractive=true
+
+    if [[ "$noninteractive" != "true" ]]; then
+        ${EDITOR:-nano} "$env_file"
+        chown "${app}:${app}" "$env_file"; chmod 640 "$env_file"
+        success ".env updated"
+        return 0
+    fi
+
+    # Mutations first
+    local pair key value
+    for pair in "${sets[@]+"${sets[@]}"}"; do
+        [[ "$pair" == *=* ]] || { error "Invalid --set (expected KEY=VALUE): ${pair}"; exit 1; }
+        key="${pair%%=*}"
+        value="${pair#*=}"
+        _env_valid_key "$key" || { error "Invalid env key: ${key}"; exit 1; }
+        _env_set_key "$env_file" "$key" "$value"
+    done
+    for key in "${unsets[@]+"${unsets[@]}"}"; do
+        _env_valid_key "$key" || { error "Invalid env key: ${key}"; exit 1; }
+        _env_unset_key "$env_file" "$key"
+    done
+    if [[ ${#sets[@]} -gt 0 || ${#unsets[@]} -gt 0 ]]; then
+        chown "${app}:${app}" "$env_file"; chmod 640 "$env_file"
+        log_action "ENV UPDATED: $app"
+    fi
+
+    if [[ -n "$get_key" ]]; then
+        _env_valid_key "$get_key" || { error "Invalid env key: ${get_key}"; exit 1; }
+        local val
+        if ! val=$(_env_read_key "$env_file" "$get_key"); then
+            error "Key not found: ${get_key}"
+            exit 1
+        fi
+        if [[ "$want_json" == "true" ]]; then
+            jq -n --arg k "$get_key" --arg v "$val" '{($k): $v}'
+        else
+            printf '%s\n' "$val"
+        fi
+        return 0
+    fi
+
+    # --show, or --json after mutations (API), or human success after set/unset
+    if [[ "$want_json" == "true" ]]; then
+        _env_to_json "$env_file"
+        return 0
+    fi
+
+    if [[ "$want_show" == "true" ]]; then
+        local line
+        while IFS= read -r line || [[ -n "$line" ]]; do
+            [[ "$line" =~ ^[[:space:]]*# ]] && continue
+            [[ -z "${line//[[:space:]]/}" ]] && continue
+            printf '%s\n' "$line"
+        done < "$env_file"
+        return 0
+    fi
+
+    # set/unset without --json/--show
     success ".env updated"
 }
 
@@ -1005,6 +1210,226 @@ app_artisan() {
     [[ $# -eq 0 ]] && { error "No artisan command"; exit 1; }
     local p; p=$(app_get "$app" php)
     sudo -u "$app" /usr/bin/php"$p" "/home/${app}/current/artisan" "$@"
+}
+
+# Whitelisted binaries for `cipi app run` (panel API / scripts). No shell, no network tools.
+# ll → ls -al. Runs as the app user under the app home (current/ or htdocs/ or ~).
+_APP_RUN_COMMANDS=(
+    composer npm npx yarn pnpm
+    ls ll cat head tail pwd du wc file stat tree
+    mkdir touch cp mv ln unlink rm rmdir
+    tar unzip zip gzip gunzip
+    git php node
+    which realpath basename dirname find
+)
+
+_app_run_is_allowed() {
+    local c="$1" x
+    for x in "${_APP_RUN_COMMANDS[@]}"; do
+        [[ "$x" == "$c" ]] && return 0
+    done
+    return 1
+}
+
+_app_run_print_commands() {
+    local c
+    if [[ "${1:-}" == "--json" ]]; then
+        printf '['
+        local first=1
+        for c in "${_APP_RUN_COMMANDS[@]}"; do
+            [[ $first -eq 1 ]] && first=0 || printf ','
+            jq -n --arg c "$c" '$c' | tr -d '\n'
+        done
+        printf ']\n'
+    else
+        echo "Allowed commands for: cipi app run <app> <cmd> [args...]"
+        echo "Runs as the app user in current/ (Laravel), htdocs/ (custom), or ~."
+        echo ""
+        for c in "${_APP_RUN_COMMANDS[@]}"; do
+            echo "  ${c}"
+        done
+        echo ""
+        echo "Notes: non-interactive only (no nano/vim/less/tinker/ssh/bash)."
+        echo "       no shell metacharacters; no path '..'; absolute paths only under /home/<app>."
+        echo "       find: -exec/-delete blocked. rm: --no-preserve-root and / blocked. ll = ls -al."
+        echo "       git/composer/npm interactive subcommands and tail -f are blocked."
+    fi
+}
+
+_app_run_validate_arg() {
+    local arg="$1" app="$2" home="/home/${app}"
+    if [[ "$arg" =~ [\;\|\&\`\$\(\)\<\>$'\n\r'\\] ]]; then
+        error "Disallowed characters in argument: ${arg}"
+        return 1
+    fi
+    if [[ "$arg" == *..* ]]; then
+        error "Path traversal (..) is not allowed"
+        return 1
+    fi
+    if [[ "$arg" == /* ]]; then
+        case "$arg" in
+            "${home}"|"${home}"/*) ;;
+            *) error "Absolute path outside app home: ${arg}"; return 1 ;;
+        esac
+    fi
+    return 0
+}
+
+# Resolve argv for app run after the binary name. Maps ll → ls -al.
+# Sets global _APP_RUN_ARGV array.
+_app_run_build_argv() {
+    local cmd="$1"; shift || true
+    _APP_RUN_ARGV=()
+    case "$cmd" in
+        ll) _APP_RUN_ARGV=(ls -al "$@") ;;
+        *)  _APP_RUN_ARGV=("$cmd" "$@") ;;
+    esac
+}
+
+app_run() {
+    # cipi app run --commands [--json]
+    # cipi app run <app> <cmd> [args...]
+    if [[ "${1:-}" == "--commands" || "${1:-}" == "commands" ]]; then
+        shift || true
+        parse_args "$@"
+        if [[ "${ARG_json:-}" == "true" || "${1:-}" == "--json" ]]; then
+            _app_run_print_commands --json
+        else
+            _app_run_print_commands
+        fi
+        return 0
+    fi
+
+    local app="${1:-}"; shift || true
+    local cmd="${1:-}"; shift || true
+    [[ -z "$app" || -z "$cmd" ]] && {
+        error "Usage: cipi app run <app> <cmd> [args...]  |  cipi app run --commands [--json]"
+        exit 1
+    }
+    app_exists "$app" || { error "Not found"; exit 1; }
+
+    if ! _app_run_is_allowed "$cmd"; then
+        error "Command not allowed: ${cmd}"
+        info "List allowed commands: cipi app run --commands"
+        exit 1
+    fi
+
+    local arg
+    for arg in "$@"; do
+        _app_run_validate_arg "$arg" "$app" || exit 1
+    done
+
+    # Reject interactive / dangerous flags (editors, pagers, REPLs are not in the whitelist)
+    case "$cmd" in
+        find)
+            for arg in "$@"; do
+                case "$arg" in
+                    -exec|-execdir|-ok|-okdir|-delete)
+                        error "find flag not allowed: ${arg}"; exit 1 ;;
+                esac
+            done
+            ;;
+        rm)
+            for arg in "$@"; do
+                case "$arg" in
+                    --no-preserve-root|/|/home|/home/)
+                        error "rm target not allowed: ${arg}"; exit 1 ;;
+                esac
+            done
+            ;;
+        php)
+            for arg in "$@"; do
+                case "$arg" in
+                    -a|--interactive|-S|--server|-r|--run|-t)
+                        error "php flag not allowed via app run: ${arg}"; exit 1 ;;
+                esac
+            done
+            ;;
+        node)
+            for arg in "$@"; do
+                case "$arg" in
+                    -e|--eval|-p|--print|-i|--interactive|--inspect|--inspect-brk)
+                        error "node flag not allowed via app run: ${arg}"; exit 1 ;;
+                esac
+            done
+            ;;
+        tail)
+            for arg in "$@"; do
+                case "$arg" in
+                    -f|--follow|--follow=*)
+                        error "tail --follow is interactive; use app logs instead"; exit 1 ;;
+                esac
+            done
+            ;;
+        git)
+            # Block interactive git UIs / patch modes
+            local prev=""
+            for arg in "$@"; do
+                case "$arg" in
+                    -i|--interactive|-p|--patch|--edit)
+                        error "git interactive flag not allowed: ${arg}"; exit 1 ;;
+                esac
+                if [[ "$prev" == "rebase" || "$prev" == "add" || "$prev" == "checkout" || "$prev" == "reset" || "$prev" == "stash" || "$prev" == "clean" || "$prev" == "commit" ]]; then
+                    case "$arg" in
+                        -i|--interactive|-p|--patch|-e|--edit)
+                            error "git ${prev} ${arg} is interactive; not allowed"; exit 1 ;;
+                    esac
+                fi
+                prev="$arg"
+            done
+            ;;
+        composer)
+            for arg in "$@"; do
+                case "$arg" in
+                    shell|browse|fund)
+                        error "composer ${arg} is interactive; not allowed"; exit 1 ;;
+                esac
+            done
+            ;;
+        npm|npx|yarn|pnpm)
+            for arg in "$@"; do
+                case "$arg" in
+                    explore|init|login|adduser|edit)
+                        error "${cmd} ${arg} is interactive; not allowed"; exit 1 ;;
+                esac
+            done
+            ;;
+    esac
+
+    local home="/home/${app}"
+    local workdir="$home"
+    local is_custom; is_custom=$(app_get "$app" custom)
+    if [[ "$is_custom" == "true" ]]; then
+        [[ -d "${home}/htdocs" ]] && workdir="${home}/htdocs"
+    else
+        [[ -d "${home}/current" ]] && workdir="${home}/current"
+    fi
+
+    _app_run_build_argv "$cmd" "$@"
+
+    # Force non-interactive environment (no pagers, no prompts)
+    local -a env_vars=(
+        -C "$workdir"
+        CI=true
+        DEBIAN_FRONTEND=noninteractive
+        GIT_TERMINAL_PROMPT=0
+        GIT_PAGER=cat
+        PAGER=cat
+        COMPOSER_NO_INTERACTION=1
+        NPM_CONFIG_YES=true
+    )
+
+    # Auto --no-interaction for composer when missing
+    if [[ "$cmd" == "composer" ]]; then
+        local has_ni=0 a
+        for a in "${_APP_RUN_ARGV[@]:1}"; do
+            [[ "$a" == "--no-interaction" || "$a" == "-n" ]] && has_ni=1
+        done
+        [[ $has_ni -eq 0 ]] && _APP_RUN_ARGV+=(--no-interaction)
+    fi
+
+    # Run without a login shell so aliases/profile cannot inject code.
+    sudo -u "$app" -H -- /usr/bin/env "${env_vars[@]}" -- "${_APP_RUN_ARGV[@]}"
 }
 
 # ── ALIAS ─────────────────────────────────────────────────────
@@ -1684,21 +2109,131 @@ EOF
 }
 
 
+# Deploy-config defaults (apps.json). Missing key = enabled / default.
+_deploy_cfg_bool() {
+    # $1=app $2=key $3=default true|false — echoes true|false
+    local app="$1" key="$2" def="${3:-true}" val
+    val=$(app_get "$app" "$key")
+    if [[ -z "$val" ]]; then echo "$def"; return; fi
+    [[ "$val" == "false" || "$val" == "0" ]] && echo "false" || echo "true"
+}
+
+_deploy_cfg_keep_releases() {
+    local app="$1" kr
+    kr=$(app_get "$app" keep_releases)
+    [[ -z "$kr" ]] && kr=5
+    [[ "$kr" =~ ^[0-9]+$ ]] && (( kr >= 1 && kr <= 20 )) || kr=5
+    echo "$kr"
+}
+
+# Validate a single extra artisan token (name only, no args/shell).
+_deploy_cfg_valid_artisan() {
+    local c="$1"
+    [[ "$c" =~ ^[a-zA-Z0-9:_-]+$ ]] || return 1
+    [[ "${c,,}" == "tinker" ]] && return 1
+    return 0
+}
+
+# Build PHP run() lines for extra_artisan (JSON array in apps.json).
+_deploy_cfg_extra_artisan_body() {
+    local app="$1" cmd force
+    while IFS= read -r cmd; do
+        [[ -z "$cmd" ]] && continue
+        _deploy_cfg_valid_artisan "$cmd" || continue
+        force=""
+        case "$cmd" in
+            db:seed|migrate|migrate:*|db:wipe) force=" --force" ;;
+        esac
+        printf "    run('{{bin/php}} {{release_path}}/artisan %s%s');\n" "$cmd" "$force"
+    done < <(vault_read apps.json | jq -r --arg a "$app" '.[$a].extra_artisan // [] | .[]?' 2>/dev/null || true)
+}
+
 # Deployer: dedicated template per app type (lib/deployer/{laravel,custom}.php)
 _create_deployer_config_from_template() {
     local type="$1" an="$2" repo="$3" branch="$4" v="$5"
     local dh="/home/${an}"
     local tpl="${CIPI_LIB}/deployer/${type}.php"
     [[ -f "$tpl" ]] || { error "Deployer template not found: $tpl"; return 1; }
+    mkdir -p "${dh}/.deployer"
+
     local repo_safe branch_safe
     repo_safe=$(printf '%s' "$repo" | sed 's/\\/\\\\/g; s/&/\\&/g')
     branch_safe=$(printf '%s' "$branch" | sed 's/\\/\\\\/g; s/&/\\&/g')
+
+    # Custom apps: classic template has no recipe hooks / keep_releases placeholders
+    if [[ "$type" == "custom" ]]; then
+        sed -e "s|__CIPI_APP_USER__|$an|g" \
+            -e "s|__CIPI_DEPLOY_PATH__|$dh|g" \
+            -e "s|__CIPI_PHP_VERSION__|$v|g" \
+            -e "s|__CIPI_REPOSITORY__|$repo_safe|g" \
+            -e "s|__CIPI_BRANCH__|$branch_safe|g" \
+            "$tpl" > "${dh}/.deployer/deploy.php"
+        chown -R "${an}:${an}" "${dh}/.deployer"
+        return 0
+    fi
+
+    local kr shared_files
+    kr=$(_deploy_cfg_keep_releases "$an")
+    if [[ -f "${dh}/shared/auth.json" ]]; then
+        shared_files="['.env', 'auth.json']"
+    else
+        shared_files="['.env']"
+    fi
+
+    local h_storage h_migrate h_optimize h_horizon h_queue h_extra
+    [[ "$(_deploy_cfg_bool "$an" deploy_storage_link true)" == "true" ]] \
+        && h_storage="after('deploy:vendors', 'artisan:storage:link');" \
+        || h_storage="// artisan:storage:link disabled (deploy-config)"
+    [[ "$(_deploy_cfg_bool "$an" deploy_migrate true)" == "true" ]] \
+        && h_migrate="after('deploy:vendors', 'artisan:migrate');" \
+        || h_migrate="// artisan:migrate disabled (deploy-config)"
+    [[ "$(_deploy_cfg_bool "$an" deploy_optimize true)" == "true" ]] \
+        && h_optimize="after('deploy:vendors', 'artisan:optimize');" \
+        || h_optimize="// artisan:optimize disabled (deploy-config)"
+    [[ "$(_deploy_cfg_bool "$an" deploy_horizon_terminate true)" == "true" ]] \
+        && h_horizon="before('deploy:symlink', 'horizon:terminate');" \
+        || h_horizon="// horizon:terminate disabled (deploy-config)"
+    [[ "$(_deploy_cfg_bool "$an" deploy_queue_restart true)" == "true" ]] \
+        && h_queue="after('deploy:symlink', 'artisan:queue:restart');" \
+        || h_queue="// artisan:queue:restart disabled (deploy-config)"
+
+    local extra_body extra_task
+    extra_body=$(_deploy_cfg_extra_artisan_body "$an")
+    if [[ -n "$extra_body" ]]; then
+        h_extra="after('deploy:vendors', 'cipi:extra_artisan');"
+        extra_task=$(printf "task('cipi:extra_artisan', function () {\n%s});\n" "$extra_body")
+    else
+        h_extra="// no extra artisan (deploy-config)"
+        extra_task=""
+    fi
+
+    # Write template with line-based placeholders; inject multiline extra-artisan task if any
+    local tmp line
+    tmp=$(mktemp)
     sed -e "s|__CIPI_APP_USER__|$an|g" \
         -e "s|__CIPI_DEPLOY_PATH__|$dh|g" \
         -e "s|__CIPI_PHP_VERSION__|$v|g" \
         -e "s|__CIPI_REPOSITORY__|$repo_safe|g" \
         -e "s|__CIPI_BRANCH__|$branch_safe|g" \
-        "$tpl" > "${dh}/.deployer/deploy.php"
+        -e "s|__CIPI_KEEP_RELEASES__|$kr|g" \
+        -e "s|__CIPI_SHARED_FILES__|$shared_files|g" \
+        -e "s|__CIPI_HOOK_STORAGE_LINK__|$h_storage|g" \
+        -e "s|__CIPI_HOOK_MIGRATE__|$h_migrate|g" \
+        -e "s|__CIPI_HOOK_OPTIMIZE__|$h_optimize|g" \
+        -e "s|__CIPI_HOOK_HORIZON_TERMINATE__|$h_horizon|g" \
+        -e "s|__CIPI_HOOK_QUEUE_RESTART__|$h_queue|g" \
+        -e "s|__CIPI_HOOK_EXTRA_ARTISAN__|$h_extra|g" \
+        "$tpl" > "$tmp"
+
+    : > "${dh}/.deployer/deploy.php"
+    while IFS= read -r line || [[ -n "$line" ]]; do
+        if [[ "$line" == *"__CIPI_EXTRA_ARTISAN_TASK__"* ]]; then
+            [[ -n "$extra_task" ]] && printf '%s' "$extra_task" >> "${dh}/.deployer/deploy.php"
+        else
+            printf '%s\n' "$line" >> "${dh}/.deployer/deploy.php"
+        fi
+    done < "$tmp"
+    rm -f "$tmp"
     chown -R "${an}:${an}" "${dh}/.deployer"
 }
 
@@ -1717,15 +2252,167 @@ _create_deployer_config_for_app() {
     _sync_node_build_script "$app"
 }
 
+# Show / edit structured deploy recipe options (apps.json → regenerate deploy.php).
+# Usage:
+#   cipi app deploy-config <app> [--json]
+#   cipi app deploy-config <app> --keep-releases=5 --no-migrate --extra-artisan=view:clear,db:seed
+app_deploy_config() {
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && {
+        error "Usage: cipi app deploy-config <app> [--json] [--keep-releases=N] [--migrate|--no-migrate] ..."
+        exit 1
+    }
+    app_exists "$app" || { error "Not found"; exit 1; }
+    local is_custom; is_custom=$(app_get "$app" custom)
+    [[ "$is_custom" == "true" ]] && { error "Custom apps have no zero-downtime deploy.php recipe"; exit 1; }
+
+    unset ARG_json ARG_keep_releases ARG_migrate ARG_no_migrate ARG_optimize ARG_no_optimize \
+        ARG_storage_link ARG_no_storage_link ARG_queue_restart ARG_no_queue_restart \
+        ARG_horizon_terminate ARG_no_horizon_terminate ARG_extra_artisan ARG_clear_extra_artisan \
+        ARG_node_build ARG_no_node_build ARG_predeploy_snapshot ARG_no_predeploy_snapshot 2>/dev/null || true
+
+    parse_args "$@"
+    local want_json=false
+    [[ "${ARG_json:-}" == "true" ]] && want_json=true
+
+    local editing=false
+    [[ -n "${ARG_keep_releases+x}" || -n "${ARG_migrate+x}" || -n "${ARG_no_migrate+x}" \
+        || -n "${ARG_optimize+x}" || -n "${ARG_no_optimize+x}" \
+        || -n "${ARG_storage_link+x}" || -n "${ARG_no_storage_link+x}" \
+        || -n "${ARG_queue_restart+x}" || -n "${ARG_no_queue_restart+x}" \
+        || -n "${ARG_horizon_terminate+x}" || -n "${ARG_no_horizon_terminate+x}" \
+        || -n "${ARG_extra_artisan+x}" || -n "${ARG_clear_extra_artisan+x}" \
+        || -n "${ARG_node_build+x}" || -n "${ARG_no_node_build+x}" \
+        || -n "${ARG_predeploy_snapshot+x}" || -n "${ARG_no_predeploy_snapshot+x}" ]] && editing=true
+
+    if [[ "$editing" == "true" ]]; then
+        if [[ -n "${ARG_keep_releases+x}" ]]; then
+            [[ "${ARG_keep_releases}" =~ ^[0-9]+$ ]] && (( ARG_keep_releases >= 1 && ARG_keep_releases <= 20 )) \
+                || { error "keep-releases must be an integer 1–20"; exit 1; }
+            app_set "$app" keep_releases "${ARG_keep_releases}"
+        fi
+        [[ "${ARG_migrate:-}" == "true" ]] && app_unset "$app" deploy_migrate
+        [[ "${ARG_no_migrate:-}" == "true" ]] && app_set "$app" deploy_migrate "false"
+        [[ "${ARG_optimize:-}" == "true" ]] && app_unset "$app" deploy_optimize
+        [[ "${ARG_no_optimize:-}" == "true" ]] && app_set "$app" deploy_optimize "false"
+        [[ "${ARG_storage_link:-}" == "true" ]] && app_unset "$app" deploy_storage_link
+        [[ "${ARG_no_storage_link:-}" == "true" ]] && app_set "$app" deploy_storage_link "false"
+        [[ "${ARG_queue_restart:-}" == "true" ]] && app_unset "$app" deploy_queue_restart
+        [[ "${ARG_no_queue_restart:-}" == "true" ]] && app_set "$app" deploy_queue_restart "false"
+        [[ "${ARG_horizon_terminate:-}" == "true" ]] && app_unset "$app" deploy_horizon_terminate
+        [[ "${ARG_no_horizon_terminate:-}" == "true" ]] && app_set "$app" deploy_horizon_terminate "false"
+
+        if [[ "${ARG_clear_extra_artisan:-}" == "true" ]]; then
+            app_unset "$app" extra_artisan
+        elif [[ -n "${ARG_extra_artisan+x}" ]]; then
+            local -a arts=()
+            local part
+            IFS=',' read -ra arts <<< "${ARG_extra_artisan}"
+            local -a clean=()
+            for part in "${arts[@]}"; do
+                part="${part#"${part%%[![:space:]]*}"}"
+                part="${part%"${part##*[![:space:]]}"}"
+                [[ -z "$part" ]] && continue
+                _deploy_cfg_valid_artisan "$part" || { error "Invalid extra artisan: ${part}"; exit 1; }
+                clean+=("$part")
+            done
+            if [[ ${#clean[@]} -eq 0 ]]; then
+                app_unset "$app" extra_artisan
+            else
+                app_set_json "$app" extra_artisan "$(printf '%s\n' "${clean[@]}" | jq -R . | jq -s -c .)"
+            fi
+        fi
+
+        if [[ -n "${ARG_node_build+x}" || "${ARG_no_node_build:-}" == "true" ]]; then
+            if [[ "${ARG_no_node_build:-}" == "true" || -z "${ARG_node_build:-}" ]]; then
+                app_unset "$app" node_build
+                _sync_node_build_script "$app"
+            else
+                _validate_node_build_cmd "${ARG_node_build}" || {
+                    error "Invalid --node-build command"
+                    exit 1
+                }
+                app_set "$app" node_build "${ARG_node_build}"
+                _sync_node_build_script "$app"
+            fi
+        fi
+        [[ "${ARG_predeploy_snapshot:-}" == "true" ]] && app_set "$app" predeploy_snapshot "true"
+        [[ "${ARG_no_predeploy_snapshot:-}" == "true" ]] && app_unset "$app" predeploy_snapshot
+
+        _create_deployer_config_for_app "$app"
+        log_action "DEPLOY-CONFIG UPDATED: $app"
+        success "Deploy config updated for ${app} (deploy.php regenerated)"
+    fi
+
+    # Show (always, or after edit)
+    local kr nb snap extra b_mig b_opt b_sl b_qr b_ht
+    kr=$(_deploy_cfg_keep_releases "$app")
+    nb=$(app_get "$app" node_build)
+    snap=$(_deploy_cfg_bool "$app" predeploy_snapshot false)
+    b_mig=$(_deploy_cfg_bool "$app" deploy_migrate true)
+    b_opt=$(_deploy_cfg_bool "$app" deploy_optimize true)
+    b_sl=$(_deploy_cfg_bool "$app" deploy_storage_link true)
+    b_qr=$(_deploy_cfg_bool "$app" deploy_queue_restart true)
+    b_ht=$(_deploy_cfg_bool "$app" deploy_horizon_terminate true)
+    extra=$(vault_read apps.json | jq -c --arg a "$app" '.[$a].extra_artisan // []')
+
+    if [[ "$want_json" == "true" ]]; then
+        jq -n \
+            --arg app "$app" \
+            --argjson keep_releases "$kr" \
+            --argjson migrate "$b_mig" \
+            --argjson optimize "$b_opt" \
+            --argjson storage_link "$b_sl" \
+            --argjson queue_restart "$b_qr" \
+            --argjson horizon_terminate "$b_ht" \
+            --argjson predeploy_snapshot "$snap" \
+            --arg node_build "${nb:-}" \
+            --argjson extra_artisan "$extra" \
+            '{
+                app: $app,
+                keep_releases: $keep_releases,
+                migrate: $migrate,
+                optimize: $optimize,
+                storage_link: $storage_link,
+                queue_restart: $queue_restart,
+                horizon_terminate: $horizon_terminate,
+                predeploy_snapshot: $predeploy_snapshot,
+                node_build: (if $node_build == "" then null else $node_build end),
+                extra_artisan: $extra_artisan
+            }'
+        return 0
+    fi
+
+    echo -e "\n${BOLD}Deploy config — ${app}${NC}"
+    echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
+    printf "  %-20s %s\n" "keep_releases" "$kr"
+    printf "  %-20s %s\n" "migrate" "$b_mig"
+    printf "  %-20s %s\n" "optimize" "$b_opt"
+    printf "  %-20s %s\n" "storage_link" "$b_sl"
+    printf "  %-20s %s\n" "queue_restart" "$b_qr"
+    printf "  %-20s %s\n" "horizon_terminate" "$b_ht"
+    printf "  %-20s %s\n" "predeploy_snapshot" "$snap"
+    printf "  %-20s %s\n" "node_build" "${nb:-(none)}"
+    printf "  %-20s %s\n" "extra_artisan" "$extra"
+    echo ""
+}
+
 # ── AUTH ──────────────────────────────────────────────────────
 
 auth_create() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi auth create <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi auth create <app> [--force]"; exit 1; }
+    parse_args "$@"
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     local auth_file="/home/${app}/shared/auth.json"
     if [[ -f "$auth_file" ]]; then
-        warn "auth.json already exists for '${app}'"
-        confirm "Overwrite?" || { info "Cancelled"; return; }
+        if [[ "${ARG_force:-}" != "true" ]] && [[ -t 0 ]]; then
+            warn "auth.json already exists for '${app}'"
+            confirm "Overwrite?" || { info "Cancelled"; return; }
+        elif [[ "${ARG_force:-}" != "true" ]] && [[ ! -t 0 ]]; then
+            error "auth.json already exists for '${app}' (pass --force to overwrite)"
+            exit 1
+        fi
     fi
     cat > "$auth_file" <<JSON
 {
@@ -1752,10 +2439,30 @@ JSON
 }
 
 auth_edit() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi auth edit <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi auth edit <app> [--file=PATH]"; exit 1; }
+    parse_args "$@"
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     local auth_file="/home/${app}/shared/auth.json"
     [[ ! -f "$auth_file" ]] && { error "auth.json not found. Run: cipi auth create ${app}"; exit 1; }
+
+    if [[ -n "${ARG_file:-}" ]]; then
+        [[ -f "$ARG_file" ]] || { error "File not found: ${ARG_file}"; exit 1; }
+        if ! jq empty "$ARG_file" 2>/dev/null; then
+            error "Invalid JSON in ${ARG_file}"
+            exit 1
+        fi
+        jq . "$ARG_file" > "$auth_file"
+        chown "${app}:${app}" "$auth_file"; chmod 640 "$auth_file"
+        log_action "AUTH EDITED: $app"
+        cipi_notify \
+            "Cipi auth.json edited: ${app} on $(hostname)" \
+            "Composer auth.json was edited.\n\nServer: $(hostname)\nApp: ${app}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+            auth_edit
+        success "auth.json updated"
+        return 0
+    fi
+
     ${EDITOR:-nano} "$auth_file"
     if jq empty "$auth_file" 2>/dev/null; then
         chown "${app}:${app}" "$auth_file"; chmod 640 "$auth_file"
@@ -1767,14 +2474,21 @@ auth_edit() {
         success "auth.json updated"
     else
         error "Invalid JSON — file saved but may be malformed. Fix it manually: ${auth_file}"
+        exit 1
     fi
 }
 
 auth_show() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi auth show <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi auth show <app> [--json]"; exit 1; }
+    parse_args "$@"
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     local auth_file="/home/${app}/shared/auth.json"
     [[ ! -f "$auth_file" ]] && { error "auth.json not found. Run: cipi auth create ${app}"; exit 1; }
+    if [[ "${ARG_json:-}" == "true" ]]; then
+        jq . "$auth_file"
+        return 0
+    fi
     echo -e "\n${BOLD}auth.json — ${app}${NC}"
     echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
     jq . "$auth_file" 2>/dev/null || cat "$auth_file"
@@ -1782,11 +2496,15 @@ auth_show() {
 }
 
 auth_delete() {
-    local app="${1:-}"; [[ -z "$app" ]] && { error "Usage: cipi auth delete <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi auth delete <app> [--force]"; exit 1; }
+    parse_args "$@"
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     local auth_file="/home/${app}/shared/auth.json"
     [[ ! -f "$auth_file" ]] && { error "auth.json not found for '${app}'"; exit 1; }
-    confirm "Delete auth.json for '${app}'?" || { info "Cancelled"; return; }
+    if [[ "${ARG_force:-}" != "true" ]] && [[ -t 0 ]]; then
+        confirm "Delete auth.json for '${app}'?" || { info "Cancelled"; return; }
+    fi
     rm -f "$auth_file"
 
     if grep -q "auth.json" "/home/${app}/.deployer/deploy.php" 2>/dev/null; then
@@ -2514,11 +3232,13 @@ app_command() {
             ;;
         tinker)  app_tinker "$@" ;;
         artisan) app_artisan "$@" ;;
+        run)     app_run "$@" ;;
+        deploy-config) app_deploy_config "$@" ;;
         suspend)   app_suspend "$@" ;;
         unsuspend) app_unsuspend "$@" ;;
         reset-password)    app_reset_password "$@" ;;
         reset-db-password) app_reset_db_password "$@" ;;
-        *) error "Unknown: $sub"; echo "Use: create list show edit delete convert clone reverb limits env logs tinker artisan suspend unsuspend reset-password reset-db-password"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; exit 1 ;;
+        *) error "Unknown: $sub"; echo "Use: create list show edit delete convert clone reverb limits env logs tinker artisan run deploy-config suspend unsuspend reset-password reset-db-password"; echo "      logs read <app> [--type=T] [--page=N] [--per-page=N]  (API snapshot)"; echo "      run --commands [--json]  (list whitelisted binaries)"; exit 1 ;;
     esac
 }
 
