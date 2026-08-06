@@ -471,29 +471,35 @@ _api_ensure_laravel_app() {
     fi
 }
 
+# Soft-update cipi/api the same way `cipi api upgrade` installs it: Packagist
+# dist zip (or local path). Never use a GitHub VCS repository here — that path
+# made Composer clone/scan the whole repo and hung soft updates indefinitely
+# while Packagist already had the current release.
 _api_update_package() {
     local pkg_dir="/opt/cipi/cipi-api"
     local composer_rc=0
     [[ -d "${CIPI_LIB}/../cipi-api" ]] && pkg_dir="${CIPI_LIB}/../cipi-api"
 
     _api_stop_queue_for_update
+    _api_composer_prepare_github "${CIPI_API_ROOT}"
+
+    # Stale VCS entry from 5.0.8+ soft-updates overrides Packagist and hangs.
+    (cd "${CIPI_API_ROOT}" && composer config --unset repositories.cipi-api 2>/dev/null) || true
 
     if [[ -d "$pkg_dir" ]]; then
         step "Composer path repo → ${pkg_dir}"
         (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path "$pkg_dir" 2>/dev/null) || true
+        step "Composer require cipi/api:@dev (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
+        if ! (cd "${CIPI_API_ROOT}" && composer require cipi/api:@dev --no-interaction --prefer-dist --no-ansi); then
+            composer_rc=$?
+            warn "Composer require cipi/api:@dev failed (exit ${composer_rc})"
+        fi
     else
-        step "Composer VCS repo → ${CIPI_API_REPO} (no bundled cipi-api)"
-        _api_composer_vcs_repo "${CIPI_API_ROOT}"
-        (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
-        (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
-    fi
-    _api_composer_prepare_github "${CIPI_API_ROOT}"
-
-    step "Composer update cipi/api (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
-    # Do not swallow stderr — silent hangs were undebuggable. Guard/timeout via prepare.
-    if ! (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist --no-ansi); then
-        composer_rc=$?
-        warn "Composer update cipi/api failed (exit ${composer_rc})"
+        step "Composer require cipi/api from Packagist (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
+        if ! (cd "${CIPI_API_ROOT}" && composer require cipi/api --no-interaction --prefer-dist --no-ansi); then
+            composer_rc=$?
+            warn "Composer require cipi/api failed (exit ${composer_rc})"
+        fi
     fi
 
     step "Reclaiming API permissions & running migrations..."
@@ -833,46 +839,22 @@ api_update() {
     [[ ! -f "${CIPI_API_CONFIG}" ]] && { error "API not configured. Run: cipi api <domain>"; exit 1; }
     [[ ! -f "${CIPI_API_ROOT}/artisan" ]] && { error "Laravel API app not found."; exit 1; }
 
-    echo ""; info "Updating API (composer update)..."; echo ""
+    echo ""; info "Updating API (cipi/api via Packagist, same as upgrade)..."; echo ""
 
     ensure_cipi_api_permissions
 
-    _api_stop_queue_for_update
-
-    # Soft update focuses on cipi/api (GitHub VCS). Full framework rebuild: cipi api upgrade.
-    local pkg_dir="/opt/cipi/cipi-api"
-    [[ -d "${CIPI_LIB}/../cipi-api" ]] && pkg_dir="${CIPI_LIB}/../cipi-api"
-    if [[ -d "$pkg_dir" ]]; then
-        step "Composer path repo → ${pkg_dir}"
-        (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path "$pkg_dir" 2>/dev/null) || true
-    else
-        step "Composer VCS repo → ${CIPI_API_REPO}"
-        _api_composer_vcs_repo "${CIPI_API_ROOT}"
-        (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
-        (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
-    fi
-
-    step "Composer update cipi/api (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
-    _api_composer_prepare_github "${CIPI_API_ROOT}"
-    if ! (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist --no-ansi); then
+    # Soft update = package bump only. Full Laravel rebuild: cipi api upgrade.
+    if ! _api_update_package; then
         error "Composer update failed (timed out or error). Try: cipi api upgrade"
         systemctl start cipi-queue 2>/dev/null || true
         exit 1
     fi
-    success "cipi/api package updated"
 
-    step "Assets & migrations..."
-    chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true
-    (cd "${CIPI_API_ROOT}" && _api_timeout 120 sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force) || true
-    (cd "${CIPI_API_ROOT}" && _api_timeout 180 sudo -u www-data php artisan migrate --force) || true
-    _api_sync_token_abilities_file 2>/dev/null || true
+    step "API runtime hardening..."
     _api_ensure_log_stack_env
     _api_ensure_session_driver_env
     _api_apply_sqlite_pragmas
     _api_setup_cron
-    success "Assets published, migrations applied"
-
-    systemctl restart cipi-queue 2>/dev/null || true
     reload_php_fpm "8.5"
 
     _api_show_versions

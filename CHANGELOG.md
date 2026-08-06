@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.15] — 2026-08-06
+
+### Fixed
+
+- **`cipi api update` / self-update API step hung while `cipi api upgrade` worked** — soft update forced a Composer **VCS** repo on `https://github.com/cipi-sh/api` (full git clone/scan). Upgrade installs from **Packagist** dist zips (`composer require cipi/api`), which already has **1.19.1**. Soft update now matches upgrade: unset stale `repositories.cipi-api`, then `composer require cipi/api` from Packagist (or local path). **Migration 5.0.15** drops the VCS entry on existing panel apps.
+
+---
+
 ## [5.0.14] — 2026-08-06
 
 ### Fixed
