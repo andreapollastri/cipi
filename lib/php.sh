@@ -161,31 +161,281 @@ _php_ensure_etc_writable() {
     return 0
 }
 
-# Move cipi-api FPM pool onto PHP $1 when it still lives under another version.
-_php_migrate_api_pool() {
-    local v="$1"
-    [[ -f "${CIPI_CONFIG}/api.json" ]] || return 0
+_PHP_API_SOCK="${_PHP_API_SOCK:-/run/php/cipi-api.sock}"
+_PHP_GUI_SOCK="${_PHP_GUI_SOCK:-/run/php/cipi-gui.sock}"
 
-    local old_pool="" new_pool="/etc/php/${v}/fpm/pool.d/cipi-api.conf"
-    local pv
+_php_pool_path() {
+    # $1=php version  $2=pool name (cipi-api|cipi-gui)
+    echo "/etc/php/${1}/fpm/pool.d/${2}.conf"
+}
+
+_php_find_pool_version() {
+    # $1=pool name — prints first PHP version that has it, or empty.
+    local name="$1" pv
     for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
-        [[ "$pv" == "$v" ]] && continue
-        if [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-api.conf" ]]; then
-            old_pool="/etc/php/${pv}/fpm/pool.d/cipi-api.conf"
-            break
+        if [[ -f "$(_php_pool_path "$pv" "$name")" ]]; then
+            echo "$pv"
+            return 0
         fi
     done
-    [[ -n "$old_pool" ]] || return 0
+    return 1
+}
 
+_php_clear_named_pools_except() {
+    # $1=keep version (empty=all)  $2=pool name
+    local keep="${1:-}" name="$2" pv
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        [[ "$pv" == "$keep" ]] && continue
+        rm -f "$(_php_pool_path "$pv" "$name")" 2>/dev/null || true
+    done
+}
+
+# Compat alias used by older call sites / mental model.
+_php_clear_api_fpm_pools_except() { _php_clear_named_pools_except "${1:-}" "cipi-api"; }
+
+_php_prepare_run_php() {
+    mkdir -p /run/php
+    chown root:root /run/php 2>/dev/null || true
+    chmod 755 /run/php 2>/dev/null || true
+}
+
+_php_wait_socket() {
+    local sock="$1" i
+    for i in 1 2 3 4 5 6 7 8 9 10 11 12 13 14 15; do
+        [[ -S "$sock" ]] && return 0
+        sleep 0.2
+    done
+    return 1
+}
+
+# Write (or rewrite) the panel API FPM pool for PHP $1.
+_php_write_api_fpm_pool() {
+    local v="$1"
+    local api_root="${CIPI_API_ROOT:-/opt/cipi/api}"
+    local pool; pool="$(_php_pool_path "$v" "cipi-api")"
+
+    [[ -n "$v" ]] || return 1
+    _php_ensure_etc_writable || return 1
+    _php_prepare_run_php
+    mkdir -p "$(dirname "$pool")"
+
+    cat > "$pool" <<POOL
+[cipi-api]
+user = www-data
+group = www-data
+listen = ${_PHP_API_SOCK}
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+listen.backlog = 1024
+pm = dynamic
+pm.max_children = 25
+pm.start_servers = 4
+pm.min_spare_servers = 2
+pm.max_spare_servers = 8
+pm.max_requests = 200
+pm.process_idle_timeout = 60s
+pm.status_path = /cipi-api-fpm-status
+request_terminate_timeout = 300
+request_slowlog_timeout = 30
+slowlog = /var/log/cipi-api-fpm-slow.log
+catch_workers_output = yes
+decorate_workers_output = no
+php_admin_value[open_basedir] = ${api_root}/:/tmp/:/etc/cipi/:/proc/:/usr/local/bin/
+php_admin_value[upload_max_filesize] = 64M
+php_admin_value[post_max_size] = 64M
+php_admin_value[memory_limit] = 256M
+php_admin_value[max_execution_time] = 300
+php_admin_value[error_log] = /var/log/cipi-api-php-error.log
+php_admin_flag[log_errors] = on
+POOL
+
+    : > /var/log/cipi-api-fpm-slow.log 2>/dev/null || true
+    : > /var/log/cipi-api-php-error.log 2>/dev/null || true
+    chown www-data:adm /var/log/cipi-api-fpm-slow.log /var/log/cipi-api-php-error.log 2>/dev/null || true
+    chmod 640 /var/log/cipi-api-fpm-slow.log /var/log/cipi-api-php-error.log 2>/dev/null || true
+}
+
+# Write (or rewrite) the GUI FPM pool for PHP $1.
+_php_write_gui_fpm_pool() {
+    local v="$1"
+    local gui_root="${CIPI_GUI_ROOT:-/opt/cipi/gui}"
+    local basedir="${gui_root}/:/tmp/:/proc/:/var/tmp/"
+    local pool; pool="$(_php_pool_path "$v" "cipi-gui")"
+
+    [[ -n "$v" ]] || return 1
+    _php_ensure_etc_writable || return 1
+    _php_prepare_run_php
+    mkdir -p "$(dirname "$pool")"
+
+    cat > "$pool" <<POOL
+[cipi-gui]
+user = www-data
+group = www-data
+listen = ${_PHP_GUI_SOCK}
+listen.owner = www-data
+listen.group = www-data
+listen.mode = 0660
+pm = dynamic
+pm.max_children = 20
+pm.start_servers = 4
+pm.min_spare_servers = 2
+pm.max_spare_servers = 8
+pm.max_requests = 500
+request_terminate_timeout = 300s
+slowlog = /var/log/cipi-gui-fpm-slow.log
+request_slowlog_timeout = 30s
+catch_workers_output = yes
+php_admin_value[error_log] = /var/log/cipi-gui-php-error.log
+php_admin_value[open_basedir] = ${basedir}
+POOL
+
+    touch /var/log/cipi-gui-fpm-slow.log /var/log/cipi-gui-php-error.log 2>/dev/null || true
+    chown www-data:adm /var/log/cipi-gui-fpm-slow.log /var/log/cipi-gui-php-error.log 2>/dev/null || true
+}
+
+_php_gui_is_present() {
+    [[ -f "${CIPI_CONFIG}/gui.json" ]] \
+        || [[ -f "${CIPI_GUI_ROOT:-/opt/cipi/gui}/artisan" ]] \
+        || [[ -f /etc/nginx/sites-available/cipi-gui ]] \
+        || _php_find_pool_version "cipi-gui" >/dev/null
+}
+
+# Restart php$1-fpm and require the given sockets (paths) when their pools exist.
+_php_ensure_panel_fpm() {
+    local v="$1"; shift || true
+    local sock
+
+    _php_prepare_run_php
+    for sock in "$@"; do
+        if [[ -e "$sock" && ! -S "$sock" ]]; then
+            rm -f "$sock" 2>/dev/null || true
+        fi
+    done
+
+    systemctl enable "php${v}-fpm" 2>/dev/null || true
+    if ! systemctl restart "php${v}-fpm"; then
+        error "Failed to restart php${v}-fpm"
+        systemctl --no-pager -l status "php${v}-fpm" 2>&1 | tail -20 >&2 || true
+        return 1
+    fi
+
+    for sock in "$@"; do
+        if ! _php_wait_socket "$sock"; then
+            error "php${v}-fpm started but ${sock} is missing (nginx would 502)"
+            systemctl --no-pager -l status "php${v}-fpm" 2>&1 | tail -20 >&2 || true
+            journalctl -u "php${v}-fpm" -n 30 --no-pager 2>&1 | tail -30 >&2 || true
+            return 1
+        fi
+    done
+    return 0
+}
+
+# Place API (and GUI, if installed) FPM pools + sockets on PHP $1.
+# Rewrites pools, clears other versions, restarts FPM, verifies socks.
+# Rolls both back together on failure.
+_php_migrate_panel_pools() {
+    local v="$1"
+    local want_api=false want_gui=false
+    local api_old="" gui_old="" old_ver="" pv
+    local -a socks=()
+
+    [[ -f "${CIPI_CONFIG}/api.json" ]] && want_api=true
+    _php_gui_is_present && want_gui=true
+    [[ "$want_api" == "true" || "$want_gui" == "true" ]] || return 0
+
+    if ! systemctl cat "php${v}-fpm" &>/dev/null; then
+        error "php${v}-fpm is not installed — cannot host panel pools"
+        return 1
+    fi
     _php_ensure_etc_writable || return 1
 
-    step "Migrating API FPM pool..."
-    mv "$old_pool" "$new_pool"
-    local old_ver; old_ver=$(echo "$old_pool" | grep -oP '/php/\K[0-9]+\.[0-9]+')
-    reload_php_fpm "$old_ver" 2>/dev/null || true
-    reload_php_fpm "$v"
-    success "API FPM pool → PHP ${v}"
+    if [[ "$want_api" == "true" ]]; then
+        api_old=$(_php_find_pool_version "cipi-api" || true)
+        [[ "$api_old" == "$v" ]] && api_old=""
+        socks+=("$_PHP_API_SOCK")
+    fi
+    if [[ "$want_gui" == "true" ]]; then
+        gui_old=$(_php_find_pool_version "cipi-gui" || true)
+        [[ "$gui_old" == "$v" ]] && gui_old=""
+        socks+=("$_PHP_GUI_SOCK")
+    fi
+
+    # Prefer a single "previous" FPM to bounce (usually both pools share it).
+    old_ver="${api_old:-${gui_old:-}}"
+
+    step "Placing panel FPM pools on PHP ${v}..."
+    [[ "$want_api" == "true" ]] && { _php_write_api_fpm_pool "$v" || return 1; _php_clear_named_pools_except "$v" "cipi-api"; }
+    [[ "$want_gui" == "true" ]] && { _php_write_gui_fpm_pool "$v" || return 1; _php_clear_named_pools_except "$v" "cipi-gui"; }
+
+    # Release listen sockets from the previous FPM master before the new one binds.
+    if [[ -n "$old_ver" ]]; then
+        systemctl stop "php${old_ver}-fpm" 2>/dev/null || true
+    else
+        systemctl stop "php${v}-fpm" 2>/dev/null || true
+    fi
+    for sock in "${socks[@]}"; do
+        rm -f "$sock" 2>/dev/null || true
+    done
+    # Also bounce the other old version if API/GUI lived on different PHPs.
+    if [[ -n "$api_old" && -n "$gui_old" && "$api_old" != "$gui_old" ]]; then
+        systemctl stop "php${api_old}-fpm" 2>/dev/null || true
+        systemctl stop "php${gui_old}-fpm" 2>/dev/null || true
+    fi
+    if [[ -n "$old_ver" ]]; then
+        systemctl start "php${old_ver}-fpm" 2>/dev/null || true
+    fi
+    if [[ -n "$api_old" && -n "$gui_old" && "$api_old" != "$gui_old" ]]; then
+        systemctl start "php${api_old}-fpm" 2>/dev/null || true
+        systemctl start "php${gui_old}-fpm" 2>/dev/null || true
+    fi
+
+    if _php_ensure_panel_fpm "$v" "${socks[@]}"; then
+        [[ "$want_api" == "true" ]] && success "API FPM on PHP ${v} — ${_PHP_API_SOCK} ready"
+        [[ "$want_gui" == "true" ]] && success "GUI FPM on PHP ${v} — ${_PHP_GUI_SOCK} ready"
+        return 0
+    fi
+
+    # Rollback both pools to their previous homes (default: old_ver / 8.5).
+    local api_back="${api_old:-8.5}" gui_back="${gui_old:-8.5}"
+    error "Rolling back panel FPM pools..."
+    _php_ensure_etc_writable || true
+    systemctl stop "php${v}-fpm" 2>/dev/null || true
+    for sock in "${socks[@]}"; do
+        rm -f "$sock" 2>/dev/null || true
+    done
+    if [[ "$want_api" == "true" ]]; then
+        _php_write_api_fpm_pool "$api_back" || true
+        _php_clear_named_pools_except "$api_back" "cipi-api"
+    fi
+    if [[ "$want_gui" == "true" ]]; then
+        _php_write_gui_fpm_pool "$gui_back" || true
+        _php_clear_named_pools_except "$gui_back" "cipi-gui"
+    fi
+    systemctl start "php${v}-fpm" 2>/dev/null || true
+
+    local ok=true
+    if [[ "$want_api" == "true" ]]; then
+        _php_ensure_panel_fpm "$api_back" "$_PHP_API_SOCK" || ok=false
+    fi
+    if [[ "$want_gui" == "true" ]]; then
+        # If GUI rolled back to a different PHP than API, ensure that FPM too.
+        if [[ "$want_api" == "true" && "$gui_back" == "$api_back" ]]; then
+            _php_wait_socket "$_PHP_GUI_SOCK" || ok=false
+        else
+            _php_ensure_panel_fpm "$gui_back" "$_PHP_GUI_SOCK" || ok=false
+        fi
+    fi
+    if [[ "$ok" == "true" ]]; then
+        error "Panel pool migration to PHP ${v} failed — restored previous PHP + sockets"
+    else
+        error "Panel pool migration failed AND rollback could not restore all sockets"
+    fi
+    return 1
 }
+
+# Back-compat name used by earlier 5.0.12 drafts.
+_php_migrate_api_pool() { _php_migrate_panel_pools "$@"; }
 
 _php_switch() {
     local v="${1:-}"
@@ -202,8 +452,8 @@ _php_switch() {
     if [[ "$already" == "true" ]]; then
         info "PHP $v is already the system default"
         # A previous attempt may have switched CLI then aborted before
-        # migrating the API pool — finish that work if needed.
-        _php_migrate_api_pool "$v" || exit 1
+        # migrating panel pools — finish that work if needed.
+        _php_migrate_panel_pools "$v" || exit 1
         return 0
     fi
 
@@ -244,7 +494,7 @@ _php_switch() {
     fi
     success "CLI: php → ${alt_bin}"
 
-    _php_migrate_api_pool "$v" || exit 1
+    _php_migrate_panel_pools "$v" || exit 1
 
     # Restart cipi-queue (uses /usr/bin/php which is now the new version)
     if systemctl is-active --quiet cipi-queue 2>/dev/null; then

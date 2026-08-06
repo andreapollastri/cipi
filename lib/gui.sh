@@ -255,9 +255,11 @@ _gui_repair_runtime() {
     }
     step "Repairing GUI runtime (open_basedir + permissions)..."
     ensure_cipi_gui_permissions
-    _gui_create_fpm_pool
+    local gui_php
+    gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    _gui_create_fpm_pool "$gui_php"
     (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan optimize:clear 2>/dev/null) || true
-    reload_php_fpm "8.5" 2>/dev/null || true
+    reload_php_fpm "$gui_php" 2>/dev/null || true
 }
 
 _gui_refresh_theme() {
@@ -285,9 +287,15 @@ _gui_update_package() {
 # ── PHP-FPM + Nginx ───────────────────────────────────────────────
 
 _gui_create_fpm_pool() {
-    local basedir
+    # Optional $1 = PHP version (default: current system CLI, fallback 8.5).
+    # Twin writer in php.sh (_php_write_gui_fpm_pool) is used by `cipi php switch`.
+    local v="${1:-}" pv basedir
+    if [[ -z "$v" ]]; then
+        v=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    fi
     basedir=$(_gui_open_basedir)
-    cat > /etc/php/8.5/fpm/pool.d/cipi-gui.conf <<EOF
+    mkdir -p "/etc/php/${v}/fpm/pool.d" /run/php
+    cat > "/etc/php/${v}/fpm/pool.d/cipi-gui.conf" <<EOF
 [cipi-gui]
 user = www-data
 group = www-data
@@ -308,6 +316,10 @@ catch_workers_output = yes
 php_admin_value[error_log] = /var/log/cipi-gui-php-error.log
 php_admin_value[open_basedir] = ${basedir}
 EOF
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        [[ "$pv" == "$v" ]] && continue
+        rm -f "/etc/php/${pv}/fpm/pool.d/cipi-gui.conf" 2>/dev/null || true
+    done
     touch /var/log/cipi-gui-fpm-slow.log /var/log/cipi-gui-php-error.log 2>/dev/null || true
     chown www-data:adm /var/log/cipi-gui-fpm-slow.log /var/log/cipi-gui-php-error.log 2>/dev/null || true
 }
@@ -357,11 +369,15 @@ EOF
 # ── Install detection + removal ─────────────────────────────────
 
 _gui_is_installed() {
-    [[ -f "${CIPI_GUI_ROOT}/artisan" ]] \
-        || [[ -f "${CIPI_GUI_CONFIG}" ]] \
-        || [[ -f /etc/nginx/sites-available/cipi-gui ]] \
-        || [[ -f /etc/php/8.5/fpm/pool.d/cipi-gui.conf ]] \
-        || [[ -f /etc/cron.d/cipi-gui ]]
+    local pv
+    [[ -f "${CIPI_GUI_ROOT}/artisan" ]] && return 0
+    [[ -f "${CIPI_GUI_CONFIG}" ]] && return 0
+    [[ -f /etc/nginx/sites-available/cipi-gui ]] && return 0
+    [[ -f /etc/cron.d/cipi-gui ]] && return 0
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-gui.conf" ]] && return 0
+    done
+    return 1
 }
 
 # ── Commands ────────────────────────────────────────────────────
@@ -398,9 +414,11 @@ gui_setup() {
     _gui_apply_sqlite_pragmas
 
     step "PHP-FPM pool..."
-    _gui_create_fpm_pool
-    reload_php_fpm "8.5"
-    success "PHP-FPM pool (cipi-gui)"
+    local gui_php
+    gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    _gui_create_fpm_pool "$gui_php"
+    reload_php_fpm "$gui_php"
+    success "PHP-FPM pool (cipi-gui on PHP ${gui_php})"
 
     step "Nginx vhost..."
     _gui_create_nginx_vhost "$domain"
@@ -451,9 +469,11 @@ gui_update() {
     _gui_ensure_log_stack_env
     _gui_ensure_session_driver_env
     _gui_apply_sqlite_pragmas
-    _gui_create_fpm_pool
+    local gui_php
+    gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    _gui_create_fpm_pool "$gui_php"
     _gui_setup_cron
-    reload_php_fpm "8.5"
+    reload_php_fpm "$gui_php"
     success "GUI updated — hard-refresh the browser (Cmd+Shift+R)"
 }
 
@@ -506,7 +526,15 @@ gui_upgrade() {
     rm -rf "$backup_dir" 2>/dev/null || true
     chown -R www-data:www-data "${CIPI_GUI_ROOT}"
     ensure_cipi_gui_permissions
-    reload_php_fpm "8.5"
+    local gui_php pv
+    gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        if [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-gui.conf" ]]; then
+            gui_php="$pv"
+            break
+        fi
+    done
+    reload_php_fpm "$gui_php"
     success "GUI upgraded (old: ${CIPI_GUI_ROOT}.old)"
 }
 
@@ -557,8 +585,14 @@ gui_remove() {
     reload_nginx 2>/dev/null || true
 
     step "PHP-FPM..."
-    rm -f /etc/php/8.5/fpm/pool.d/cipi-gui.conf
-    reload_php_fpm "8.5" 2>/dev/null || true
+    local pv
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        if [[ -f "/etc/php/${pv}/fpm/pool.d/cipi-gui.conf" ]]; then
+            rm -f "/etc/php/${pv}/fpm/pool.d/cipi-gui.conf"
+            reload_php_fpm "$pv" 2>/dev/null || true
+        fi
+    done
+    rm -f /run/php/cipi-gui.sock 2>/dev/null || true
 
     step "Cron..."
     rm -f /etc/cron.d/cipi-gui

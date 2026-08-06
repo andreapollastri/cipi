@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.12] — 2026-08-06
+
+### Fixed
+
+- **`cipi php switch` could leave the panel on nginx 502** — it now **rewrites** the API and (when installed) GUI FPM pools onto the target PHP (`listen = /run/php/cipi-api.sock` / `cipi-gui.sock`), removes them from other versions, stops the old FPM to release the socks, recreates `/run/php` + both sockets via the new `php*-fpm`, waits until they exist, and **rolls back** both pools if either socket never appears.
+
+---
+
 ## [5.0.11] — 2026-08-06
 
 ### Fixed

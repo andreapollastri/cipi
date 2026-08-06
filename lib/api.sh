@@ -683,12 +683,15 @@ _api_create_fpm_pool() {
     # silent 500s when workers were SIGKILL'd at request_terminate_timeout
     # before Laravel could write to laravel.log.
     #
-    # Key additions vs. <4.5.0:
-    # - bigger pool + listen.backlog so bursts queue at FPM, not at the kernel
-    # - slowlog: PHP stack trace 30s before the kill, so we know what hung
-    # - catch_workers_output: child stderr (incl. fatals) lands in the FPM log
-    # - error_log moved out of /var/log/nginx (logically belongs to the API)
-    cat > /etc/php/8.5/fpm/pool.d/cipi-api.conf <<POOL
+    # Optional $1 = PHP version (default: current system CLI, fallback 8.5).
+    # `cipi php switch` has a twin writer in php.sh (_php_write_api_fpm_pool)
+    # that also re-homes the pool and recreates /run/php/cipi-api.sock.
+    local v="${1:-}" pv
+    if [[ -z "$v" ]]; then
+        v=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    fi
+    mkdir -p "/etc/php/${v}/fpm/pool.d" /run/php
+    cat > "/etc/php/${v}/fpm/pool.d/cipi-api.conf" <<POOL
 [cipi-api]
 user = www-data
 group = www-data
@@ -718,8 +721,10 @@ php_admin_value[max_execution_time] = 300
 php_admin_value[error_log] = /var/log/cipi-api-php-error.log
 php_admin_flag[log_errors] = on
 POOL
-    # slowlog/error_log files: must exist + be writable by www-data, and be
-    # part of cipi log rotation (handled in lib/migrations/4.5.0.sh).
+    for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
+        [[ "$pv" == "$v" ]] && continue
+        rm -f "/etc/php/${pv}/fpm/pool.d/cipi-api.conf" 2>/dev/null || true
+    done
     : > /var/log/cipi-api-fpm-slow.log 2>/dev/null || true
     : > /var/log/cipi-api-php-error.log 2>/dev/null || true
     chown www-data:adm /var/log/cipi-api-fpm-slow.log /var/log/cipi-api-php-error.log 2>/dev/null || true
