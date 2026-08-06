@@ -17,7 +17,7 @@ _svc_status_line() {
         printf "  $(_svc_label "$svc") ${GREEN}● running${NC}"
         [[ -n "$since" ]] && printf "  ${DIM}since %s${NC}" "$since"
         echo
-    elif systemctl list-unit-files --quiet "${svc}.service" &>/dev/null; then
+    elif systemd_unit_exists "$svc"; then
         printf "  $(_svc_label "$svc") ${RED}● stopped${NC}\n"
     else
         printf "  $(_svc_label "$svc") ${DIM}● not installed${NC}\n"
@@ -29,18 +29,15 @@ _resolve_services() {
     case "$name" in
         all|"")
             local list=("${CIPI_SERVICES[@]}")
-            systemctl list-unit-files --quiet postgresql.service &>/dev/null \
-                && list+=("postgresql")
+            systemd_unit_exists postgresql && list+=("postgresql")
             for v in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
-                systemctl list-unit-files --quiet "php${v}-fpm.service" &>/dev/null \
-                    && list+=("php${v}-fpm")
+                systemd_unit_exists "php${v}-fpm" && list+=("php${v}-fpm")
             done
             echo "${list[@]}"
             ;;
         php)
             for v in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
-                systemctl list-unit-files --quiet "php${v}-fpm.service" &>/dev/null \
-                    && echo -n "php${v}-fpm "
+                systemd_unit_exists "php${v}-fpm" && echo -n "php${v}-fpm "
             done
             ;;
         nginx|mariadb|valkey-server|supervisor|fail2ban|postgresql)
@@ -81,7 +78,7 @@ service_status() {
             if systemctl is-active --quiet "$svc" 2>/dev/null; then
                 st="running"
                 since=$(systemctl show "$svc" --property=ActiveEnterTimestamp --value 2>/dev/null | sed 's/ [A-Z]*$//')
-            elif systemctl list-unit-files --quiet "${svc}.service" &>/dev/null; then
+            elif systemd_unit_exists "$svc"; then
                 st="stopped"
             fi
             items=$(echo "$items" | jq -c --arg n "$svc" --arg s "$st" --arg since "$since" \
@@ -105,7 +102,7 @@ service_restart() {
     local services; services=$(_resolve_services "$target") || return 1
 
     for svc in $services; do
-        if ! systemctl list-unit-files --quiet "${svc}.service" &>/dev/null; then
+        if ! systemd_unit_exists "$svc"; then
             warn "Service ${svc} is not installed — skipping"
             continue
         fi

@@ -102,37 +102,23 @@ selfupdate_command() {
     echo "$nv" > "${CIPI_CONFIG}/version"
     step "Core updated to v${nv}"
 
-    # Auto-update cipi-api package in installed API app
+    # Auto-update cipi-api package in installed API app (never installs the API).
+    # Delegates to _api_update_package from the freshly copied api.sh so the first
+    # upgrade pass already gets timeouts / non-hanging ssh-keyscan / queue stop.
     if [[ -f "${CIPI_API_ROOT:-/opt/cipi/api}/artisan" ]]; then
         step "Updating cipi-api in Laravel app..."
-        local api_root="${CIPI_API_ROOT:-/opt/cipi/api}"
         if [[ -f /opt/cipi/lib/api.sh ]]; then
             # shellcheck source=/dev/null
             source /opt/cipi/lib/api.sh
         fi
-        # Same as `cipi api update`: stop the queue before composer/migrate so the
-        # panel SQLite DB is not locked (migrate can hang forever otherwise).
-        systemctl stop cipi-queue 2>/dev/null || true
-        if [[ -d /opt/cipi/cipi-api ]]; then
-            (cd "$api_root" && composer config repositories.cipi-api path /opt/cipi/cipi-api 2>/dev/null) || true
+        if declare -f _api_update_package >/dev/null 2>&1; then
+            if ! _api_update_package; then
+                warn "cipi/api package update failed — continuing (run: cipi api update)"
+            fi
         else
-            _api_composer_vcs_repo "$api_root"
-            (cd "$api_root" && composer config minimum-stability dev 2>/dev/null) || true
-            (cd "$api_root" && composer config prefer-stable true 2>/dev/null) || true
+            warn "api.sh missing _api_update_package — skip (run: cipi api update)"
         fi
-        _api_composer_prepare_github "$api_root" || true
-        step "Composer update cipi/api (GitHub VCS — may take a few minutes)..."
-        export GIT_TERMINAL_PROMPT=0
-        if ! (cd "$api_root" && composer update cipi/api --no-interaction --prefer-dist); then
-            warn "Composer update cipi/api failed — panel API package unchanged (run: cipi api update)"
-        fi
-        # Composer runs as root; reclaim ownership before migrate (SQLite/logs must be www-data-writable).
-        step "Reclaiming API permissions & running migrations..."
-        chown -R www-data:www-data "$api_root"
-        (cd "$api_root" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
-        (cd "$api_root" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
-        systemctl restart cipi-queue 2>/dev/null || true
-        success "cipi-api package updated in Laravel app"
+        ensure_cipi_api_permissions || true
     fi
 
     # Auto-update cipi/gui package in installed GUI app (from GitHub VCS).

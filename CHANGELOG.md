@@ -4,6 +4,16 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.14] — 2026-08-06
+
+### Fixed
+
+- **`cipi self-update` / `cipi api update` hung forever on panel API package update** — bare `ssh-keyscan github.com` (no timeout) blocked before Composer, and VCS `composer update` had no wall-clock limit (stderr was often discarded). Now: timed keyscan + official GitHub host-key fallback, Composer guard (`timeout` + `COMPOSER_PROCESS_TIMEOUT`), timed queue stop/migrate, and `cipi api update` updates **`cipi/api` only** (full rebuild remains `cipi api upgrade`). Self-update delegates to `_api_update_package` / `_gui_update_package` so the first upgrade pass already gets the fix.
+- **`systemctl list-unit-files --quiet UNIT` is not an existence check** — it exits 0 even when zero units match, so PostgreSQL (and optional PHP-FPM units) could be treated as present. Detection now uses `systemctl cat` via `systemd_unit_exists` for DB engines and `cipi service`.
+- **`cipi db engines`** — prints ASCII `not_installed` instead of an em dash, so API/GUI parsers cannot mis-read the status column.
+
+---
+
 ## [5.0.13] — 2026-08-06
 
 ### Fixed

@@ -28,16 +28,27 @@ _gui_composer_prepare_github() {
     fi
     local dir="$1"
     [[ -n "$dir" && -d "$dir" ]] || return 0
-    # Split locals: with set -u, `local a=x b=$a` expands $a before a is set.
     local ssh_dir="/root/.ssh"
     local kh="${ssh_dir}/known_hosts"
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
-    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
-        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
+    if ! grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+        if command -v timeout >/dev/null 2>&1; then
+            timeout --foreground 10 ssh-keyscan -T 5 -H github.com >> "$kh" 2>/dev/null || true
+        else
+            ssh-keyscan -T 5 -H github.com >> "$kh" 2>/dev/null || true
+        fi
+        if ! grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+            cat >> "$kh" <<'EOF'
+github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+EOF
+        fi
     fi
     chmod 600 "$kh" 2>/dev/null || true
     export GIT_TERMINAL_PROMPT=0
+    export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
     (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
     (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
 }
@@ -305,15 +316,30 @@ _gui_refresh_theme() {
 }
 
 _gui_update_package() {
+    local composer_rc=0
+    step "Composer VCS repo → ${CIPI_GUI_REPO}"
     _gui_composer_vcs_repo "${CIPI_GUI_ROOT}"
     _gui_composer_prepare_github "${CIPI_GUI_ROOT}"
-    (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction --prefer-dist 2>/dev/null) || true
+    step "Composer update cipi/gui (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
+    if ! (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction --prefer-dist --no-ansi); then
+        composer_rc=$?
+        warn "Composer update cipi/gui failed (exit ${composer_rc})"
+    fi
     chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
     ensure_cipi_gui_permissions
-    (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force 2>/dev/null) || true
-    (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
+    if declare -f _cipi_run_timed >/dev/null 2>&1; then
+        (cd "${CIPI_GUI_ROOT}" && _cipi_run_timed 120 sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force) || true
+        (cd "${CIPI_GUI_ROOT}" && _cipi_run_timed 180 sudo -u www-data php artisan migrate --force) || true
+    else
+        (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force 2>/dev/null) || true
+        (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
+    fi
     _gui_refresh_theme || true
+    if [[ "$composer_rc" -ne 0 ]]; then
+        return "$composer_rc"
+    fi
     success "cipi/gui package updated"
+    return 0
 }
 
 # ── PHP-FPM + Nginx ───────────────────────────────────────────────

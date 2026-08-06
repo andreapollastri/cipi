@@ -141,6 +141,15 @@ validate_php_version_known() {
 
 php_is_installed() { dpkg -l "php${1}-fpm" &>/dev/null 2>&1; }
 
+# True if a systemd unit file exists.
+# Note: `systemctl list-unit-files --quiet UNIT` exits 0 even when zero units
+# match, so it must not be used as an existence check.
+systemd_unit_exists() {
+    local unit="${1%.service}"
+    [[ -n "$unit" ]] || return 1
+    systemctl cat "${unit}.service" &>/dev/null
+}
+
 # Major version of the installed Deployer binary (e.g. "8"). Empty if `dep` is
 # missing/unreadable. Used to gate the PHP >= 8.3 requirement: only Deployer 8+
 # rejects older PHP — under Deployer 7 those apps still deploy fine.
@@ -223,24 +232,82 @@ ensure_cipi_api_permissions() {
     fi
 }
 
+# Wall-clock limit when GNU timeout exists (composer/git/ssh-keyscan/systemctl).
+_cipi_run_timed() {
+    local secs="$1"
+    shift
+    if command -v timeout >/dev/null 2>&1; then
+        # --foreground: keep Ctrl+C working when run interactively
+        timeout --foreground "$secs" "$@"
+    else
+        "$@"
+    fi
+}
+
+# Wrap `composer` in this shell so even older in-memory self-update bodies
+# cannot hang forever on VCS/git (first upgrade pass sources new common.sh,
+# then still runs the pre-update function text that calls bare `composer`).
+_cipi_composer_guard() {
+    [[ -n "${_CIPI_COMPOSER_GUARD:-}" ]] && return 0
+    local bin
+    bin="$(command -v composer 2>/dev/null || true)"
+    [[ -n "$bin" && -x "$bin" ]] || return 0
+    _CIPI_COMPOSER_BIN="$bin"
+    _CIPI_COMPOSER_GUARD=1
+    composer() {
+        local bin="${_CIPI_COMPOSER_BIN:-/usr/local/bin/composer}"
+        local secs="${CIPI_COMPOSER_TIMEOUT:-600}"
+        export GIT_TERMINAL_PROMPT=0
+        export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
+        export COMPOSER_DISABLE_XDEBUG=1
+        if command -v timeout >/dev/null 2>&1; then
+            timeout --foreground "$secs" "$bin" "$@"
+        else
+            "$bin" "$@"
+        fi
+    }
+}
+
+# Seed known_hosts for github.com without hanging. Bare `ssh-keyscan` has no
+# useful default timeout and blocks forever on filtered egress — that left
+# self-update stuck on "Updating cipi-api in Laravel app...".
+_cipi_github_known_hosts() {
+    local ssh_dir="/root/.ssh"
+    local kh="${ssh_dir}/known_hosts"
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    if grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+        chmod 600 "$kh" 2>/dev/null || true
+        return 0
+    fi
+    _cipi_run_timed 10 ssh-keyscan -T 5 -H github.com >> "$kh" 2>/dev/null || true
+    if ! grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+        # Official GitHub host keys (docs.github.com — SSH key fingerprints)
+        cat >> "$kh" <<'EOF'
+github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+EOF
+    fi
+    chmod 600 "$kh" 2>/dev/null || true
+}
+
 # Composer panel updates (self-update, api/gui update) run as root. Package metadata
 # may use git@github.com source URLs; without github.com in /root/.ssh/known_hosts
 # git blocks on "Are you sure you want to continue connecting (yes/no)?".
 _cipi_composer_prepare_github() {
     local dir="${1:-}"
     [[ -n "$dir" && -d "$dir" ]] || return 0
-    # Split locals: with set -u, `local a=x b=$a` expands $a before a is set.
-    local ssh_dir="/root/.ssh"
-    local kh="${ssh_dir}/known_hosts"
-    mkdir -p "$ssh_dir"
-    chmod 700 "$ssh_dir"
-    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
-        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
-    fi
-    chmod 600 "$kh" 2>/dev/null || true
+    _cipi_github_known_hosts
+    _cipi_composer_guard
     export GIT_TERMINAL_PROMPT=0
-    (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
-    (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
+    export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
+    # Prefer the real binary here so config never goes through a nested timeout wrapper oddly.
+    local bin="${_CIPI_COMPOSER_BIN:-$(command -v composer 2>/dev/null || true)}"
+    if [[ -n "$bin" ]]; then
+        (cd "$dir" && "$bin" config --json github-protocols '["https"]' 2>/dev/null) || true
+        (cd "$dir" && "$bin" config preferred-install dist 2>/dev/null) || true
+    fi
 }
 
 app_set() {

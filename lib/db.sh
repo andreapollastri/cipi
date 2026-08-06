@@ -123,13 +123,13 @@ db_engine_is_installed() {
     db_ensure_engine_state
     case "$engine" in
         mariadb)
-            echo "$(vault_read server.json | jq -r '.db_engines.mariadb.installed // true')" | grep -qx true \
-                && systemctl list-unit-files --quiet mariadb.service &>/dev/null
+            [[ "$(vault_read server.json | jq -r '.db_engines.mariadb.installed // true')" == "true" ]] \
+                && systemd_unit_exists mariadb
             ;;
         pgsql)
             [[ "$(vault_read server.json | jq -r '.db_engines.pgsql.installed // false')" == "true" ]] \
                 && command -v psql &>/dev/null \
-                && systemctl list-unit-files --quiet postgresql.service &>/dev/null
+                && systemd_unit_exists postgresql
             ;;
         *) return 1 ;;
     esac
@@ -620,18 +620,19 @@ _db_engines() {
     db_ensure_engine_state
     local default; default=$(db_get_default_engine)
     echo -e "\n${BOLD}Database engines${NC}"
-    printf "  ${BOLD}%-12s %-10s %-8s %s${NC}\n" "ENGINE" "STATUS" "PORT" "DEFAULT"
+    printf "  ${BOLD}%-12s %-14s %-8s %s${NC}\n" "ENGINE" "STATUS" "PORT" "DEFAULT"
     local e status port mark
     for e in mariadb pgsql; do
         port=$(db_engine_port "$e")
         if db_engine_is_installed "$e"; then
             status="installed"
         else
-            status="—"
+            # ASCII token (not an em dash) so API parsers never mis-read status.
+            status="not_installed"
         fi
         mark=""
         [[ "$e" == "$default" ]] && mark="*"
-        printf "  %-12s %-10s %-8s %s\n" "$e" "$status" "$port" "$mark"
+        printf "  %-12s %-14s %-8s %s\n" "$e" "$status" "$port" "$mark"
     done
     echo ""
     echo -e "  Install:  ${CYAN}cipi db install pgsql${NC}"

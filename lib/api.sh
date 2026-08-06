@@ -29,18 +29,45 @@ _api_composer_prepare_github() {
     # Self-update may source this file before common.sh is reloaded (v5.0.7 → 5.0.8).
     local dir="$1"
     [[ -n "$dir" && -d "$dir" ]] || return 0
-    # Split locals: with set -u, `local a=x b=$a` expands $a before a is set.
     local ssh_dir="/root/.ssh"
     local kh="${ssh_dir}/known_hosts"
     mkdir -p "$ssh_dir"
     chmod 700 "$ssh_dir"
-    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
-        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
+    if ! grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+        if command -v timeout >/dev/null 2>&1; then
+            timeout --foreground 10 ssh-keyscan -T 5 -H github.com >> "$kh" 2>/dev/null || true
+        else
+            ssh-keyscan -T 5 -H github.com >> "$kh" 2>/dev/null || true
+        fi
+        if ! grep -qE '(^|[,[:space:]])github\.com[,[:space:]]' "$kh" 2>/dev/null; then
+            cat >> "$kh" <<'EOF'
+github.com ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIOMqqnkVzrm0SdG6UOoqKLsabgH5C9okWi0dh2l9GKJl
+github.com ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg=
+github.com ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQCj7ndNxQowgcQnjshcLrqPEiiphnt+VTTvDP6mHBL9j1aNUkY4Ue1gvwnGLVlOhGeYrnZaMgRK6+PKCUXaDbC7qtbW8gIkhL7aGCsOr/C56SJMy/BCZfxd1nWzAOxSDPgVsmerOBYfNqltV9/hWCqBywINIR+5dIg6JTJ72pcEpEjcYgXkE2YEFXV1JHnsKgbLWNlhScqb2UmyRkQyytRLtL+38TGxkxCflmO+5Z8CSSNY7GidjMIZ7Q4zMjA2n1nGrlTDkzwDCsw+wqFPGQA179cnfGWOWRVruj16z6XyvxvjJwbz0wQZ75XK5tKSb7FNyeIEs4TT4jk+S4dhPeAUC5y+bDYirYgM4GC7uEnztnZyaVWQ7B381AK4Qdrwt51ZqExKbQpTUNn+EjqoTwvqNj4kqx5QUCI0ThS/YkOxJCXmPUWZbhjpCg56i+2aB6CmK2JGhn57K5mj0MNdBXA4/WnwH6XoPWJzK5Nyu2zB3nAZp+S5hpQs+p1vN1/wsjk=
+EOF
+        fi
     fi
     chmod 600 "$kh" 2>/dev/null || true
     export GIT_TERMINAL_PROMPT=0
+    export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
     (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
     (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
+}
+
+# Stop queue (and force-kill if stop hangs) before composer/migrate so panel
+# SQLite is not locked forever by cipi-queue.
+_api_stop_queue_for_update() {
+    if ! systemctl is-active --quiet cipi-queue 2>/dev/null; then
+        return 0
+    fi
+    if declare -f _cipi_run_timed >/dev/null 2>&1; then
+        _cipi_run_timed 45 systemctl stop cipi-queue 2>/dev/null || true
+    else
+        _api_timeout 45 systemctl stop cipi-queue 2>/dev/null || true
+    fi
+    if systemctl is-active --quiet cipi-queue 2>/dev/null; then
+        systemctl kill -s SIGKILL cipi-queue 2>/dev/null || true
+    fi
 }
 
 _api_composer_vcs_repo() {
@@ -446,21 +473,40 @@ _api_ensure_laravel_app() {
 
 _api_update_package() {
     local pkg_dir="/opt/cipi/cipi-api"
+    local composer_rc=0
     [[ -d "${CIPI_LIB}/../cipi-api" ]] && pkg_dir="${CIPI_LIB}/../cipi-api"
+
+    _api_stop_queue_for_update
+
     if [[ -d "$pkg_dir" ]]; then
+        step "Composer path repo → ${pkg_dir}"
         (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path "$pkg_dir" 2>/dev/null) || true
     else
+        step "Composer VCS repo → ${CIPI_API_REPO} (no bundled cipi-api)"
         _api_composer_vcs_repo "${CIPI_API_ROOT}"
         (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
         (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
     fi
     _api_composer_prepare_github "${CIPI_API_ROOT}"
-    (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist 2>/dev/null) || true
+
+    step "Composer update cipi/api (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
+    # Do not swallow stderr — silent hangs were undebuggable. Guard/timeout via prepare.
+    if ! (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist --no-ansi); then
+        composer_rc=$?
+        warn "Composer update cipi/api failed (exit ${composer_rc})"
+    fi
+
+    step "Reclaiming API permissions & running migrations..."
     chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true
-    (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
-    (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
+    (cd "${CIPI_API_ROOT}" && _api_timeout 120 sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force) || true
+    (cd "${CIPI_API_ROOT}" && _api_timeout 180 sudo -u www-data php artisan migrate --force) || true
     _api_sync_token_abilities_file 2>/dev/null || true
+    systemctl start cipi-queue 2>/dev/null || systemctl restart cipi-queue 2>/dev/null || true
+    if [[ "$composer_rc" -ne 0 ]]; then
+        return "$composer_rc"
+    fi
     success "cipi-api package updated"
+    return 0
 }
 
 _api_patch_user_model() {
@@ -791,31 +837,34 @@ api_update() {
 
     ensure_cipi_api_permissions
 
-    # Stop queue worker during update
-    systemctl stop cipi-queue 2>/dev/null || true
+    _api_stop_queue_for_update
 
-    # Update local package reference
+    # Soft update focuses on cipi/api (GitHub VCS). Full framework rebuild: cipi api upgrade.
     local pkg_dir="/opt/cipi/cipi-api"
     [[ -d "${CIPI_LIB}/../cipi-api" ]] && pkg_dir="${CIPI_LIB}/../cipi-api"
     if [[ -d "$pkg_dir" ]]; then
+        step "Composer path repo → ${pkg_dir}"
         (cd "${CIPI_API_ROOT}" && composer config repositories.cipi-api path "$pkg_dir" 2>/dev/null) || true
+    else
+        step "Composer VCS repo → ${CIPI_API_REPO}"
+        _api_composer_vcs_repo "${CIPI_API_ROOT}"
+        (cd "${CIPI_API_ROOT}" && composer config minimum-stability dev 2>/dev/null) || true
+        (cd "${CIPI_API_ROOT}" && composer config prefer-stable true 2>/dev/null) || true
     fi
 
-    # Update all packages (Laravel framework + cipi-api + dependencies)
-    step "Composer update..."
+    step "Composer update cipi/api (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
     _api_composer_prepare_github "${CIPI_API_ROOT}"
-    (cd "${CIPI_API_ROOT}" && composer update --no-interaction --prefer-dist 2>/dev/null) || {
-        error "Composer update failed. Try: cipi api upgrade"
+    if ! (cd "${CIPI_API_ROOT}" && composer update cipi/api --no-interaction --prefer-dist --no-ansi); then
+        error "Composer update failed (timed out or error). Try: cipi api upgrade"
         systemctl start cipi-queue 2>/dev/null || true
         exit 1
-    }
-    success "Packages updated"
+    fi
+    success "cipi/api package updated"
 
-    # Re-publish assets and run migrations
     step "Assets & migrations..."
     chown -R www-data:www-data "${CIPI_API_ROOT}" 2>/dev/null || true
-    (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force 2>/dev/null) || true
-    (cd "${CIPI_API_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
+    (cd "${CIPI_API_ROOT}" && _api_timeout 120 sudo -u www-data php artisan vendor:publish --tag=cipi-assets --force) || true
+    (cd "${CIPI_API_ROOT}" && _api_timeout 180 sudo -u www-data php artisan migrate --force) || true
     _api_sync_token_abilities_file 2>/dev/null || true
     _api_ensure_log_stack_env
     _api_ensure_session_driver_env
@@ -823,11 +872,9 @@ api_update() {
     _api_setup_cron
     success "Assets published, migrations applied"
 
-    # Restart services
     systemctl restart cipi-queue 2>/dev/null || true
     reload_php_fpm "8.5"
 
-    # Show versions
     _api_show_versions
 
     log_action "API UPDATED"
