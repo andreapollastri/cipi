@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.13] — 2026-08-06
+
+### Fixed
+
+- **`cipi self-update` aborted with `_cipi_composer_prepare_github: command not found` and left the panel on HTTP 500** — upgrading from older builds (e.g. v5.0.2) kept the pre-update `self-update`/`common.sh` helpers in memory while sourcing the new `gui.sh`, which called a helper that did not exist yet. After the blanket `chown -R root:root /opt/cipi`, GUI `.env` / storage stayed root-owned and PHP-FPM returned 500. **`lib/gui.sh`** now has the same inline fallback as the API (`_gui_composer_prepare_github`), **`ensure_cipi_gui_permissions`** also restores `.env` ownership, and **`self-update`** always reclaims panel permissions at the end even if the Composer step fails. **Migration 5.0.13** reclaims API/GUI ownership on update.
+
+---
+
 ## [5.0.12] — 2026-08-06
 
 ### Fixed

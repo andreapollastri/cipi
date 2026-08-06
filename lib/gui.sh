@@ -18,11 +18,35 @@ if [[ -z "${CIPI_GUI_BRANCH:-}" ]]; then
     readonly CIPI_GUI_BRANCH="main"
 fi
 
+# Composer GitHub prep for cipi/gui. Mirrors _api_composer_prepare_github so
+# self-update can source this file before common.sh is reloaded (old process
+# still has pre-update helpers in memory).
+_gui_composer_prepare_github() {
+    if declare -f _cipi_composer_prepare_github >/dev/null 2>&1; then
+        _cipi_composer_prepare_github "$@"
+        return
+    fi
+    local dir="$1"
+    [[ -n "$dir" && -d "$dir" ]] || return 0
+    # Split locals: with set -u, `local a=x b=$a` expands $a before a is set.
+    local ssh_dir="/root/.ssh"
+    local kh="${ssh_dir}/known_hosts"
+    mkdir -p "$ssh_dir"
+    chmod 700 "$ssh_dir"
+    if ! grep -q '[[:space:]]github\.com' "$kh" 2>/dev/null; then
+        ssh-keyscan -H github.com 2>/dev/null >> "$kh" || true
+    fi
+    chmod 600 "$kh" 2>/dev/null || true
+    export GIT_TERMINAL_PROMPT=0
+    (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
+    (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
+}
+
 # Composer VCS repository for cipi/gui (https://github.com/cipi-sh/gui).
 _gui_composer_vcs_repo() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
-    _cipi_composer_prepare_github "$dir"
+    _gui_composer_prepare_github "$dir"
     (cd "$dir" && composer config repositories.cipi-gui \
         "{\"type\":\"vcs\",\"url\":\"${CIPI_GUI_REPO}\"}" 2>/dev/null) || true
 }
@@ -96,8 +120,15 @@ _gui_apply_sqlite_pragmas() {
 
 ensure_cipi_gui_permissions() {
     [[ ! -d "${CIPI_GUI_ROOT}" ]] && return
-    chown -R www-data:www-data "${CIPI_GUI_ROOT}/storage" "${CIPI_GUI_ROOT}/bootstrap/cache" 2>/dev/null || true
+    mkdir -p "${CIPI_GUI_ROOT}/storage/logs" "${CIPI_GUI_ROOT}/database" "${CIPI_GUI_ROOT}/bootstrap/cache" 2>/dev/null || true
+    chown -R www-data:www-data "${CIPI_GUI_ROOT}/storage" "${CIPI_GUI_ROOT}/database" "${CIPI_GUI_ROOT}/bootstrap/cache" 2>/dev/null || true
     chmod -R ug+rwx "${CIPI_GUI_ROOT}/storage" "${CIPI_GUI_ROOT}/bootstrap/cache" 2>/dev/null || true
+    # self-update does chown -R root:root /opt/cipi — .env must stay www-data-readable
+    # or PHP-FPM returns HTTP 500 (same class as ensure_cipi_api_permissions).
+    if [[ -f "${CIPI_GUI_ROOT}/.env" ]]; then
+        chown www-data:www-data "${CIPI_GUI_ROOT}/.env" 2>/dev/null || true
+        chmod 640 "${CIPI_GUI_ROOT}/.env" 2>/dev/null || true
+    fi
     [[ -f "${CIPI_GUI_ROOT}/database/database.sqlite" ]] \
         && chown www-data:www-data "${CIPI_GUI_ROOT}/database/database.sqlite" 2>/dev/null || true
 }
@@ -275,9 +306,10 @@ _gui_refresh_theme() {
 
 _gui_update_package() {
     _gui_composer_vcs_repo "${CIPI_GUI_ROOT}"
-    _cipi_composer_prepare_github "${CIPI_GUI_ROOT}"
+    _gui_composer_prepare_github "${CIPI_GUI_ROOT}"
     (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction --prefer-dist 2>/dev/null) || true
     chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
+    ensure_cipi_gui_permissions
     (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force 2>/dev/null) || true
     (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
     _gui_refresh_theme || true

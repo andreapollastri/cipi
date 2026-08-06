@@ -135,17 +135,20 @@ selfupdate_command() {
         success "cipi-api package updated in Laravel app"
     fi
 
-    # Auto-update cipi/gui package in installed GUI app (from GitHub VCS)
+    # Auto-update cipi/gui package in installed GUI app (from GitHub VCS).
+    # Never let a composer helper miss abort the update after chown root:root —
+    # that left .env root-owned and the panel on HTTP 500 (v5.0.2 → 5.0.12).
     if [[ -f "${CIPI_GUI_ROOT:-/opt/cipi/gui}/artisan" ]] && [[ -f /opt/cipi/lib/gui.sh ]]; then
         step "Updating cipi/gui in Laravel app..."
-        local gui_root="${CIPI_GUI_ROOT:-/opt/cipi/gui}"
         # shellcheck source=/dev/null
         source /opt/cipi/lib/gui.sh
-        _gui_update_package
-        ensure_cipi_gui_permissions
-        _gui_create_fpm_pool
+        if ! _gui_update_package; then
+            warn "cipi/gui package update failed — continuing (run: cipi gui update)"
+        fi
+        ensure_cipi_gui_permissions || true
+        _gui_create_fpm_pool || true
         reload_php_fpm "8.5" 2>/dev/null || true
-        success "cipi/gui package updated in Laravel app"
+        success "cipi/gui package step finished"
     fi
 
     rm -rf "$tmp"
@@ -155,6 +158,15 @@ selfupdate_command() {
     # available even when no new migration ran (same-version refresh / already on 4.7.19).
     # shellcheck source=/dev/null
     source "${CIPI_LIB}/common.sh"
+    # Final reclaim: blanket chown root:root above must never leave the panel unreadable.
+    ensure_cipi_api_permissions || true
+    if declare -f ensure_cipi_gui_permissions >/dev/null 2>&1; then
+        ensure_cipi_gui_permissions || true
+    elif [[ -f /opt/cipi/lib/gui.sh ]]; then
+        # shellcheck source=/dev/null
+        source /opt/cipi/lib/gui.sh
+        ensure_cipi_gui_permissions || true
+    fi
     if declare -f purge_orphan_app_users >/dev/null; then
         step "Purging orphan app users..."
         purge_orphan_app_users || true
