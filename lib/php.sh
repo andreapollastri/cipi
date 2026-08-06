@@ -260,7 +260,8 @@ POOL
 _php_write_gui_fpm_pool() {
     local v="$1"
     local gui_root="${CIPI_GUI_ROOT:-/opt/cipi/gui}"
-    local basedir="${gui_root}/:/tmp/:/proc/:/var/tmp/"
+    # Mirror lib/gui.sh _gui_open_basedir — allow path package dir if symlink slips through.
+    local basedir="${gui_root}/:/opt/cipi/cipi-gui/:/tmp/:/proc/:/var/tmp/"
     local pool; pool="$(_php_pool_path "$v" "cipi-gui")"
 
     [[ -n "$v" ]] || return 1

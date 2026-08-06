@@ -108,9 +108,26 @@ _gui_composer_path_repo() {
     _gui_composer_prepare_github "$dir"
     # Drop stale VCS entry that hangs soft updates.
     (cd "$dir" && composer config --unset repositories.cipi-gui 2>/dev/null) || true
-    (cd "$dir" && composer config repositories.cipi-gui path "$pkg" 2>/dev/null) || true
+    # symlink=false: copy into vendor/ so FPM open_basedir (/opt/cipi/gui) can load it.
+    # A plain `path` repo defaults to symlink → /opt/cipi/cipi-gui → HTTP 500.
+    (cd "$dir" && composer config --json repositories.cipi-gui \
+        "{\"type\":\"path\",\"url\":\"${pkg}\",\"options\":{\"symlink\":false}}" 2>/dev/null) || true
     (cd "$dir" && composer config minimum-stability dev 2>/dev/null) || true
     (cd "$dir" && composer config prefer-stable true 2>/dev/null) || true
+}
+
+# If vendor/cipi/gui is still a symlink outside the app root, force a real copy.
+_gui_ensure_vendor_copy() {
+    local dir="${1:-${CIPI_GUI_ROOT}}"
+    local vendor="${dir}/vendor/cipi/gui"
+    [[ -d "$dir" ]] || return 0
+    if [[ -L "$vendor" ]] || [[ -d /opt/cipi/cipi-gui && ! -d "$vendor" ]]; then
+        _gui_composer_path_repo "$dir" /opt/cipi/cipi-gui || return 1
+        (cd "$dir" && composer reinstall cipi/gui --no-interaction --prefer-dist --no-ansi 2>/dev/null) \
+            || (cd "$dir" && composer update cipi/gui --no-interaction --prefer-dist --no-ansi) \
+            || return 1
+    fi
+    return 0
 }
 
 # Compat for historical migrations (4.7.5) — never wire a real VCS repo.
@@ -128,11 +145,13 @@ _gui_require_package() {
     _gui_composer_path_repo "$dir" /opt/cipi/cipi-gui || return 1
     (cd "$dir" && composer require cipi/gui:@dev --no-interaction --prefer-dist --no-ansi) \
         || return 1
+    _gui_ensure_vendor_copy "$dir" || return 1
     return 0
 }
 
 _gui_open_basedir() {
-    echo "${CIPI_GUI_ROOT}/:/tmp/:/proc/:/var/tmp/"
+    # Include /opt/cipi/cipi-gui/ as a safety net if a path symlink slips through.
+    echo "${CIPI_GUI_ROOT}/:/opt/cipi/cipi-gui/:/tmp/:/proc/:/var/tmp/"
 }
 
 # Shell cwd may point at /tmp/cipi-gui-build or /opt/cipi/gui while we rm -rf them — escape first.
@@ -352,7 +371,12 @@ _gui_repair_runtime() {
         error "Laravel GUI app not found."
         return 1
     }
-    step "Repairing GUI runtime (open_basedir + permissions)..."
+    step "Repairing GUI runtime (vendor copy + open_basedir + permissions)..."
+    if [[ -d /opt/cipi/cipi-gui ]]; then
+        _gui_composer_path_repo "${CIPI_GUI_ROOT}" /opt/cipi/cipi-gui || true
+        _gui_ensure_vendor_copy "${CIPI_GUI_ROOT}" || true
+    fi
+    chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
     ensure_cipi_gui_permissions
     local gui_php
     gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
@@ -389,8 +413,12 @@ _gui_update_package() {
         composer_rc=$?
         warn "Composer require cipi/gui:@dev failed (exit ${composer_rc})"
     fi
+    _gui_ensure_vendor_copy "${CIPI_GUI_ROOT}" || true
     chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
     ensure_cipi_gui_permissions
+    local gui_php
+    gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
+    _gui_create_fpm_pool "$gui_php"
     if declare -f _cipi_run_timed >/dev/null 2>&1; then
         (cd "${CIPI_GUI_ROOT}" && _cipi_run_timed 120 sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force) || true
         (cd "${CIPI_GUI_ROOT}" && _cipi_run_timed 180 sudo -u www-data php artisan migrate --force) || true
@@ -398,6 +426,8 @@ _gui_update_package() {
         (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan vendor:publish --tag=cipi-gui-config --force 2>/dev/null) || true
         (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan migrate --force 2>/dev/null) || true
     fi
+    (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan optimize:clear 2>/dev/null) || true
+    reload_php_fpm "$gui_php" 2>/dev/null || true
     _gui_refresh_theme || true
     if [[ "$composer_rc" -ne 0 ]]; then
         return "$composer_rc"
@@ -614,6 +644,7 @@ gui_upgrade() {
     [[ ! -f "${CIPI_GUI_ROOT}/artisan" ]] && { error "Laravel GUI app not found."; exit 1; }
 
     _gui_cd_safe
+    export COMPOSER_ALLOW_SUPERUSER=1
 
     local backup_dir="/var/tmp/cipi-gui-backup-$(date +%s)"
     local build_dir
@@ -647,7 +678,11 @@ gui_upgrade() {
     mv "$build_dir" "${CIPI_GUI_ROOT}"
     rm -rf "$backup_dir" 2>/dev/null || true
     chown -R www-data:www-data "${CIPI_GUI_ROOT}"
+    _gui_ensure_vendor_copy "${CIPI_GUI_ROOT}" || true
     ensure_cipi_gui_permissions
+    _gui_ensure_log_stack_env
+    _gui_ensure_session_driver_env
+    _gui_apply_sqlite_pragmas
     local gui_php pv
     gui_php=$(php -r 'echo PHP_MAJOR_VERSION.".".PHP_MINOR_VERSION;' 2>/dev/null || echo "8.5")
     for pv in 7.4 8.0 8.1 8.2 8.3 8.4 8.5; do
@@ -656,6 +691,9 @@ gui_upgrade() {
             break
         fi
     done
+    _gui_create_fpm_pool "$gui_php"
+    _gui_setup_cron
+    (cd "${CIPI_GUI_ROOT}" && sudo -u www-data php artisan optimize:clear 2>/dev/null) || true
     reload_php_fpm "$gui_php"
     success "GUI upgraded (old: ${CIPI_GUI_ROOT}.old)"
 }

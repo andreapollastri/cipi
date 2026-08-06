@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.18] — 2026-08-06
+
+### Fixed
+
+- **Panel GUI HTTP 500 after `cipi gui upgrade` / soft update** — path repo for `cipi/gui` defaulted to a **symlink** into `/opt/cipi/cipi-gui`, outside PHP-FPM `open_basedir` (`/opt/cipi/gui/` only). Restore Composer `options.symlink=false` (real copy in `vendor/`), widen `open_basedir` to include `/opt/cipi/cipi-gui/`, reinstall when a symlink is detected, and rewrite the FPM pool after upgrade/update. **Migration 5.0.18** repairs existing panels. Immediate: `cipi gui fix-permissions`.
+
+---
+
 ## [5.0.17] — 2026-08-06
 
 ### Fixed
