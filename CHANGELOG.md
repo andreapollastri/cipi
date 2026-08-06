@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.16] — 2026-08-06
+
+### Fixed
+
+- **`cipi self-update` hung on GUI after API Packagist fix** — `cipi/gui` is **not** on Packagist, so soft update still used a GitHub **VCS** repo and blocked on `Composer VCS repo → https://github.com/cipi-sh/gui`. Now syncs a timed GitHub **tar.gz** into `/opt/cipi/cipi-gui` and installs via **path** repo (`composer require cipi/gui:@dev`). **Migration 5.0.16** unsets stale `repositories.cipi-gui`.
+
+---
+
 ## [5.0.15] — 2026-08-06
 
 ### Fixed

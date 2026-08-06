@@ -53,23 +53,81 @@ EOF
     (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
 }
 
-# Composer VCS repository for cipi/gui (https://github.com/cipi-sh/gui).
+# cipi/gui is not on Packagist. A Composer VCS repo on GitHub hangs the same way
+# cipi/api VCS did (full git clone/scan). Sync a shallow zipball into
+# /opt/cipi/cipi-gui and use a path repository instead.
+_gui_sync_path_package() {
+    local branch="${CIPI_GUI_BRANCH:-main}"
+    local dest="/opt/cipi/cipi-gui"
+    local tmp="/tmp/cipi-gui-pkg-$$"
+    local url="https://github.com/cipi-sh/gui/archive/refs/heads/${branch}.tar.gz"
+    local extracted=""
+
+    rm -rf "$tmp"
+    mkdir -p "$tmp" || return 1
+
+    step "Downloading cipi/gui (${branch}) from GitHub (zipball/tar, not VCS)..."
+    if declare -f _cipi_run_timed >/dev/null 2>&1; then
+        _cipi_run_timed 120 curl -fsSL "$url" -o "${tmp}/gui.tar.gz" || {
+            rm -rf "$tmp"
+            return 1
+        }
+        _cipi_run_timed 60 tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" || {
+            rm -rf "$tmp"
+            return 1
+        }
+    else
+        curl -fsSL --connect-timeout 15 --max-time 120 "$url" -o "${tmp}/gui.tar.gz" || {
+            rm -rf "$tmp"
+            return 1
+        }
+        tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" || {
+            rm -rf "$tmp"
+            return 1
+        }
+    fi
+
+    extracted=$(find "$tmp" -mindepth 1 -maxdepth 1 -type d ! -name '.' | head -1)
+    if [[ -z "$extracted" || ! -f "${extracted}/composer.json" ]]; then
+        rm -rf "$tmp"
+        return 1
+    fi
+
+    rm -rf "$dest"
+    mkdir -p "$(dirname "$dest")"
+    mv "$extracted" "$dest"
+    rm -rf "$tmp"
+    # open_basedir allows /opt/cipi/cipi-gui/ — keep it root-owned like cipi libs
+    chown -R root:root "$dest" 2>/dev/null || true
+    return 0
+}
+
+_gui_composer_path_repo() {
+    local dir="$1"
+    local pkg="${2:-/opt/cipi/cipi-gui}"
+    [[ -d "$dir" && -d "$pkg" ]] || return 1
+    _gui_composer_prepare_github "$dir"
+    # Drop stale VCS entry that hangs soft updates.
+    (cd "$dir" && composer config --unset repositories.cipi-gui 2>/dev/null) || true
+    (cd "$dir" && composer config repositories.cipi-gui path "$pkg" 2>/dev/null) || true
+    (cd "$dir" && composer config minimum-stability dev 2>/dev/null) || true
+    (cd "$dir" && composer config prefer-stable true 2>/dev/null) || true
+}
+
+# Compat for historical migrations (4.7.5) — never wire a real VCS repo.
 _gui_composer_vcs_repo() {
     local dir="$1"
     [[ -d "$dir" ]] || return 0
-    _gui_composer_prepare_github "$dir"
-    (cd "$dir" && composer config repositories.cipi-gui \
-        "{\"type\":\"vcs\",\"url\":\"${CIPI_GUI_REPO}\"}" 2>/dev/null) || true
+    _gui_sync_path_package || return 1
+    _gui_composer_path_repo "$dir" /opt/cipi/cipi-gui
 }
 
 _gui_require_package() {
     local dir="$1"
     [[ -d "$dir" ]] || return 1
-    _gui_composer_vcs_repo "$dir"
-    (cd "$dir" && composer config minimum-stability dev 2>/dev/null) || true
-    (cd "$dir" && composer config prefer-stable true 2>/dev/null) || true
-    (cd "$dir" && composer require "cipi/gui:dev-${CIPI_GUI_BRANCH}" --no-interaction 2>/dev/null) \
-        || (cd "$dir" && composer require cipi/gui --no-interaction 2>/dev/null) \
+    _gui_sync_path_package || return 1
+    _gui_composer_path_repo "$dir" /opt/cipi/cipi-gui || return 1
+    (cd "$dir" && composer require cipi/gui:@dev --no-interaction --prefer-dist --no-ansi) \
         || return 1
     return 0
 }
@@ -317,13 +375,20 @@ _gui_refresh_theme() {
 
 _gui_update_package() {
     local composer_rc=0
-    step "Composer VCS repo → ${CIPI_GUI_REPO}"
-    _gui_composer_vcs_repo "${CIPI_GUI_ROOT}"
-    _gui_composer_prepare_github "${CIPI_GUI_ROOT}"
-    step "Composer update cipi/gui (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
-    if ! (cd "${CIPI_GUI_ROOT}" && composer update cipi/gui --no-interaction --prefer-dist --no-ansi); then
+
+    if ! _gui_sync_path_package; then
+        warn "Failed to download cipi/gui from GitHub — package unchanged (run: cipi gui update)"
+        return 1
+    fi
+    _gui_composer_path_repo "${CIPI_GUI_ROOT}" /opt/cipi/cipi-gui || {
+        warn "Failed to configure path repo for cipi/gui"
+        return 1
+    }
+
+    step "Composer require cipi/gui:@dev (timeout ${CIPI_COMPOSER_TIMEOUT:-600}s)..."
+    if ! (cd "${CIPI_GUI_ROOT}" && composer require cipi/gui:@dev --no-interaction --prefer-dist --no-ansi); then
         composer_rc=$?
-        warn "Composer update cipi/gui failed (exit ${composer_rc})"
+        warn "Composer require cipi/gui:@dev failed (exit ${composer_rc})"
     fi
     chown -R www-data:www-data "${CIPI_GUI_ROOT}" 2>/dev/null || true
     ensure_cipi_gui_permissions
