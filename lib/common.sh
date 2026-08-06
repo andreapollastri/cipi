@@ -260,10 +260,12 @@ _cipi_composer_guard() {
         export GIT_TERMINAL_PROMPT=0
         export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
         export COMPOSER_DISABLE_XDEBUG=1
+        export COMPOSER_ALLOW_SUPERUSER=1
+        # Close stdin so Composer never blocks on an accidental prompt (TTY Enter).
         if command -v timeout >/dev/null 2>&1; then
-            timeout --foreground "$secs" "$bin" "$@"
+            timeout --foreground "$secs" "$bin" "$@" </dev/null
         else
-            "$bin" "$@"
+            "$bin" "$@" </dev/null
         fi
     }
 }
@@ -302,6 +304,7 @@ _cipi_composer_prepare_github() {
     _cipi_composer_guard
     export GIT_TERMINAL_PROMPT=0
     export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
+    export COMPOSER_ALLOW_SUPERUSER=1
     # Prefer the real binary here so config never goes through a nested timeout wrapper oddly.
     local bin="${_CIPI_COMPOSER_BIN:-$(command -v composer 2>/dev/null || true)}"
     if [[ -n "$bin" ]]; then

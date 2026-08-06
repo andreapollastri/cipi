@@ -49,6 +49,7 @@ EOF
     chmod 600 "$kh" 2>/dev/null || true
     export GIT_TERMINAL_PROMPT=0
     export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
+    export COMPOSER_ALLOW_SUPERUSER=1
     (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
     (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
 }
@@ -66,22 +67,20 @@ _gui_sync_path_package() {
     rm -rf "$tmp"
     mkdir -p "$tmp" || return 1
 
+    # Always close stdin: with an interactive TTY, `timeout --foreground curl -s`
+    # can stop on SIGTTIN (looks "hung" until Enter). Curl has its own timeouts.
     step "Downloading cipi/gui (${branch}) from GitHub (zipball/tar, not VCS)..."
+    if ! curl -fsSL --connect-timeout 15 --max-time 120 "$url" -o "${tmp}/gui.tar.gz" </dev/null; then
+        rm -rf "$tmp"
+        return 1
+    fi
     if declare -f _cipi_run_timed >/dev/null 2>&1; then
-        _cipi_run_timed 120 curl -fsSL "$url" -o "${tmp}/gui.tar.gz" || {
-            rm -rf "$tmp"
-            return 1
-        }
-        _cipi_run_timed 60 tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" || {
+        _cipi_run_timed 60 tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" </dev/null || {
             rm -rf "$tmp"
             return 1
         }
     else
-        curl -fsSL --connect-timeout 15 --max-time 120 "$url" -o "${tmp}/gui.tar.gz" || {
-            rm -rf "$tmp"
-            return 1
-        }
-        tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" || {
+        tar -xzf "${tmp}/gui.tar.gz" -C "$tmp" </dev/null || {
             rm -rf "$tmp"
             return 1
         }

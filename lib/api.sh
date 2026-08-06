@@ -50,6 +50,7 @@ EOF
     chmod 600 "$kh" 2>/dev/null || true
     export GIT_TERMINAL_PROMPT=0
     export COMPOSER_PROCESS_TIMEOUT="${COMPOSER_PROCESS_TIMEOUT:-300}"
+    export COMPOSER_ALLOW_SUPERUSER=1
     (cd "$dir" && composer config --json github-protocols '["https"]' 2>/dev/null) || true
     (cd "$dir" && composer config preferred-install dist 2>/dev/null) || true
 }

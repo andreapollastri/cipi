@@ -4,6 +4,14 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.0.17] — 2026-08-06
+
+### Fixed
+
+- **`cipi self-update` appeared stuck on “Downloading cipi/gui…” until Enter** — interactive TTY + `timeout --foreground curl -s` could stop on stdin (SIGTTIN). GUI tarball sync now uses curl’s own timeouts with stdin closed (`</dev/null`). Composer panel updates set `COMPOSER_ALLOW_SUPERUSER=1` and also close stdin so root/`--no-interaction` runs never wait for a prompt.
+
+---
+
 ## [5.0.16] — 2026-08-06
 
 ### Fixed
