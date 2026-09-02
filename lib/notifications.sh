@@ -31,7 +31,8 @@ deploy_success|Deploy|Deploy succeeded
 deploy_fail|Deploy|Deploy failed
 deploy_rollback|Deploy|Deploy rollback
 deploy_snapshot_fail|Deploy|Pre-deploy DB snapshot failed
-health_fail|Health|HTTP healthcheck failed
+health_fail|Health|HTTP healthcheck failed (periodic, after 3 failures)
+deploy_health_fail|Health|Post-deploy healthcheck failed
 ssl_install|SSL|SSL certificate installed
 ssl_force|SSL|HTTP → HTTPS redirect forced
 ssl_renew|SSL|SSL certificates renewed

@@ -441,6 +441,7 @@ ${app_user} ALL=(root) NOPASSWD: /usr/local/bin/cipi-worker restart ${app_user}
 ${app_user} ALL=(root) NOPASSWD: /usr/local/bin/cipi-worker stop ${app_user}
 ${app_user} ALL=(root) NOPASSWD: /usr/local/bin/cipi-worker status ${app_user}
 ${app_user} ALL=(root) NOPASSWD: /usr/local/bin/cipi-app-notify ${app_user} *
+${app_user} ALL=(root) NOPASSWD: /usr/local/bin/cipi health postdeploy ${app_user} --auto
 SUDO
     chmod 440 "/etc/sudoers.d/cipi-${app_user}"
     success "Permissions"
@@ -1270,7 +1271,8 @@ _app_run_print_commands() {
 }
 
 _app_run_validate_arg() {
-    local arg="$1" app="$2" home="/home/${app}"
+    local arg="$1" app="$2"
+    local home="/home/${app}"
     if [[ "$arg" =~ [\;\|\&\`\$\(\)\<\>$'\n\r'\\] ]]; then
         error "Disallowed characters in argument: ${arg}"
         return 1

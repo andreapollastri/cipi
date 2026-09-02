@@ -75,6 +75,34 @@ grep -q '_bk_prune_legacy' "${LIB}/backup.sh" && pass "legacy --weeks prune stil
 grep -q 'db_dump_database_ex' "${LIB}/db.sh" && pass "dump supports table exclusions" || fail "no table exclusions"
 grep -q 'db_list_databases' "${LIB}/db.sh" && pass "db.sh can enumerate live databases" || fail "db.sh discovery"
 
+echo "-- backup integrity"
+grep -q '_bk_check_archive' "${LIB}/backup.sh" && pass "archives are integrity-checked before storing" || fail "no integrity check"
+grep -q 'tar_rc -ge 2' "${LIB}/backup.sh" && pass "tar warnings are not treated as failures" || fail "tar exit 1 still fails the backup"
+grep -q 'if . == null then empty else tostring end' "${LIB}/backup.sh" \
+    && pass "profile booleans read correctly (jq // false pitfall)" || fail "jq // false pitfall present"
+grep -q 'created_at' "${LIB}/backup.sh" && pass "new profiles are not reported overdue" || fail "no created_at"
+grep -q 'nothing was downloaded' "${LIB}/backup.sh" && pass "fetch refuses to claim an empty download" || fail "fetch can report a false success"
+
+cat > "${TMP}/arch.sh" <<'AR'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=/tmp/cipi-t; CIPI_LIB=LIBDIR
+info(){ :; }; warn(){ :; }; error(){ :; }; success(){ :; }; step(){ :; }
+vault_read(){ echo '{}'; }; vault_write(){ cat >/dev/null; }
+source LIBDIR/backup.sh
+D=TMPDIR/arch; rm -rf "$D"; mkdir -p "$D"
+echo hello > "$D/f"; tar -czf "$D/good.tar.gz" -C "$D" f 2>/dev/null
+_bk_check_archive "$D/good.tar.gz" || exit 60
+head -c 40 "$D/good.tar.gz" > "$D/trunc.tar.gz"
+_bk_check_archive "$D/trunc.tar.gz" && exit 61
+: > "$D/empty.sql.gz"
+_bk_check_archive "$D/empty.sql.gz" && exit 62
+exit 0
+AR
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/arch.sh" && rm -f "${TMP}/arch.sh.bak"
+if bash "${TMP}/arch.sh"; then pass "good archive accepted, truncated and empty rejected"
+else fail "archive integrity check (exit $?)"; fi
+
 echo "-- backup helper behaviour"
 cat > "${TMP}/bk.sh" <<'BK'
 set -uo pipefail
@@ -97,6 +125,12 @@ _bk_glob_match x        ""                     && exit 20
 _bk_valid_profile_name hourly-db || exit 21
 _bk_valid_profile_name 'x;rm'    && exit 22
 [[ "$(_bk_csv_to_json 'a, b ,c' | jq -c .)" == '["a","b","c"]' ]] || exit 23
+# a false boolean must read as "false", not as an empty string
+_bk_profiles_json(){ echo '{"p1":{"enabled":false,"encrypt":false,"scope":"db"}}'; }
+[[ "$(_bk_profile_get p1 enabled)" == "false" ]] || exit 24
+[[ "$(_bk_profile_get p1 encrypt)" == "false" ]] || exit 25
+[[ "$(_bk_profile_get p1 scope)"   == "db" ]]    || exit 26
+[[ -z "$(_bk_profile_get p1 missing)" ]]         || exit 27
 exit 0
 BK
 sed -i.bak "s#LIBDIR#${LIB}#g" "${TMP}/bk.sh" && rm -f "${TMP}/bk.sh.bak"
@@ -291,6 +325,213 @@ o=$(bash "${TMP}/auto.sh" true 2>&1); r=$?
     || fail "auto: hostile file (exit ${r}: ${o})"
 rm -f "${TMP}/cipi.yml"
 
+# ── 6b. Post-deploy healthcheck
+echo "-- post-deploy healthcheck"
+grep -q '^health_post_deploy()' "${LIB}/health.sh" && pass "health_post_deploy exists" || fail "health_post_deploy missing"
+grep -q '_deploy_health_check' "${LIB}/deploy.sh" && pass "cipi deploy verifies the release" || fail "CLI deploy has no health step"
+grep -q 'cipi health postdeploy' "${LIB}/cipi-app-deploy.sh" && pass "webhook deploy verifies the release" || fail "webhook has no health step"
+grep -q 'cipi health postdeploy \${app_user}' "${LIB}/app.sh" && pass "sudoers allows it from the app user" || fail "sudoers rule missing"
+grep -q 'cipi health postdeploy' "${LIB}/migrations/5.1.0.sh" && pass "migration backfills the sudoers rule" || fail "migration sudoers"
+grep -q '^deploy_health_fail|' "${LIB}/notifications.sh" && pass "trigger deploy_health_fail" || fail "trigger missing"
+grep -q 'echo "000")' "${LIB}/health.sh" && fail "health.sh still double-appends 000 on connection failure" \
+    || pass "connection failures report a single 000"
+grep -q 'echo "000")' "${LIB}/cipi-health-check.sh" && fail "cron helper still double-appends 000" \
+    || pass "cron helper reports a single 000"
+
+# behaviour against a real HTTP server
+cat > "${TMP}/hsrv.py" <<'PYS'
+import http.server, sys
+n = [0]
+FLIP = int(sys.argv[2]); CODE = int(sys.argv[3])
+class H(http.server.BaseHTTPRequestHandler):
+    def do_GET(self):
+        n[0] += 1
+        self.send_response(200 if n[0] > FLIP else CODE)
+        self.end_headers(); self.wfile.write(b"x")
+    def log_message(self, *a): pass
+http.server.HTTPServer(("127.0.0.1", int(sys.argv[1])), H).serve_forever()
+PYS
+cat > "${TMP}/h.sh" <<'HS'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=TMPDIR/hlog
+export HEALTH_PD_DELAY=1
+mkdir -p "$CIPI_LOG"
+info(){ :; }; warn(){ :; }; error(){ :; }; success(){ :; }; step(){ :; }
+log_action(){ :; }
+cipi_notify(){ echo "NOTIFY:$3"; }
+APP_JSON="$1"
+app_get(){ echo "$APP_JSON" | jq -r --arg k "$2" '.[$k] // empty'; }
+app_exists(){ return 0; }
+source LIBDIR/health.sh
+health_post_deploy iceberg deploy
+HS
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/h.sh" && rm -f "${TMP}/h.sh.bak"
+
+if command -v python3 >/dev/null 2>&1; then
+    HP=8791
+    python3 "${TMP}/hsrv.py" "$HP" 0 200 >/dev/null 2>&1 &
+    HSRV=$!; sleep 1
+    o=$(bash "${TMP}/h.sh" "{\"health_url\":\"http://127.0.0.1:${HP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\"}" 2>&1); r=$?
+    [[ $r -eq 0 && "$o" != *NOTIFY* ]] && pass "healthy release: passes, no alert" || fail "healthy release (rc=$r: $o)"
+    kill $HSRV 2>/dev/null; wait $HSRV 2>/dev/null
+
+    HP=8792
+    python3 "${TMP}/hsrv.py" "$HP" 2 502 >/dev/null 2>&1 &
+    HSRV=$!; sleep 1
+    o=$(bash "${TMP}/h.sh" "{\"health_url\":\"http://127.0.0.1:${HP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\"}" 2>&1); r=$?
+    [[ $r -eq 0 && "$o" != *NOTIFY* ]] && pass "slow-starting app: retries then passes" || fail "retry path (rc=$r: $o)"
+    kill $HSRV 2>/dev/null; wait $HSRV 2>/dev/null
+
+    HP=8793
+    python3 "${TMP}/hsrv.py" "$HP" 99 500 >/dev/null 2>&1 &
+    HSRV=$!; sleep 1
+    o=$(bash "${TMP}/h.sh" "{\"health_url\":\"http://127.0.0.1:${HP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\"}" 2>&1); r=$?
+    [[ $r -eq 1 && "$o" == *"NOTIFY:deploy_health_fail"* ]] \
+        && pass "broken release: fails and alerts immediately" || fail "broken release (rc=$r: $o)"
+    kill $HSRV 2>/dev/null; wait $HSRV 2>/dev/null
+
+    o=$(bash "${TMP}/h.sh" '{"health_url":"http://127.0.0.1:9/up","health_expect":"200","health_grace":"0"}' 2>&1); r=$?
+    [[ $r -eq 1 && "$o" == *"NOTIFY:deploy_health_fail"* ]] \
+        && pass "unreachable app: fails and alerts" || fail "unreachable (rc=$r: $o)"
+
+    for spec in '{}' '{"health_url":"http://127.0.0.1:9/","health_postdeploy":"false"}' '{"health_url":"http://127.0.0.1:9/","suspended":"true"}'; do
+        o=$(bash "${TMP}/h.sh" "$spec" 2>&1); r=$?
+        [[ $r -eq 2 && "$o" != *NOTIFY* ]] || fail "skip case not honoured: ${spec} (rc=$r)"
+    done
+    pass "skipped cleanly: unset, opted out, suspended"
+else
+    echo "  SKIP: python3 unavailable, health behaviour not exercised"
+fi
+
+# ── 6c. Auto-rollback on an unhealthy release
+echo "-- auto-rollback"
+grep -q '^_deploy_auto_rollback()' "${LIB}/deploy.sh" && pass "_deploy_auto_rollback exists" || fail "missing"
+grep -q 'health_rollback' "${LIB}/health.sh" && pass "policy stored per app" || fail "no health_rollback setting"
+grep -q 'ARG_rollback_on_unhealthy' "${LIB}/deploy.sh" && pass "--rollback-on-unhealthy honoured" || fail "flag missing"
+grep -q 'migrations are NOT undone' "${LIB}/deploy.sh" && pass "migration caveat stated in the alert" || fail "no migration caveat"
+grep -q 'cipi health postdeploy \${app_user} --auto' "${LIB}/app.sh" \
+    && pass "manual postdeploy cannot trigger a rollback (sudoers uses --auto)" || fail "sudoers not scoped to --auto"
+
+cat > "${TMP}/rb.sh" <<'RS'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=TMPDIR/rblog
+export HEALTH_PD_DELAY=1
+mkdir -p "$CIPI_LOG"
+info(){ :; }; warn(){ :; }; error(){ :; }; success(){ :; }; step(){ :; }
+log_action(){ :; }
+cipi_notify(){ echo "SUBJECT:$1"; }
+APP_JSON="$1"; ROLLBACK_RC="$2"; NRELEASES="$3"
+app_get(){ echo "$APP_JSON" | jq -r --arg k "$2" '.[$k] // empty'; }
+app_exists(){ return 0; }
+HOME_FAKE=TMPDIR/rbhome
+rm -rf "$HOME_FAKE"; mkdir -p "$HOME_FAKE/releases" "$HOME_FAKE/logs"
+for i in $(seq 1 "$NRELEASES"); do mkdir -p "$HOME_FAKE/releases/$i"; done
+ln -sfn "releases/${NRELEASES}" "$HOME_FAKE/current"
+source LIBDIR/deploy.sh
+source LIBDIR/health.sh
+deploy_app_home(){ echo "$HOME_FAKE"; }
+_deploy_commit_info(){ echo "a1b2c3d|Fix checkout|Jane Doe|2026-09-02 15:40"; }
+sudo(){
+  [[ "$ROLLBACK_RC" != "0" ]] && { echo "dep: rollback failed"; return "$ROLLBACK_RC"; }
+  local cur prev
+  cur=$(basename "$(readlink "$HOME_FAKE/current")")
+  prev=$(( cur - 1 )); [[ $prev -lt 1 ]] && prev=1
+  ln -sfn "releases/${prev}" "$HOME_FAKE/current"; return 0
+}
+deploy_post_release_verify iceberg deploy
+echo "RC:$?"
+echo "SUMMARY:$DEPLOY_VERIFY_SUMMARY"
+echo "RELEASE:$(deploy_current_release iceberg)"
+RS
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/rb.sh" && rm -f "${TMP}/rb.sh.bak"
+
+if command -v python3 >/dev/null 2>&1; then
+    RP=8811
+    python3 "${TMP}/hsrv.py" "$RP" 5 502 >/dev/null 2>&1 &   # 5 failures, then healthy
+    RSRV=$!; sleep 1
+    A="{\"health_url\":\"http://127.0.0.1:${RP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\",\"health_rollback\":\"true\",\"php\":\"8.5\",\"branch\":\"main\"}"
+    o=$(bash "${TMP}/rb.sh" "$A" 0 3 2>&1)
+    [[ "$o" == *"healthy again"* && "$o" == *"RELEASE:2"* && "$o" == *"RC:1"* ]] \
+        && pass "unhealthy release is rolled back and the app recovers" \
+        || fail "rollback recovery (${o})"
+    kill $RSRV 2>/dev/null; wait $RSRV 2>/dev/null
+
+    RP=8812
+    python3 "${TMP}/hsrv.py" "$RP" 99 500 >/dev/null 2>&1 &  # never healthy
+    RSRV=$!; sleep 1
+    A="{\"health_url\":\"http://127.0.0.1:${RP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\",\"health_rollback\":\"true\",\"php\":\"8.5\",\"branch\":\"main\"}"
+    o=$(bash "${TMP}/rb.sh" "$A" 0 3 2>&1)
+    [[ "$o" == *"STILL unhealthy"* ]] \
+        && pass "rollback that does not help says so (look past the code)" || fail "still-unhealthy path (${o})"
+
+    o=$(bash "${TMP}/rb.sh" "$A" 1 3 2>&1)
+    [[ "$o" == *"ROLLBACK FAILED"* ]] \
+        && pass "a failed rollback is reported as still live" || fail "rollback-failed path (${o})"
+
+    o=$(bash "${TMP}/rb.sh" "$A" 0 1 2>&1)
+    [[ "$o" == *"no rollback possible"* && "$o" == *"RELEASE:1"* ]] \
+        && pass "with a single release nothing is moved" || fail "single-release guard (${o})"
+
+    A="{\"health_url\":\"http://127.0.0.1:${RP}/up\",\"health_expect\":\"200\",\"health_grace\":\"0\",\"php\":\"8.5\"}"
+    o=$(bash "${TMP}/rb.sh" "$A" 0 3 2>&1)
+    [[ "$o" == *"RELEASE:3"* && "$o" != *"rolled back"* ]] \
+        && pass "without the opt-in an unhealthy release is left alone" || fail "opt-out (${o})"
+    kill $RSRV 2>/dev/null; wait $RSRV 2>/dev/null
+fi
+
+# ── 6d. Deploy notifications carry the release and the commit
+echo "-- deploy notifications"
+grep -q '_deploy_release_details' "${LIB}/deploy.sh" && pass "shared release detail builder" || fail "no detail builder"
+grep -q "Commit: %s — %s" "${LIB}/deploy.sh" && pass "success/failure mail names the commit" || fail "no commit in mail"
+grep -q 'deploy succeeded: \${app} release' "${LIB}/deploy.sh" && pass "success subject carries the release" || fail "success subject"
+grep -q 'deploy FAILED: \${app}' "${LIB}/deploy.sh" && pass "failure subject is visibly different" || fail "failure subject"
+grep -q 'Healthcheck: \${health_line}' "${LIB}/deploy.sh" && pass "success mail states the health verdict" || fail "no health verdict in mail"
+grep -q 'Commit: ' "${LIB}/cipi-app-deploy.sh" && pass "webhook mail names the commit too" || fail "webhook commit"
+awk '/cipi health postdeploy/{h=NR} /deploy-ok/{d=NR} END{exit !(h && d && h < d)}' "${LIB}/cipi-app-deploy.sh" \
+    && pass "webhook success mail is sent after the healthcheck" || fail "webhook mail ordering"
+
+# ── 6e. The migration must never abort (it would pin the server on the old version)
+echo "-- migration robustness"
+grep -q 'head -1 || true' "${LIB}/migrations/5.1.0.sh" \
+    && pass "the weeks lookup cannot abort the migration" || fail "pipefail abort still possible"
+grep -c 'WARNING:' "${LIB}/migrations/5.1.0.sh" >/dev/null \
+    && [[ $(grep -c 'WARNING:' "${LIB}/migrations/5.1.0.sh") -ge 5 ]] \
+    && pass "each step degrades to a warning" || fail "steps can still be fatal"
+
+MIG="${TMP}/mig"; rm -rf "$MIG"; mkdir -p "$MIG"/{etc,log,bin,lib}
+cp "${LIB}"/*.sh "$MIG/lib/" 2>/dev/null; cp -r "${LIB}/migrations" "$MIG/lib/"
+for c in crontab systemctl visudo chown id; do printf '#!/bin/bash\nexit 0\n' > "$MIG/bin/$c"; chmod +x "$MIG/bin/$c"; done
+printf '#!/bin/bash\nexit 1\n' > "$MIG/bin/nginx"; chmod +x "$MIG/bin/nginx"
+# crontab with no legacy prune line — the exact case that used to abort
+printf '#!/bin/bash\n[[ "$1" == "-l" ]] && { echo "0 4 * * * /usr/local/bin/other"; exit 0; }\ncat >/dev/null 2>&1\nexit 0\n' > "$MIG/bin/crontab"
+chmod +x "$MIG/bin/crontab"
+
+mrc=0
+( export PATH="$MIG/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  CIPI_LIB="$MIG/lib" CIPI_CONFIG="$MIG/etc" CIPI_LOG="$MIG/log" \
+  bash "$MIG/lib/migrations/5.1.0.sh" >/dev/null 2>&1 ) || mrc=$?
+[[ $mrc -eq 0 ]] && pass "migration completes on a bare server (no apps, no backup config)" \
+                 || fail "migration aborted (exit ${mrc})"
+
+# now with a backup config present but no legacy cron line
+( CIPI_CONFIG="$MIG/etc"; source "${LIB}/vault.sh"
+  echo '{"bucket":"b","region":"eu-central-1","profiles":{}}' | vault_write backup.json ) 2>/dev/null
+mrc=0
+( export PATH="$MIG/bin:/usr/bin:/bin:/usr/sbin:/sbin"
+  CIPI_LIB="$MIG/lib" CIPI_CONFIG="$MIG/etc" CIPI_LOG="$MIG/log" \
+  bash "$MIG/lib/migrations/5.1.0.sh" >"$MIG/out.txt" 2>&1 ) || mrc=$?
+[[ $mrc -eq 0 ]] && pass "migration completes with a backup config and no legacy cron line" \
+                 || fail "migration aborted on the legacy-cron path (exit ${mrc})"
+grep -q "converted to profile 'default'" "$MIG/out.txt" \
+    && pass "the old nightly job is converted into a profile" || fail "no profile conversion"
+grep -q "kept 4 weeks" "$MIG/out.txt" \
+    && pass "retention falls back to the previous 4 weeks" || fail "retention default"
+
+grep -q 'return 2' "${LIB}/nginx.sh" \
+    && pass "nginx distinguishes 'nothing to claim' from 'cannot write'" || fail "nginx status conflated"
+
 # ── 7. nginx default server
 echo "-- nginx"
 grep -q 'nginx_default_server_owner' "${LIB}/nginx.sh" && pass "default_server detected per port" || fail "per-port detection"
@@ -303,6 +544,78 @@ for t in backup_stale ini_set yml_apply yml_fail self_update; do
     grep -q "^${t}|" "${LIB}/notifications.sh" && pass "trigger ${t}" || fail "trigger ${t} missing"
 done
 grep -q 'self_update' "${LIB}/self-update.sh" && pass "self-update sends a notification" || fail "self-update notify"
+
+# ── 8b. Two shell traps that abort commands silently under `set -e`
+echo "-- set -e traps"
+cat > "${TMP}/detect.py" <<'DPY'
+import re, sys, glob, os
+root = sys.argv[1]
+files = [os.path.join(root, 'cipi')] + glob.glob(os.path.join(root, 'lib', '*.sh'))
+bad = []
+
+# 1. `local a="$1" b="...${a}..."` — bash expands ${a} before local assigns it.
+for f in files:
+    for n, line in enumerate(open(f, encoding='utf-8'), 1):
+        st = line.strip()
+        if not st.startswith(('local ', 'declare ')):
+            continue
+        body = st.split(None, 1)[1] if ' ' in st else ''
+        names = [(m.group(1), m.start(1)) for m in re.finditer(r'(?:^|\s)([A-Za-z_][A-Za-z0-9_]*)=', body)]
+        for i, (nm, pos) in enumerate(names):
+            earlier = [x for x, _ in names[:i]]
+            if not earlier:
+                continue
+            end = names[i + 1][1] if i + 1 < len(names) else len(body)
+            val = body[pos:end]
+            for e in earlier:
+                if re.search(r'\$\{?' + re.escape(e) + r'\b', val):
+                    bad.append('%s:%d self-referencing local: %s' % (os.path.basename(f), n, st))
+
+# 2. a non-predicate helper whose last statement is a conditional AND-list
+#    returns non-zero on the ordinary path and aborts its caller.
+PREDICATES = {'app_exists', '_smtp_is_enabled', '_deploy_cfg_bool', 'nginx_default_server_enabled',
+              '_bk_configured', '_bk_has_s3', 'php_is_installed', '_bk_profile_exists'}
+for f in files:
+    lines = open(f, encoding='utf-8').read().split('\n')
+    for i, l in enumerate(lines):
+        if l.strip() != '}':
+            continue
+        j = i - 1
+        while j >= 0 and (not lines[j].strip() or lines[j].strip().startswith('#')):
+            j -= 1
+        if j < 0:
+            continue
+        last = lines[j].strip()
+        if not re.match(r'^(\[\[.*\]\]|\[.*\])\s*&&\s*\S', last):
+            continue
+        if 'return' in last or 'exit' in last:
+            continue
+        fn = '?'
+        for k in range(j, -1, -1):
+            m = re.match(r'^([A-Za-z_][A-Za-z0-9_]*)\(\)\s*\{', lines[k])
+            if m:
+                fn = m.group(1)
+                break
+        if fn in PREDICATES:
+            continue
+        bad.append('%s:%d %s() ends with a conditional AND-list: %s' % (os.path.basename(f), j + 1, fn, last))
+
+for b in bad:
+    print(b)
+sys.exit(1 if bad else 0)
+DPY
+if command -v python3 >/dev/null 2>&1; then
+    dout=$(python3 "${TMP}/detect.py" "$ROOT" 2>&1)
+    if [[ -z "$dout" ]]; then
+        pass "no self-referencing 'local', no helper aborting on its normal path"
+    else
+        fail "shell traps present:"; echo "$dout" | sed 's/^/       /'
+    fi
+fi
+grep -A3 '^_bk_app_paths()' "${LIB}/backup.sh" >/dev/null && grep -q 'return 0' <(sed -n '/^_bk_app_paths()/,/^}/p' "${LIB}/backup.sh") \
+    && pass "_bk_app_paths returns 0 when there is nothing to archive" || fail "_bk_app_paths can abort a backup"
+sed -n '/^_supervisor_remove_program()/,/^}/p' "${LIB}/common.sh" | grep -q 'return 0' \
+    && pass "_supervisor_remove_program returns 0 (horizon enable no longer aborts)" || fail "_supervisor_remove_program can abort its caller"
 
 # ── 9. Re-sourcing safety (cipi yml apply loads several libs)
 echo "-- re-sourcing"

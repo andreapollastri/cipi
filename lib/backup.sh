@@ -167,7 +167,10 @@ _bk_key_command() {
 
 _bk_profiles_json() { _bk_cfg | jq '.profiles // {}'; }
 _bk_profile_names() { _bk_profiles_json | jq -r 'keys[]' 2>/dev/null || true; }
-_bk_profile_get()   { _bk_profiles_json | jq -r --arg p "$1" --arg k "$2" '.[$p][$k] // empty'; }
+# jq's `//` treats `false` as absent, so `.[$p][$k] // empty` returned an empty
+# string for every boolean that is false — which made `enabled: false` read as
+# "not set", and a disabled profile kept running and stayed in the crontab.
+_bk_profile_get()   { _bk_profiles_json | jq -r --arg p "$1" --arg k "$2" '.[$p][$k] | if . == null then empty else tostring end'; }
 _bk_profile_json()  { _bk_profiles_json | jq --arg p "$1" '.[$p] // empty'; }
 _bk_profile_exists() { _bk_profiles_json | jq -e --arg p "$1" 'has($p)' &>/dev/null; }
 
@@ -263,14 +266,15 @@ _bk_default_profile_json() {
         destinations: ["s3"],
         retention: { keep: 0, days: 28, weeks: 0 },
         encrypt: false,
-        enabled: true
+        enabled: true,
+        created_at: (now | floor)
     }'
 }
 
 _bk_profile_save() {
     local name="$1" json="$2"
     _bk_cfg | jq --arg p "$name" --argjson d "$json" '
-        .profiles = ((.profiles // {}) | .[$p] = $d)
+        .profiles = ((.profiles // {}) | .[$p] = ($d | .created_at = (.created_at // (now | floor))))
     ' | _bk_cfg_write
     _bk_write_cron
 }
@@ -345,6 +349,13 @@ _bk_retention_label() {
     echo "${out:-—}"
 }
 
+_bk_profile_created_label() {
+    local ts
+    ts=$(_bk_profiles_json | jq -r --arg p "$1" '.[$p].created_at // empty')
+    [[ "$ts" =~ ^[0-9]+$ ]] || { echo "—"; return 0; }
+    date -d "@${ts}" '+%Y-%m-%d %H:%M' 2>/dev/null || date -r "$ts" '+%Y-%m-%d %H:%M' 2>/dev/null || echo "—"
+}
+
 _bk_profile_show() {
     local p="${1:-}"
     [[ -z "$p" ]] && { error "Usage: cipi backup profile show <name>"; exit 1; }
@@ -365,6 +376,7 @@ _bk_profile_show() {
     printf "  %-20s %s\n" "Exclude tables" "${extbl:-—}"
     printf "  %-20s %s\n" "Destinations" "$(_bk_profile_list_field "$p" destinations | paste -sd, -)"
     printf "  %-20s %s\n" "Encrypted"    "$(_bk_profile_get "$p" encrypt)"
+    printf "  %-20s %s\n" "Created"      "$(_bk_profile_created_label "$p")"
     printf "  %-20s %s\n" "Retention"    "$(_bk_retention_label "$p")"
     echo ""
     echo -e "  ${BOLD}Last run${NC}"
@@ -648,13 +660,30 @@ _bk_select_databases() {
 # code itself comes back from git. A --custom app has no shared/ at all — its
 # files live in htdocs/, and archiving shared/ there failed on every run,
 # marking the whole backup as errored while quietly saving nothing.
+_bk_app_home() { echo "/home/${1:-}"; }
+
 _bk_app_paths() {
-    local app="$1" home="/home/${app}"
+    local app="$1"
+    local home
+    home=$(_bk_app_home "$app")
     if [[ "$(app_get "$app" custom)" == "true" ]]; then
         [[ -d "${home}/htdocs" ]] && echo "htdocs"
     else
         [[ -d "${home}/shared" ]] && echo "shared"
     fi
+    # "nothing to archive" is a normal answer, not a failure: without this the
+    # empty result made the assignment fail and `set -e` aborted the whole
+    # backup run before it reached the "skipped" warning.
+    return 0
+}
+
+# Is this gzip stream complete and readable? Catches the failure mode that
+# matters most here — an archive truncated by a full disk, which is non-empty
+# and therefore passes every size check, but restores to nothing.
+_bk_check_archive() {
+    local f="$1"
+    [[ -s "$f" ]] || return 1
+    gzip -t "$f" 2>/dev/null
 }
 
 # ── Run ──────────────────────────────────────────────────────
@@ -697,8 +726,10 @@ _bk_run() {
 _bk_run_profile() {
     local p="$1" only_app="${2:-}" dry="${3:-false}"
 
+    # Guarded: _bk_run loops over every profile, and re-sourcing on each pass
+    # is pure waste.
     # shellcheck source=/dev/null
-    source "${CIPI_LIB}/db.sh"
+    declare -f db_dump_database_ex >/dev/null 2>&1 || source "${CIPI_LIB}/db.sh"
 
     local scope encrypt dests ts started
     scope=$(_bk_profile_get "$p" scope)
@@ -763,10 +794,25 @@ _bk_run_profile() {
         fi
         step "  Files: ${a} (${paths//$'\n'/, })"
         mkdir -p "${tmp}/apps/${a}"
+        # tar exits 1 for *warnings* — most commonly "file changed as we read
+        # it", which happens constantly on a live app writing its logs. Only
+        # exit 2 and above means the archive is unusable; treating 1 as failure
+        # would flag a perfectly good backup as broken on every busy site.
+        local tar_rc=0
         # shellcheck disable=SC2086
-        if ! tar_err=$(tar -czf "${tmp}/apps/${a}/files.tar.gz" -C "/home/${a}" $paths 2>&1); then
+        tar_err=$(tar -czf "${tmp}/apps/${a}/files.tar.gz" -C "$(_bk_app_home "$a")" $paths 2>&1) || tar_rc=$?
+        if [[ $tar_rc -ge 2 ]]; then
             error "    archive failed: ${tar_err}"
             errors="${errors}${errors:+, }files:${a}"
+            rm -f "${tmp}/apps/${a}/files.tar.gz"
+            continue
+        elif [[ $tar_rc -eq 1 ]]; then
+            warn "    files changed while being archived (normal on a live app)"
+        fi
+        if ! _bk_check_archive "${tmp}/apps/${a}/files.tar.gz"; then
+            error "    archive is unreadable — discarding it rather than storing a corrupt backup"
+            errors="${errors}${errors:+, }files:${a}"
+            rm -f "${tmp}/apps/${a}/files.tar.gz"
             continue
         fi
         vault_read apps.json | jq --arg a "$a" '.[$a] | {
@@ -785,6 +831,13 @@ _bk_run_profile() {
         mkdir -p "${tmp}/databases/${eng}"
         if ! db_dump_database_ex "$eng" "$db" "${tmp}/databases/${eng}/${db}.sql.gz" "$excl_tables" 2>/dev/null; then
             error "    dump failed: ${db} (${eng})"
+            errors="${errors}${errors:+, }db:${db}"
+            rm -f "${tmp}/databases/${eng}/${db}.sql.gz"
+        elif ! _bk_check_archive "${tmp}/databases/${eng}/${db}.sql.gz"; then
+            # A dump truncated by a full disk is still a non-empty file, so the
+            # size check inside db_dump_database_ex cannot catch it. Storing it
+            # would be worse than failing: it looks like a backup and is not.
+            error "    dump is truncated or corrupt (disk full?) — discarding it"
             errors="${errors}${errors:+, }db:${db}"
             rm -f "${tmp}/databases/${eng}/${db}.sql.gz"
         fi
@@ -1008,6 +1061,7 @@ _bk_prune_legacy() {
             fi
         done
         [[ $found -eq 0 ]] && info "  No local dumps older than ${weeks} week(s) for '${app}'"
+        return 0
     }
 
     _prune_s3_legacy() {
@@ -1030,6 +1084,7 @@ _bk_prune_legacy() {
             fi
         done < <(_aws_s3 ls "s3://${bucket}/cipi/${app}/" 2>/dev/null | awk '{print $NF}')
         [[ $found -eq 0 ]] && info "  No S3 backups older than ${weeks} week(s) for '${app}'"
+        return 0
     }
 
     _prune_app_legacy() {
@@ -1150,6 +1205,15 @@ _bk_check_stale() {
         [[ "$last" =~ ^[0-9]+$ ]] || last=0
 
         if [[ "$last" -eq 0 ]]; then
+            # A profile created five minutes ago has not yet "failed" to run a
+            # nightly backup. Only complain once its first scheduled run should
+            # plausibly have happened.
+            local created
+            created=$(_bk_profiles_json | jq -r --arg p "$p" '.[$p].created_at // 0')
+            [[ "$created" =~ ^[0-9]+$ ]] || created=0
+            if [[ "$created" -gt 0 && $(( now - created )) -lt "$grace" ]]; then
+                continue
+            fi
             overdue_list="${overdue_list}${overdue_list:+, }${p} (never succeeded)"
         elif [[ $(( now - last )) -gt "$grace" ]]; then
             overdue_list="${overdue_list}${overdue_list:+, }${p} (last success $(( (now - last) / 3600 ))h ago)"
@@ -1200,24 +1264,30 @@ _bk_verify() {
         names=$(_bk_profile_names)
     fi
 
-    local failed=0 p ts
+    local failed=0 checked=0 p ts
     while IFS= read -r p; do
         [[ -n "$p" ]] || continue
         ts=$(_bk_list_runs "$p" | sort -r | head -1)
         if [[ -z "$ts" ]]; then
-            warn "Profile '${p}': no runs to verify"
+            warn "Profile '${p}': no runs to verify yet"
             continue
         fi
+        ((checked++)) || true
         echo -e "\n${BOLD}Verifying ${p}/${ts}${NC}"
         _bk_verify_run "$p" "$ts" "$deep" || failed=1
     done <<< "$names"
     echo ""
-    if [[ $failed -eq 0 ]]; then
-        success "Verification passed"
-    else
+    if [[ $failed -ne 0 ]]; then
         error "Verification failed — see above"
         return 1
     fi
+    if [[ $checked -eq 0 ]]; then
+        # Saying "passed" after checking nothing is a false reassurance.
+        warn "Nothing was verified — no profile has produced a backup yet."
+        info "Take one now: cipi backup run"
+        return 0
+    fi
+    success "Verification passed (${checked} profile(s))"
 }
 
 _bk_verify_run() {
@@ -1300,6 +1370,19 @@ _bk_fetch() {
         step "Downloading s3://$(_bk_s3_bucket)/cipi/${p}/${ts}/ ..."
         _aws_s3 cp "s3://$(_bk_s3_bucket)/cipi/${p}/${ts}/" "${dest}/" --recursive &>/dev/null \
             || { error "Download failed — check the profile and timestamp (cipi backup list ${p})"; exit 1; }
+    fi
+
+    # `aws s3 cp --recursive` exits 0 when the prefix holds no objects, so a
+    # wrong timestamp would otherwise be reported as a successful restore of an
+    # empty directory. Never claim a backup is available without seeing it.
+    if [[ -z "$(find "$dest" -type f -print -quit 2>/dev/null)" ]]; then
+        rmdir "$dest" 2>/dev/null || true
+        error "No backup found at ${p}/${ts} — nothing was downloaded."
+        info "List what exists:  cipi backup list ${p}"
+        exit 1
+    fi
+    if [[ ! -f "${dest}/manifest.json" ]]; then
+        warn "This run has no manifest.json — it may be incomplete or from an older Cipi."
     fi
 
     local n=0 f

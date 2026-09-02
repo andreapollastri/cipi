@@ -29,14 +29,20 @@ _deploy_assert_php_compat() {
 # timestamp, and each run is bracketed by a start/end banner naming the
 # trigger, the branch, the release and the duration.
 
-deploy_log_file() { echo "/home/${1}/logs/deploy.log"; }
+# Defensive on the argument: called from several places now, and under
+# `set -u` a missing one would kill the whole process with an opaque
+# "$1: unbound variable" instead of failing where the mistake is.
+deploy_app_home() { echo "/home/${1:-}"; }
+deploy_log_file() { echo "$(deploy_app_home "${1:-}")/logs/deploy.log"; }
 
 # Release directory the `current` symlink points at ("54"), empty before the
 # first successful deploy or for custom apps (no releases/).
 deploy_current_release() {
-    local app="$1" target
-    [[ -L "/home/${app}/current" ]] || { echo ""; return 0; }
-    target=$(readlink "/home/${app}/current" 2>/dev/null || true)
+    local app="${1:-}" target home
+    [[ -n "$app" ]] || { echo ""; return 0; }
+    home=$(deploy_app_home "$app")
+    [[ -L "${home}/current" ]] || { echo ""; return 0; }
+    target=$(readlink "${home}/current" 2>/dev/null || true)
     [[ -z "$target" ]] && { echo ""; return 0; }
     basename "$target"
 }
@@ -73,7 +79,7 @@ deploy_log_close() {
 
 deploy_command() {
     local app="${1:-}"; shift||true
-    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--log|--key|--webhook|--snapshot|--snapshot-required]"; exit 1; }
+    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--log|--key|--webhook|--snapshot|--snapshot-required|--rollback-on-unhealthy]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     parse_args "$@"
 
@@ -130,7 +136,8 @@ _deploy_predeploy_snapshot() {
 }
 
 _deploy_run() {
-    local app="$1" home="/home/${app}"
+    local app="$1"
+    local home="/home/${app}"
     local df="${home}/.deployer/deploy.php"
     local php_ver; php_ver=$(app_get "$app" php)
 
@@ -173,12 +180,13 @@ _deploy_run() {
     # non-zero — the failure branch below (and its deploy_fail notification)
     # was unreachable. Disable it around the run and read the real status from
     # PIPESTATUS[0]; the pipe adds a wall-clock timestamp to every logged line.
-    local rc=0
+    local rc=0 had_e=0
+    [[ $- == *e* ]] && had_e=1
     set +e
     sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${df} 2>&1" \
         | deploy_log_tee "$lf"
     rc=${PIPESTATUS[0]}
-    set -e
+    [[ $had_e -eq 1 ]] && set -e
 
     local rel_after; rel_after=$(deploy_current_release "$app")
     local secs=$(( SECONDS - t0 ))
@@ -188,11 +196,15 @@ _deploy_run() {
         deploy_log_close "$app" "OK" "$rel_after" "$secs" "$rc"
         success "Deploy completed${rel_after:+  (release ${rel_after}, ${secs}s)}"
         log_action "DEPLOY OK: $app release=${rel_after:-?} in ${secs}s"
-        cipi_notify \
-            "Cipi deploy succeeded: ${app} on $(hostname)" \
-            "Deploy completed successfully.\n\nServer: $(hostname)\nApp: ${app}\nBranch: ${branch_disp:-?}\nRelease: ${rel_after:-?}\nDuration: ${secs}s\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
-            deploy_success
+        # The success notification is sent after the release has been verified,
+        # so it can state whether the app actually answers — reporting "deploy
+        # succeeded" while the site returns 500 would be worse than silence.
         _deploy_apply_yml "$app"
+        local health_line; health_line=$(_deploy_health_check "$app")
+        cipi_notify \
+            "Cipi deploy succeeded: ${app} release ${rel_after:-?} on $(hostname)" \
+            "Deploy completed successfully.\n\n$(_deploy_release_details "$app" "$rel_after" "$branch_disp" "$secs")Previous release: ${rel_before:-none}\nHealthcheck: ${health_line}\n" \
+            deploy_success
     else
         deploy_log_close "$app" "FAILED" "$rel_after" "$secs" "$rc"
         error "Deploy failed (exit $rc)"
@@ -204,11 +216,168 @@ _deploy_run() {
         fi
         log_action "DEPLOY FAIL: $app exit=$rc release=${rel_after:-?}"
         cipi_notify \
-            "Cipi deploy failed: ${app} on $(hostname)" \
-            "Deploy exited with code ${rc}.\n\nServer: $(hostname)\nApp: ${app}\nBranch: ${branch_disp:-?}\nRelease still live: ${rel_after:-?}\nDuration: ${secs}s\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\nLast lines of ${lf}:\n$(tail -n 30 "$lf" 2>/dev/null || echo '<log unreadable>')\n\nRollback: cipi deploy ${app} --rollback" \
+            "Cipi deploy FAILED: ${app} on $(hostname)" \
+            "Deploy exited with code ${rc}. Nothing was published — the previous release is still serving.\n\n$(_deploy_release_details "$app" "$rel_after" "$branch_disp" "$secs")Release still live: ${rel_after:-?}\n\nLast lines of the deploy log:\n$(tail -n 30 "$lf" 2>/dev/null || echo '<log unreadable>')\n\nRoll back further: cipi deploy ${app} --rollback" \
             deploy_fail
         return "$rc"
     fi
+}
+
+# ── Release detail for notifications ─────────────────────────
+#
+# "Deploy succeeded" on its own tells you nothing you can act on. What was
+# actually published — which commit, by whom, on which release — is the part
+# worth reading, and the part you need when deciding whether to roll back.
+
+# "<sha>|<subject>|<author>|<date>" for a release, empty when it is not a git
+# checkout (custom apps deployed by other means).
+_deploy_commit_info() {
+    local app="$1" release="$2" home dir
+    home=$(deploy_app_home "$app")
+    dir="${home}/releases/${release}"
+    [[ -n "$release" ]] || return 0
+    [[ -d "${dir}/.git" ]] || dir="${home}/current"
+    [[ -d "${dir}/.git" ]] || return 0
+    git -C "$dir" log -1 --format='%h|%s|%an|%ad' --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || true
+}
+
+# Multi-line body shared by the success and failure notifications.
+_deploy_release_details() {
+    local app="$1" release="$2" branch="$3" secs="$4"
+    local info sha subject author cdate
+    info=$(_deploy_commit_info "$app" "$release")
+    sha=""; subject=""; author=""; cdate=""
+    if [[ -n "$info" ]]; then
+        IFS='|' read -r sha subject author cdate <<< "$info"
+    fi
+    printf 'Server: %s\n' "$(hostname)"
+    printf 'App: %s\n' "$app"
+    printf 'Branch: %s\n' "${branch:-?}"
+    printf 'Release: %s\n' "${release:-?}"
+    [[ -n "$sha" ]]     && printf 'Commit: %s — %s\n' "$sha" "$subject"
+    [[ -n "$author" ]]  && printf 'Author: %s\n' "$author"
+    [[ -n "$cdate" ]]   && printf 'Committed: %s\n' "$cdate"
+    printf 'Duration: %ss\n' "$secs"
+    printf 'Time: %s\n' "$(date '+%Y-%m-%d %H:%M:%S %Z')"
+    printf 'Deploy log: %s\n' "$(deploy_log_file "$app")"
+}
+
+# ── Post-release verification and recovery ───────────────────
+#
+# Called after a release goes live, by both deploy paths. Probes the app and,
+# when the app opted into it, rolls the release back if it does not answer.
+#
+# Auto-rollback moves the `current` symlink back to the previous release. It
+# does NOT undo database migrations — a release that migrated the schema and
+# then failed its healthcheck may well be worse off after a rollback, which is
+# exactly why this is opt-in per app and never the default.
+deploy_post_release_verify() {
+    local app="$1" context="${2:-deploy}"
+    declare -f health_post_deploy >/dev/null 2>&1 || source "${CIPI_LIB}/health.sh"
+
+    local want_rollback=false
+    [[ "$(app_get "$app" health_rollback)" == "true" ]] && want_rollback=true
+    [[ "${ARG_rollback_on_unhealthy:-}" == "true" ]] && want_rollback=true
+    [[ "${ARG_no_rollback_on_unhealthy:-}" == "true" ]] && want_rollback=false
+
+    # When a rollback may follow, suppress the probe's own alert: the message
+    # sent below describes the failure and the recovery together.
+    DEPLOY_VERIFY_SUMMARY=""
+    local rc=0
+    health_post_deploy "$app" "$context" "$([[ "$want_rollback" == true ]] && echo false || echo true)" || rc=$?
+
+    if [[ $rc -eq 2 ]]; then
+        DEPLOY_VERIFY_SUMMARY="not configured (cipi health set ${app})"
+        return 2
+    fi
+    if [[ $rc -eq 0 ]]; then
+        DEPLOY_VERIFY_SUMMARY="passed — HTTP ${HEALTH_PD_LAST_CODE:-?}"
+        return 0
+    fi
+
+    if [[ "$want_rollback" != true ]]; then
+        DEPLOY_VERIFY_SUMMARY="FAILED — got ${HEALTH_PD_LAST_CODE:-?}, expected ${HEALTH_PD_LAST_EXPECT:-?} (a separate alert has been sent)"
+        return 1
+    fi
+
+    _deploy_auto_rollback "$app" "$context"
+    return 1
+}
+
+_deploy_auto_rollback() {
+    local app="$1" context="$2" home
+    home=$(deploy_app_home "$app")
+    local bad_release; bad_release=$(deploy_current_release "$app")
+    local branch; branch=$(app_get "$app" branch)
+    local bad_code="${HEALTH_PD_LAST_CODE:-?}" url="${HEALTH_PD_LAST_URL:-?}" expect="${HEALTH_PD_LAST_EXPECT:-?}"
+    local lf; lf=$(deploy_log_file "$app")
+
+    local n=0
+    [[ -d "${home}/releases" ]] && n=$(find "${home}/releases" -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l | tr -d ' ')
+    if [[ "${n:-0}" -lt 2 ]]; then
+        error "Auto-rollback requested but there is no previous release to return to."
+        DEPLOY_VERIFY_SUMMARY="FAILED — HTTP ${bad_code}, and there is no earlier release to roll back to"
+        cipi_notify \
+            "Cipi deploy unhealthy: ${app} on $(hostname) — no rollback possible" \
+            "The release that just went live is not answering, and there is no earlier release to roll back to.\n\n$(_deploy_release_details "$app" "$bad_release" "$branch" 0)\nHealthcheck: ${url}\nExpected: ${expect}\nGot: ${bad_code}\n\nThe release is live and serving this response. Manual intervention is needed." \
+            deploy_health_fail
+        return 1
+    fi
+
+    warn "Release ${bad_release:-?} is unhealthy — rolling back automatically."
+    warn "Database migrations are NOT undone by this."
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== auto-rollback (unhealthy release %s) =====\n' -1 "${bad_release:-?}" \
+        >> "$lf" 2>/dev/null || true
+
+    local php_ver; php_ver=$(app_get "$app" php)
+    local rrc=0 had_e=0
+    [[ $- == *e* ]] && had_e=1
+    set +e
+    sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep rollback -f ${home}/.deployer/deploy.php 2>&1" \
+        | deploy_log_tee "$lf"
+    rrc=${PIPESTATUS[0]}
+    [[ $had_e -eq 1 ]] && set -e
+
+    local now_release; now_release=$(deploy_current_release "$app")
+
+    if [[ $rrc -ne 0 ]]; then
+        error "Auto-rollback FAILED (exit ${rrc}) — the unhealthy release is still live."
+        DEPLOY_VERIFY_SUMMARY="FAILED — HTTP ${bad_code}, and the automatic rollback also failed (release ${bad_release:-?} is still live)"
+        log_action "AUTO-ROLLBACK FAIL: ${app} release=${bad_release:-?} exit=${rrc}"
+        cipi_notify \
+            "Cipi deploy unhealthy: ${app} — AUTOMATIC ROLLBACK FAILED on $(hostname)" \
+            "The release that just went live failed its healthcheck, and the automatic rollback also failed.\n\n$(_deploy_release_details "$app" "$bad_release" "$branch" 0)\nHealthcheck: ${url}\nExpected: ${expect}\nGot: ${bad_code}\nRollback exit code: ${rrc}\n\nThe unhealthy release ${bad_release:-?} is STILL LIVE. Manual intervention is needed:\n  cipi deploy ${app} --rollback\n  cipi deploy ${app} --log" \
+            deploy_health_fail
+        return 1
+    fi
+
+    # Did returning to the previous release actually fix it?
+    local hrc=0
+    health_post_deploy "$app" "rollback" false || hrc=$?
+    local after_code="${HEALTH_PD_LAST_CODE:-?}"
+
+    log_action "AUTO-ROLLBACK: ${app} ${bad_release:-?} → ${now_release:-?} healthy=$([[ $hrc -eq 0 ]] && echo yes || echo no)"
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== auto-rollback done: %s -> %s (healthy=%s) =====\n\n' \
+        -1 "${bad_release:-?}" "${now_release:-?}" "$([[ $hrc -eq 0 ]] && echo yes || echo no)" \
+        >> "$lf" 2>/dev/null || true
+
+    if [[ $hrc -eq 0 ]]; then
+        DEPLOY_VERIFY_SUMMARY="FAILED — HTTP ${bad_code}; rolled back ${bad_release:-?} → ${now_release:-?}, healthy again"
+        success "Rolled back to release ${now_release:-?} — the app is answering again."
+        cipi_notify \
+            "Cipi deploy rolled back: ${app} is healthy again on $(hostname)" \
+            "The release that was just deployed did not answer, so it was rolled back automatically. The app is serving correctly again.\n\n$(_deploy_release_details "$app" "$bad_release" "$branch" 0)\nHealthcheck: ${url}\nExpected: ${expect}\nGot from the new release: ${bad_code}\n\nRolled back: ${bad_release:-?} → ${now_release:-?}\nStatus after rollback: ${after_code} (healthy)\n\nDatabase migrations from the failed release were NOT undone — check them.\nDeploy log: ${lf}" \
+            deploy_health_fail
+        return 1
+    fi
+
+    DEPLOY_VERIFY_SUMMARY="FAILED — HTTP ${bad_code}; rolled back ${bad_release:-?} → ${now_release:-?}, still unhealthy (${after_code})"
+    error "Rolled back to release ${now_release:-?}, but the app is still not answering (${after_code})."
+    cipi_notify \
+        "Cipi deploy rolled back: ${app} is STILL unhealthy on $(hostname)" \
+        "The release that was just deployed did not answer and was rolled back automatically — but the previous release is not answering either, so the cause is probably not the code.\n\n$(_deploy_release_details "$app" "$bad_release" "$branch" 0)\nHealthcheck: ${url}\nExpected: ${expect}\nGot from the new release: ${bad_code}\n\nRolled back: ${bad_release:-?} → ${now_release:-?}\nStatus after rollback: ${after_code} (still failing)\n\nLook at the database, queue workers, PHP-FPM and nginx before the code.\nDeploy log: ${lf}" \
+        deploy_health_fail
+    return 1
 }
 
 # Reconcile the server with the cipi.yml shipped in the release that was just
@@ -229,17 +398,54 @@ _deploy_apply_yml() {
     step "Applying cipi.yml..."
     printf '[%(%Y-%m-%d %H:%M:%S)T] ===== cipi.yml apply =====\n' -1 >> "$lf" 2>/dev/null || true
 
-    local rc=0
+    local rc=0 had_e=0
+    [[ $- == *e* ]] && had_e=1
     set +e
     ( source "${CIPI_LIB}/yml.sh"; yml_command apply "$app" --yes --auto ) 2>&1 | deploy_log_tee "$lf"
     rc=${PIPESTATUS[0]}
-    set -e
+    [[ $had_e -eq 1 ]] && set -e
 
     if [[ $rc -ne 0 ]]; then
         warn "cipi.yml was not applied — the deploy itself succeeded."
         warn "Details: ${lf}   Retry: cipi yml apply ${app}"
     fi
     chown "${app}:www-data" "$lf" 2>/dev/null || true
+    return 0
+}
+
+# Verify the release that just went live actually answers, and say so in the
+# deploy log. A deploy reports that the code was published; this reports
+# whether the site survived it — the two are not the same thing, and until now
+# a deploy that returned 500 on every page still looked like a success.
+#
+# The verdict deliberately does not change the deploy's exit code: the release
+# *is* live either way, and rolling back is a decision for whoever reads the
+# alert. `cipi deploy <app> --rollback` is one command away.
+# Runs the verification (and any opted-in recovery), streams its output to the
+# terminal and the deploy log, and prints a one-line verdict on stdout for the
+# success notification to quote.
+_deploy_health_check() {
+    local app="$1"
+    local lf; lf=$(deploy_log_file "$app")
+
+    declare -f deploy_post_release_verify >/dev/null 2>&1 || source "${CIPI_LIB}/health.sh"
+
+    local rc=0 had_e=0
+    [[ $- == *e* ]] && had_e=1
+    set +e
+    deploy_post_release_verify "$app" "deploy" 2>&1 | deploy_log_tee "$lf" >&2
+    rc=${PIPESTATUS[0]}
+    [[ $had_e -eq 1 ]] && set -e
+
+    if [[ $rc -eq 2 && -t 2 ]]; then
+        # Worth one quiet line for someone watching a deploy by hand; never in a
+        # webhook log, where it would repeat forever.
+        echo -e "  ${DIM}No healthcheck for '${app}' — set one: cipi health set ${app}${NC}" >&2
+    fi
+    [[ $rc -eq 1 ]] && warn "Deploy succeeded but the app is not answering as expected."
+
+    chown "${app}:www-data" "$lf" 2>/dev/null || true
+    echo "${DEPLOY_VERIFY_SUMMARY:-unknown}"
     return 0
 }
 
@@ -256,7 +462,8 @@ _deploy_log_show() {
 }
 
 _deploy_unlock() {
-    local app="$1" home="/home/${app}"
+    local app="$1"
+    local home="/home/${app}"
     local lockfile="${home}/.dep/deploy.lock"
     if [[ ! -f "$lockfile" ]]; then
         info "No deploy lock found for '${app}'"
@@ -268,7 +475,8 @@ _deploy_unlock() {
 }
 
 _deploy_rollback() {
-    local app="$1" home="/home/${app}"
+    local app="$1"
+    local home="/home/${app}"
     local php_ver; php_ver=$(app_get "$app" php)
     _deploy_assert_php_compat "$app" "$php_ver"
     # Skip confirmation for non-interactive callers (API/UI job runner): a
@@ -285,12 +493,13 @@ _deploy_rollback() {
     info "Rolling back..."
     # Same `set -e` trap as _deploy_run: an unguarded sudo would abort cipi
     # before the failure branch and before the notification.
-    local rc=0
+    local rc=0 had_e=0
+    [[ $- == *e* ]] && had_e=1
     set +e
     sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep rollback -f ${home}/.deployer/deploy.php 2>&1" \
         | deploy_log_tee "$lf"
     rc=${PIPESTATUS[0]}
-    set -e
+    [[ $had_e -eq 1 ]] && set -e
 
     local rel_after; rel_after=$(deploy_current_release "$app")
     local secs=$(( SECONDS - t0 ))
@@ -319,7 +528,8 @@ _deploy_rollback() {
 # relies on that ordering). The date and the deployed commit are shown here
 # instead, which is what the numbers alone failed to tell you.
 _deploy_releases() {
-    local app="$1" home="/home/${app}"
+    local app="$1"
+    local home="/home/${app}"
     [[ ! -d "${home}/releases" ]] && { info "No releases yet"; return; }
     local current=""
     [[ -L "${home}/current" ]] && current=$(readlink -f "${home}/current" | xargs basename)
@@ -345,7 +555,8 @@ _deploy_releases() {
 }
 
 _deploy_key() {
-    local app="$1" kf="/home/${app}/.ssh/id_ed25519.pub"
+    local app="$1"
+    local kf="/home/${app}/.ssh/id_ed25519.pub"
     [[ ! -f "$kf" ]] && { error "Key not found"; exit 1; }
     echo -e "\n${BOLD}Deploy Key for '${app}'${NC}"
     echo -e "${CYAN}$(cat "$kf")${NC}\n"

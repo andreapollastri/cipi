@@ -31,7 +31,7 @@ yml_command() {
         apply)          _yml_apply_cmd "$@" ;;
         auto)           _yml_auto_cmd "$@" ;;
         generate|dump)  _yml_generate "$@" ;;
-        example|sample) _yml_example ;;
+        example|sample) _yml_example "$@" ;;
         *) error "Use: validate plan apply auto generate example"; exit 1 ;;
     esac
 }
@@ -837,7 +837,12 @@ _yml_resolve() {
         _YML_FILE=$(_yml_find_file "$app") || {
             error "No cipi.yml found for '${app}'."
             echo "  Looked in: /home/${app}/current/cipi.yml, current/cipi.yaml, shared/cipi.yml"
-            echo "  Start from a template: cipi yml example > /home/${app}/shared/cipi.yml"
+            echo ""
+            echo "  Start from what this server already has:"
+            echo "    cipi yml generate ${app} > cipi.yml"
+            echo "  Or from a blank template in this app's namespace:"
+            echo "    cipi yml example ${app} > cipi.yml"
+            echo "  Then commit it to the repository and deploy."
             exit 1
         }
     fi
@@ -1458,7 +1463,8 @@ _yml_cron_to_every() {
 # Queue workers as "<queue>\t<procs>\t<tries>\t<timeout>", read back out of the
 # supervisor program Cipi wrote for them.
 _yml_read_workers() {
-    local app="$1" conf="/etc/supervisor/conf.d/${app}.conf"
+    local app="$1"
+    local conf="/etc/supervisor/conf.d/${app}.conf"
     [[ -f "$conf" ]] || return 0
     awk -v app="$app" '
         $0 ~ "^\\[program:" app "-worker-" {
@@ -1701,18 +1707,37 @@ _yml_generate() {
     rm -f "$out"
 }
 
+# `cipi yml example [app]` — a blank, commented template.
+#
+# Given an app name it is written in that app's namespace, so the output
+# validates as-is. Without one the placeholders say "example", which would fail
+# validation for any real app — the namespacing rules are not negotiable, and a
+# template that trips over them on first use is a trap rather than a starting
+# point.
 _yml_example() {
-    cat <<'YMLEXAMPLE'
+    local app="${1:-example}" domain=""
+    if [[ "$app" != "example" ]]; then
+        validate_username "$app" || { error "Invalid app name: ${app}"; exit 1; }
+        if app_exists "$app"; then
+            domain=$(app_get "$app" domain)
+        fi
+    fi
+    [[ -n "$domain" ]] || domain="example.com"
+
+    cat <<YMLEXAMPLE
 # cipi.yml — declarative configuration for one Cipi app.
 #
 # Commit this at the root of your repository. After a deploy, run
-#   cipi yml plan <app>     to see what would change
-#   cipi yml apply <app>    to apply it
+#   cipi yml plan ${app}     to see what would change
+#   cipi yml apply ${app}    to apply it
 # or turn on automatic apply with
-#   cipi yml auto <app> on
+#   cipi yml auto ${app} on
 #
-# Only this app is ever touched: databases must be named <app> or <app>_*, and
-# backup profiles <app> or <app>-*. Everything else is rejected.
+# Only this app is ever touched: databases must be named ${app} or ${app}_*,
+# and backup profiles ${app} or ${app}-*. Everything else is rejected.
+#
+# Tip: to start from what the server already has, use
+#   cipi yml generate ${app} > cipi.yml
 
 version: 1
 
@@ -1723,20 +1748,20 @@ app:
   # The declared list replaces the current aliases: an alias you remove here
   # is removed from the server. The primary domain is not managed here.
   aliases:
-    - "www.example.com"
-    - "*.example.com"      # wildcard, for multi-tenant subdomains
+    - "www.${domain}"
+    - "*.${domain}"      # wildcard, for multi-tenant subdomains
 
-  # Per-app php.ini overrides. Server-wide values stay with `cipi ini set`.
+  # Per-app php.ini overrides. Server-wide values stay with \`cipi ini set\`.
   ini:
     upload_max_filesize: 50M
     post_max_size: 60M
     memory_limit: 512M
 
 # Extra databases beyond the one created with the app.
-# Credentials land in /home/<app>/shared/cipi-databases.env — never dropped.
+# Credentials land in /home/${app}/shared/cipi-databases.env — never dropped.
 databases:
-  - name: example_reporting
-  - name: example_analytics
+  - name: ${app}_reporting
+  - name: ${app}_analytics
     engine: pgsql          # mariadb (default) or pgsql
 
 workers:
@@ -1752,22 +1777,22 @@ workers:
 # Laravel scheduler (* * * * * artisan schedule:run)
 schedule: true
 
-# Backup strategy for this app. Profile names must be <app> or <app>-*.
+# Backup strategy for this app. Profile names must be ${app} or ${app}-*.
 backup:
   profiles:
     # Frequent, cheap: databases only, without the noisy tables.
-    - name: example-db
+    - name: ${app}-db
       scope: db
-      databases: ["example", "example_*", "tenant_*"]
+      databases: ["${app}", "${app}_*", "tenant_*"]
       exclude_tables: ["*.jobs", "*.failed_jobs", "*.telescope_*"]
       every: 30m           # 5m/10m/15m/20m/30m, 1h..12h, 1d..28d
       keep: 48             # keep the last 48 runs
       destinations: [local]
 
     # Slower, complete, off-site and encrypted.
-    - name: example-nightly
+    - name: ${app}-nightly
       scope: all           # all | files | db
-      cron: "0 2 * * *"    # or use `every:`
+      cron: "0 2 * * *"    # or use \\`every:\\`
       keep_days: 14
       destinations: [s3]
       encrypt: true

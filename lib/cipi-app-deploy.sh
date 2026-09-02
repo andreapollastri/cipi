@@ -72,9 +72,19 @@ RESULT="OK"; [[ $RC -eq 0 ]] || RESULT="FAILED"
         -1 "$RESULT" "$APP" "${REL_AFTER:-?}" "$SECS" "$RC"
 } >> "$LOG" 2>/dev/null || true
 
+# What was actually published — the part worth reading in the alert.
+COMMIT=""
+REL_DIR="${HOME_DIR}/releases/${REL_AFTER}"
+[[ -d "${REL_DIR}/.git" ]] || REL_DIR="${HOME_DIR}/current"
+if [[ -d "${REL_DIR}/.git" ]]; then
+    COMMIT=$(git -C "$REL_DIR" log -1 --format='%h — %s%nAuthor: %an%nCommitted: %ad' \
+        --date=format:'%Y-%m-%d %H:%M' 2>/dev/null || true)
+fi
+
 DETAIL="Trigger: ${TRIGGER}
 Branch: ${BRANCH:-?}
-Release: ${REL_BEFORE:-none} -> ${REL_AFTER:-?}
+Release: ${REL_BEFORE:-none} -> ${REL_AFTER:-?}${COMMIT:+
+Commit: ${COMMIT}}
 Duration: ${SECS}s
 Log: ${LOG}"
 
@@ -82,8 +92,6 @@ if [[ $RC -ne 0 ]]; then
     sudo /usr/local/bin/cipi-app-notify "$APP" deploy "$RC" "$LOG" "$DETAIL" 2>/dev/null || true
     exit "$RC"
 fi
-
-sudo /usr/local/bin/cipi-app-notify "$APP" deploy-ok 0 "$LOG" "$DETAIL" 2>/dev/null || true
 
 # Reconcile the server with the cipi.yml shipped in this release, but only when
 # root has explicitly opted this app in (`cipi yml auto <app> on`), which is
@@ -97,5 +105,29 @@ if [[ -f "/etc/sudoers.d/cipi-${APP}-yml" ]]; then
         printf '[%(%Y-%m-%d %H:%M:%S)T] cipi.yml apply failed — see above\n' -1 >> "$LOG" 2>/dev/null || true
     }
 fi
+
+# Did the release that just went live actually survive? An automatic deploy has
+# nobody watching it, so this is the only thing standing between a broken push
+# and finding out from a customer. It never changes the deploy's own result —
+# the code is published either way — but a failure alerts immediately instead
+# of waiting for the periodic checker's three-strike debounce, and rolls the
+# release back when the app opted into that.
+{
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== post-deploy healthcheck =====\n' -1
+} >> "$LOG" 2>/dev/null || true
+HRC=0
+sudo /usr/local/bin/cipi health postdeploy "$APP" --auto >> "$LOG" 2>&1 || HRC=$?
+
+case "$HRC" in
+    0) HEALTH_LINE="passed" ;;
+    2) HEALTH_LINE="not configured (cipi health set ${APP})" ;;
+    *) HEALTH_LINE="FAILED — a separate alert has been sent" ;;
+esac
+
+# Sent last, so "deploy succeeded" can say whether the app actually answers.
+# Announcing success while the site returns 500 would be worse than silence.
+sudo /usr/local/bin/cipi-app-notify "$APP" deploy-ok 0 "$LOG" \
+    "${DETAIL}
+Healthcheck: ${HEALTH_LINE}" 2>/dev/null || true
 
 exit 0

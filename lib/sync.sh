@@ -212,6 +212,7 @@ _sync_export() {
         "Apps were exported.\n\nServer: $(hostname)\nApps: ${apps[*]}\nArchive: ${archive}\nWith DB: ${with_db}\nWith storage: ${with_storage}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
         sync_export
     [[ "$internal_push" == "true" ]] && _SYNC_LAST_ARCHIVE="$archive"
+    return 0
 }
 
 # ── LIST (inspect archive) ────────────────────────────────────

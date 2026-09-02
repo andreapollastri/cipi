@@ -21,7 +21,10 @@ echo "$json" | jq -r 'to_entries[] | select(.value.health_url != null and (.valu
 | while IFS=$'\t' read -r app url expect; do
     [[ -z "$app" || -z "$url" ]] && continue
     [[ -z "$expect" ]] && expect=200
-    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" 2>/dev/null || echo "000")
+    # curl already writes "000" through -w on a connection failure; an
+    # `|| echo 000` fallback would append a second one ("000000").
+    code=$(curl -sS -o /dev/null -w '%{http_code}' --max-time 15 -L "$url" 2>/dev/null) || true
+    [[ "$code" =~ ^[0-9]{3}$ ]] || code="000"
     failfile="${STATE_DIR}/${app}.failcount"
     statefile="${STATE_DIR}/${app}.state"
     if [[ "$code" == "$expect" ]]; then

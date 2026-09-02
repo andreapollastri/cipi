@@ -185,7 +185,9 @@ nginx_default_server_owner() {
 }
 
 # Write the catch-all for whichever of :80 / :443 is still unclaimed.
-# Returns 1 when there is nothing left to claim.
+#   0 = written
+#   2 = nothing to claim (both ports already have a default server)
+#   1 = could not write the file
 nginx_write_default_server() {
     local ver with_ssl=true wrote=false
     ver=$(nginx_installed_version 2>/dev/null || echo "")
@@ -195,7 +197,13 @@ nginx_write_default_server() {
         with_ssl=false
     fi
 
-    mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled
+    mkdir -p /etc/nginx/sites-available /etc/nginx/sites-enabled 2>/dev/null || true
+    if ! : > "$_NGINX_DEFAULT_SITE" 2>/dev/null; then
+        # Say what actually happened. Reporting "already claimed" here would be
+        # a plain lie, and the kind that sends someone hunting the wrong vhost.
+        error "Cannot write ${_NGINX_DEFAULT_SITE}"
+        return 1
+    fi
     {
         echo "# Managed by Cipi — catch-all for requests matching no app."
         echo "# Disable with: cipi nginx default-server off"
@@ -231,15 +239,20 @@ EOF
 
     if [[ "$wrote" != true ]]; then
         rm -f "$_NGINX_DEFAULT_SITE"
-        return 1
+        return 2
     fi
     return 0
 }
 
 nginx_enable_default_server() {
-    if ! nginx_write_default_server; then
+    local wrc=0
+    nginx_write_default_server || wrc=$?
+    if [[ $wrc -eq 2 ]]; then
         info "Both :80 and :443 already have a default server — nothing to claim."
-        return 0
+        return 2
+    fi
+    if [[ $wrc -ne 0 ]]; then
+        return 1
     fi
     ln -sf "$_NGINX_DEFAULT_SITE" "$_NGINX_DEFAULT_LINK"
     if ! nginx -t &>/dev/null; then
@@ -293,9 +306,14 @@ nginx_command() {
                         _nginx_default_server_report
                         return 0
                     fi
-                    nginx_enable_default_server || exit 1
-                    success "Catch-all default server enabled"
-                    log_action "NGINX DEFAULT SERVER: on"
+                    local erc=0
+                    nginx_enable_default_server || erc=$?
+                    case $erc in
+                        0) success "Catch-all default server enabled"
+                           log_action "NGINX DEFAULT SERVER: on" ;;
+                        2) : ;;   # nothing to claim, already reported
+                        *) exit 1 ;;
+                    esac
                     _nginx_default_server_report
                     ;;
                 off|disable)

@@ -362,7 +362,12 @@ _supervisor_remove_program() {
     local tmp; tmp=$(mktemp)
     awk -v p="[program:${prog}]" '$0==p{s=1;next}/^\[program:/{s=0}!s' "$conf" >"$tmp"
     mv "$tmp" "$conf"
+    # Drop the file only when nothing is left in it. This used to be the last
+    # statement, so the function returned 1 in the ordinary case (other
+    # programs still present) and aborted its caller under `set -e` — which is
+    # how `cipi worker horizon enable` stopped halfway with no message.
     [[ ! -s "$conf" ]] && rm -f "$conf"
+    return 0
 }
 
 # Validate node build command (fail-closed). Allows npm/npx/yarn/pnpm/bun/node only.

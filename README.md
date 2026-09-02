@@ -81,7 +81,7 @@ Every app gets a fully isolated environment. **Laravel** (default): zero-downtim
 | **Deployments**    | Deployer — Laravel: atomic symlink, 5 releases, rollback, optional Node build; Custom: clone into htdocs     |
 | **SSL**            | Let's Encrypt via Certbot — HTTP-01 by default; optional **DNS-01 (Cloudflare)** + wildcards                 |
 | **Security**       | Fail2ban + UFW, per-app Linux user + PHP-FPM/Octane + SSH key                                                |
-| **Healthchecks**   | HTTP probes every 5 minutes with failure alerts                                                              |
+| **Healthchecks**   | HTTP probes every 5 minutes, plus a post-deploy check with optional automatic rollback of a broken release    |
 | **Backups**        | Backup profiles: what, how often, where, how long — S3/S3-compatible/local, client-side encryption           |
 | **Configuration**  | `cipi ini` for php.ini; optional per-project `cipi.yml` for aliases, databases, workers and backups          |
 
