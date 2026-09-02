@@ -467,7 +467,8 @@ show_help_topic() {
             echo ""
             _help_note "An app can carry a cipi.yml in its repository describing the state it"
             _help_note "expects: aliases, PHP version and settings, extra databases, queue"
-            _help_note "workers and its backup strategy. Configuration travels with the code."
+            _help_note "workers, its healthcheck and its backup strategy. Configuration"
+            _help_note "travels with the code."
             echo ""
             _help_cmd "cipi yml generate <app>"           "Print this app's current config as cipi.yml"
             _help_cmd "cipi yml example [app]"            "Print a blank commented template"
@@ -488,7 +489,8 @@ show_help_topic() {
             _help_note "Looked up in current/cipi.yml, current/cipi.yaml, shared/cipi.yml"
             _help_note "(override with --file=<path>)."
             _help_note "It can only configure an existing app: databases must be named <app> or"
-            _help_note "<app>_*, backup profiles <app> or <app>-*, and nothing in it runs a command."
+            _help_note "<app>_*, backup profiles <app> or <app>-*, the healthcheck URL must be one"
+            _help_note "of the app's own domains, and nothing in it runs a command."
             echo ""
             ;;
 

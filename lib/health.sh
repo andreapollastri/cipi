@@ -30,11 +30,16 @@ _health_ensure_cron() {
         fi
     fi
     if [[ ! -f "$HEALTH_CRON" ]]; then
-        cat > "$HEALTH_CRON" <<EOF
+        if cat > "$HEALTH_CRON" 2>/dev/null <<EOF
 # Cipi app HTTP healthchecks (every 5 minutes)
 */5 * * * * root ${HEALTH_HELPER} >/dev/null 2>&1
 EOF
-        chmod 644 "$HEALTH_CRON"
+        then
+            chmod 644 "$HEALTH_CRON" 2>/dev/null || true
+        else
+            warn "Could not write ${HEALTH_CRON} — the 5-minute check will not run"
+            warn "(the post-deploy check still works)"
+        fi
     fi
 }
 

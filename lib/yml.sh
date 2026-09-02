@@ -113,6 +113,10 @@ PROFILE_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
 EVERY_RE = re.compile(r"^([0-9]+)([mhd])$")
 CRON_RE = re.compile(r"^[0-9*/,\s-]+$")
 GLOB_RE = re.compile(r"^[a-zA-Z0-9_.*?\[\]-]{1,64}$")
+# Deliberately narrow: scheme, host, optional port, optional path. No user
+# info, no query string, no fragment, and no character that could confuse the
+# shell or a downstream curl invocation.
+URL_RE = re.compile(r"^https?://[A-Za-z0-9.-]{1,253}(:[0-9]{1,5})?(/[A-Za-z0-9._~/-]{0,200})?$")
 TABLE_GLOB_RE = re.compile(r"^[a-zA-Z0-9_.*?\[\]-]{1,128}$")
 
 
@@ -424,7 +428,7 @@ class Validator:
             self.err("cipi.yml", "the file must be a mapping at the top level")
             return None
 
-        allowed = {"version", "app", "databases", "workers", "backup", "schedule"}
+        allowed = {"version", "app", "databases", "workers", "backup", "schedule", "health"}
         self.unknown_keys(doc, allowed, "cipi.yml")
 
         version = doc.get("version")
@@ -446,6 +450,66 @@ class Validator:
             b = self.as_bool(doc["schedule"], "schedule")
             if b is not None:
                 out["schedule"] = b
+        if "health" in doc:
+            out["health"] = self.v_health(doc["health"])
+        return out
+
+    def v_health(self, node):
+        m = self.expect_map(node, "health")
+        if m is None:
+            return {}
+        self.unknown_keys(m, {"enabled", "url", "expect", "grace",
+                              "postdeploy", "rollback_on_unhealthy"}, "health")
+        out = {}
+
+        if "enabled" in m:
+            b = self.as_bool(m["enabled"], "health.enabled")
+            if b is None:
+                return {}
+            out["enabled"] = b
+            if b is False:
+                # "health: {enabled: false}" removes the healthcheck; nothing
+                # else in the section would mean anything.
+                for k in m:
+                    if k != "enabled":
+                        self.err("health." + k, "cannot be combined with 'enabled: false'")
+                return out
+        else:
+            out["enabled"] = True
+
+        if "url" not in m:
+            self.err("health", "'url' is required (or use 'enabled: false' to remove the healthcheck)")
+            return out
+        url = self.as_str(m.get("url"), "health.url")
+        if url is None:
+            return out
+        if not URL_RE.match(url):
+            self.err("health.url",
+                     "must be a plain http:// or https:// URL with no credentials, "
+                     "query string or fragment")
+            return out
+        # The host is checked against the app's own domains in the plan, where
+        # the server state is available: a project file must not be able to
+        # point this server's prober at somewhere else on the network.
+        out["url"] = url
+
+        if "expect" in m:
+            v = self.as_int(m["expect"], "health.expect", 100, 599)
+            if v is not None:
+                out["expect"] = v
+        else:
+            out["expect"] = 200
+
+        if "grace" in m:
+            v = self.as_int(m["grace"], "health.grace", 0, 120)
+            if v is not None:
+                out["grace"] = v
+
+        for field in ("postdeploy", "rollback_on_unhealthy"):
+            if field in m:
+                b = self.as_bool(m[field], "health." + field)
+                if b is not None:
+                    out[field] = b
         return out
 
     def v_app(self, node):
@@ -1006,6 +1070,42 @@ _yml_build_plan() {
             && _YML_ACTIONS+=("schedule|${want_sched}|turn Laravel scheduler ${want_sched/true/on}${want_sched/false/off}")
     fi
 
+    # ── healthcheck
+    if echo "$_YML_DATA" | jq -e 'has("health")' &>/dev/null; then
+        local h_enabled h_url h_expect h_grace h_pd h_rb
+        h_enabled=$(echo "$_YML_DATA" | jq -r '.health.enabled // true')
+        if [[ "$h_enabled" == "false" ]]; then
+            [[ -n "$(app_get "$app" health_url)" ]] \
+                && _YML_ACTIONS+=("health-unset||remove the healthcheck")
+        else
+            h_url=$(echo "$_YML_DATA" | jq -r '.health.url // empty')
+            h_expect=$(echo "$_YML_DATA" | jq -r '.health.expect // 200')
+            h_grace=$(echo "$_YML_DATA" | jq -r '.health.grace // empty')
+            h_pd=$(echo "$_YML_DATA" | jq -r 'if .health | has("postdeploy") then (.health.postdeploy|tostring) else "true" end')
+            h_rb=$(echo "$_YML_DATA" | jq -r 'if .health | has("rollback_on_unhealthy") then (.health.rollback_on_unhealthy|tostring) else "false" end')
+
+            if ! _yml_url_belongs_to_app "$app" "$h_url"; then
+                _YML_BLOCKERS+=("health.url '${h_url}' is not one of this app's domains — a project file cannot aim the server's prober elsewhere")
+            else
+                local cur_url cur_expect cur_grace cur_pd cur_rb
+                cur_url=$(app_get "$app" health_url)
+                cur_expect=$(app_get "$app" health_expect); [[ -n "$cur_expect" ]] || cur_expect=200
+                cur_grace=$(app_get "$app" health_grace)
+                cur_pd="true";  [[ "$(app_get "$app" health_postdeploy)" == "false" ]] && cur_pd="false"
+                cur_rb="false"; [[ "$(app_get "$app" health_rollback)" == "true" ]] && cur_rb="true"
+                if [[ "$cur_url" != "$h_url" || "$cur_expect" != "$h_expect" \
+                      || "$cur_grace" != "$h_grace" || "$cur_pd" != "$h_pd" || "$cur_rb" != "$h_rb" ]]; then
+                    local desc="healthcheck ${h_url} (expect ${h_expect}"
+                    [[ -n "$h_grace" ]] && desc="${desc}, grace ${h_grace}s"
+                    [[ "$h_pd" == "false" ]] && desc="${desc}, no post-deploy check"
+                    [[ "$h_rb" == "true" ]] && desc="${desc}, AUTO-ROLLBACK on failure"
+                    desc="${desc})"
+                    _YML_ACTIONS+=("health|${h_url}|${h_expect}|${h_grace}|${h_pd}|${h_rb}|${desc}")
+                fi
+            fi
+        fi
+    fi
+
     # ── backup profiles
     if echo "$_YML_DATA" | jq -e 'has("backup")' &>/dev/null; then
         if ! _bk_configured; then
@@ -1069,6 +1169,8 @@ _yml_source_libs() {
     declare -f _horizon_enable      >/dev/null 2>&1 || source "${CIPI_LIB}/worker.sh"
     # shellcheck source=/dev/null
     declare -f _ini_set             >/dev/null 2>&1 || source "${CIPI_LIB}/ini.sh"
+    # shellcheck source=/dev/null
+    declare -f _health_set          >/dev/null 2>&1 || source "${CIPI_LIB}/health.sh"
 }
 
 _yml_plan_cmd() {
@@ -1081,6 +1183,38 @@ _yml_plan_cmd() {
     _yml_print_plan
     [[ ${#_YML_BLOCKERS[@]} -gt 0 ]] && return 1
     return 0
+}
+
+# Is this URL served by the app itself?
+#
+# The healthcheck URL is fetched by the server every five minutes and after
+# every deploy, and the resulting status code comes back in alert emails. Left
+# unrestricted, a project file could point it at anything reachable from the
+# server — an internal address, another tenant — and read the answer out of the
+# notifications. Restricting it to the app's own primary domain and aliases is
+# both the safe rule and the only one that makes sense for a healthcheck.
+_yml_url_belongs_to_app() {
+    local app="$1" url="$2" host allowed a
+    [[ -n "$url" ]] || return 1
+    host="${url#*://}"; host="${host%%/*}"; host="${host%%:*}"
+    host=$(printf '%s' "$host" | tr '[:upper:]' '[:lower:]')
+    [[ -n "$host" ]] || return 1
+
+    allowed=$(app_get "$app" domain)$'\n'
+    allowed="${allowed}$(vault_read apps.json | jq -r --arg a "$app" '(.[$a].aliases // [])[]' 2>/dev/null || true)"
+
+    while IFS= read -r a; do
+        [[ -n "$a" ]] || continue
+        a=$(printf '%s' "$a" | tr '[:upper:]' '[:lower:]')
+        [[ "$host" == "$a" ]] && return 0
+        # A wildcard alias covers its subdomains, one level deep, as nginx does.
+        if [[ "$a" == \*.* ]]; then
+            local base="${a#\*.}"
+            [[ "$host" == *."$base" ]] && return 0
+            [[ "$host" == "$base" ]] && return 0
+        fi
+    done <<< "$allowed"
+    return 1
 }
 
 # ── Apply ────────────────────────────────────────────────────
@@ -1245,6 +1379,29 @@ _yml_apply_action() {
             step "scheduler ${mode}"
             if [[ "$mode" == "true" ]]; then _schedule_set on "$app" >/dev/null
             else _schedule_set off "$app" >/dev/null; fi
+            ;;
+        health)
+            local h_url h_expect h_grace h_pd h_rb
+            h_url="${rest%%|*}";    rest="${rest#*|}"
+            h_expect="${rest%%|*}"; rest="${rest#*|}"
+            h_grace="${rest%%|*}";  rest="${rest#*|}"
+            h_pd="${rest%%|*}";     rest="${rest#*|}"
+            h_rb="${rest%%|*}"
+            step "healthcheck ${h_url}"
+            local -a hargs=( "--url=${h_url}" "--expect=${h_expect}" )
+            [[ -n "$h_grace" ]] && hargs+=( "--grace=${h_grace}" )
+            # Always pass the explicit form of both switches, so applying the
+            # file converges on exactly what it declares rather than inheriting
+            # whatever the app happened to have.
+            if [[ "$h_pd" == "false" ]]; then hargs+=( "--no-postdeploy" ); else hargs+=( "--postdeploy" ); fi
+            if [[ "$h_rb" == "true" ]]; then hargs+=( "--rollback-on-unhealthy" ); else hargs+=( "--no-rollback-on-unhealthy" ); fi
+            declare -f _health_set >/dev/null 2>&1 || source "${CIPI_LIB}/health.sh"
+            _health_set "$app" "${hargs[@]}" >/dev/null
+            ;;
+        health-unset)
+            step "healthcheck removed"
+            declare -f _health_unset >/dev/null 2>&1 || source "${CIPI_LIB}/health.sh"
+            _health_unset "$app" >/dev/null
             ;;
         backup-profile)
             local pname="${rest%%|*}"
@@ -1624,6 +1781,32 @@ _yml_generate() {
             echo "schedule: ${sched}"
         fi
 
+        # ── healthcheck
+        local hu he hg hpd hrb
+        hu=$(app_get "$app" health_url)
+        echo ""
+        if [[ -n "$hu" ]]; then
+            he=$(app_get "$app" health_expect); [[ -n "$he" ]] || he=200
+            hg=$(app_get "$app" health_grace)
+            hpd=$(app_get "$app" health_postdeploy)
+            hrb=$(app_get "$app" health_rollback)
+            echo "# Checked every 5 minutes and right after every deploy."
+            echo "health:"
+            echo "  url: $(_yml_q "$hu")"
+            echo "  expect: ${he}"
+            [[ -n "$hg" ]] && echo "  grace: ${hg}          # seconds to wait before the first probe"
+            [[ "$hpd" == "false" ]] && echo "  postdeploy: false"
+            if [[ "$hrb" == "true" ]]; then
+                echo "  rollback_on_unhealthy: true   # undo a release that fails the check"
+            fi
+        else
+            echo "# No healthcheck configured. The URL must be one of this app's own"
+            echo "# domains. Uncomment to add one:"
+            echo "# health:"
+            echo "#   url: \"https://${domain}/up\""
+            echo "#   expect: 200"
+        fi
+
         # ── backup profiles this app owns
         local owned="" p
         if _bk_configured; then
@@ -1776,6 +1959,17 @@ workers:
 
 # Laravel scheduler (* * * * * artisan schedule:run)
 schedule: true
+
+# HTTP healthcheck. Probed every 5 minutes and right after every deploy.
+# The URL must be one of this app's own domains.
+health:
+  url: "https://${domain}/up"
+  expect: 200
+  # grace: 8                      # seconds before the first probe after a deploy
+  # postdeploy: false             # skip the check right after a deploy
+  # rollback_on_unhealthy: true   # undo a release that fails the check
+  #                               # (the code symlink only — migrations are NOT undone)
+  # Use "health: {enabled: false}" to remove the healthcheck entirely.
 
 # Backup strategy for this app. Profile names must be ${app} or ${app}-*.
 backup:

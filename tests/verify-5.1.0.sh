@@ -215,6 +215,71 @@ out=$(bash "${TMP}/yml.sh" 2>&1); rc=$?
 if [[ $rc -eq 0 ]]; then pass "cipi.yml: template valid, 11 hostile documents rejected"
 else fail "cipi.yml validation (${out})"; fi
 
+# cipi.yml: healthcheck section
+cat > "${TMP}/hy.sh" <<'HY'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=/tmp/cipi-t
+info(){ :; }; warn(){ :; }; error(){ :; }; success(){ :; }; step(){ :; }
+APPS='{"iceberg":{"domain":"icebergpro.it","aliases":["*.icebergpro.it","www.icebergpro.it"]}}'
+app_get(){ echo "$APPS" | jq -r --arg a "$1" --arg k "$2" '.[$a][$k] // empty'; }
+vault_read(){ echo "$APPS"; }
+source LIBDIR/yml.sh
+ok(){ printf '%s
+' "$1" > TMPDIR/hy.yml; [[ "$(_yml_parse TMPDIR/hy.yml iceberg | jq -r .ok)" == "true" ]]; }
+ok 'version: 1
+health:
+  url: "https://icebergpro.it/up"
+  expect: 200' || exit 70
+ok 'version: 1
+health:
+  enabled: false' || exit 71
+ok 'version: 1
+health:
+  url: "https://user:pw@evil.com/x"' && exit 72
+ok 'version: 1
+health:
+  url: "https://icebergpro.it/up?a=1"' && exit 73
+ok 'version: 1
+health:
+  url: "file:///etc/passwd"' && exit 74
+ok 'version: 1
+health:
+  url: "https://icebergpro.it/up"
+  expect: 99' && exit 75
+ok 'version: 1
+health:
+  url: "https://icebergpro.it/up"
+  grace: 999' && exit 76
+ok 'version: 1
+health:
+  url: "https://icebergpro.it/up"
+  timeout: 5' && exit 77
+ok 'version: 1
+health:
+  enabled: false
+  url: "https://icebergpro.it/up"' && exit 78
+ok 'version: 1
+health:
+  expect: 200' && exit 79
+# the URL must belong to the app
+_yml_url_belongs_to_app iceberg "https://icebergpro.it/up"        || exit 80
+_yml_url_belongs_to_app iceberg "https://www.icebergpro.it/up"    || exit 81
+_yml_url_belongs_to_app iceberg "https://t7.icebergpro.it/up"     || exit 82
+_yml_url_belongs_to_app iceberg "http://127.0.0.1:8080/admin"     && exit 83
+_yml_url_belongs_to_app iceberg "https://169.254.169.254/latest/" && exit 84
+_yml_url_belongs_to_app iceberg "https://altrocliente.it/up"      && exit 85
+_yml_url_belongs_to_app iceberg "https://icebergpro.it.evil.com/" && exit 86
+exit 0
+HY
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/hy.sh" && rm -f "${TMP}/hy.sh.bak"
+hout=$(bash "${TMP}/hy.sh" 2>&1); hrc=$?
+[[ $hrc -eq 0 ]] && pass "cipi.yml health: valid forms accepted, 8 bad ones rejected, URL confined to the app's domains" \
+                 || fail "cipi.yml health section (exit ${hrc}: ${hout})"
+grep -q 'aim the server' "${LIB}/yml.sh" && pass "the URL restriction explains itself" || fail "no SSRF guard message"
+grep -q 'health-unset' "${LIB}/yml.sh" && pass "cipi.yml can remove a healthcheck" || fail "no health removal"
+grep -q 'rollback_on_unhealthy' "${LIB}/yml.sh" && pass "cipi.yml can declare auto-rollback" || fail "no rollback in yml"
+
 grep -q 'a project file cannot' "${LIB}/yml.sh" && pass "namespacing is enforced with an explanation" || fail "namespacing"
 
 # generate must produce something this same Cipi accepts, and round-trip exactly
