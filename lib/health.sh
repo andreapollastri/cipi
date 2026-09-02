@@ -53,6 +53,13 @@ _health_set() {
     local grace="${ARG_grace:-}"
     if [[ -z "$url" ]]; then
         local domain; domain=$(app_get "$app" domain)
+        # A wildcard domain answers only on a concrete subdomain, and guessing
+        # one here would arm a check (and a post-deploy rollback) against a host
+        # that may not exist.
+        if domain_is_wildcard "$domain"; then
+            error "'${app}' is served on the wildcard domain '${domain}' — pass an explicit --url=https://<host>/up"
+            exit 1
+        fi
         url="https://${domain}/up"
     fi
     [[ "$expect" =~ ^[0-9]+$ ]] || { error "--expect must be an HTTP status code"; exit 1; }

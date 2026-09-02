@@ -4,6 +4,32 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.1.1] — 2026-09-02
+
+A hotfix for 5.1.0: one unterminated heredoc, and wildcard domains made to work end to end.
+
+### Fixed
+
+- **One unterminated heredoc broke app creation, every vhost rewrite, and emptied FPM pools.** `_create_fpm_pool` ended its heredoc with `${overrides}EOF` on a single line. A heredoc only closes on a line holding the delimiter *alone*, so the body ran on: the pool file was truncated to **zero bytes** by the redirection and the run then died on an unbound variable, and the runaway body swallowed the next function, `_nginx_reverb_location_block`, whole. Consequences, all from the same line:
+  - `cipi app create` aborted at the PHP-FPM step.
+  - Every vhost regeneration — `cipi alias add/remove`, `cipi www`, `cipi basicauth`, `cipi app suspend`, a PHP version change — died with `_nginx_reverb_location_block: command not found` *after* apps.json had been written, so the panel's state and nginx drifted apart.
+  - Migration 5.1.0 called `_create_fpm_pool` for every app, so **upgraded servers can be left with empty pools**: the sites keep serving until the next php-fpm restart, then answer 502.
+
+  **Migration 5.1.1** rebuilds every FPM pool (reporting the ones that had been emptied), restarts the affected `php*-fpm` after a config test, and regenerates the vhosts that no longer match apps.json — healthy vhosts are left untouched, backups go to `/var/lib/cipi/vhost-backup-5.1.1`, and a failing `nginx -t` rolls the batch back.
+- **A regression test now fails if this class of bug returns.** `tests/verify-5.1.1.sh` sources each library and checks that every function it defines is actually defined afterwards — an unterminated heredoc makes the functions behind it disappear, which is exactly what went unnoticed here.
+
+### Fixed — wildcard domains
+
+- **`*.example.com` was rejected as a primary domain.** `cipi app create` and `cipi app edit --domain=` validated the primary with the non-wildcard matcher, so a multi-tenant app fronted by one wildcard vhost could not be created at all — even though nginx serves a wildcard `server_name` natively and `cipi.yml` documents `*.${domain}` as an alias. Wildcards are now accepted for the primary domain of `app create`, `app edit --domain=` and `app clone --domain=`.
+- **Every URL built from the domain was unusable on a wildcard app.** `APP_URL`, the deploy webhook shown by `cipi app show` / `cipi deploy webhook`, and the webhook registered with GitHub or GitLab were all built as `https://*.example.com/…`, which is not a hostname and which both providers refuse. They now name a concrete tenant host (`www.example.com`).
+- **SSL could not work on a wildcard app.** Let's Encrypt validates a wildcard over DNS-01 only, and certbot names the lineage after the bare domain — but Cipi passed `--cert-name '*.example.com'` and looked for `/etc/letsencrypt/live/*.example.com`, so nothing matched. Certificate names and lineage lookups now strip the wildcard label everywhere (install, force, renew-time reinstall, domain change, app delete, `cipi domains`).
+- **A single wildcard alias failed the whole certificate.** `cipi ssl install` sent every alias to HTTP-01, and one `-d '*.example.com'` fails the entire order — so an app with a wildcard alias could not get a certificate for any of its domains. Wildcard aliases are now left out of the HTTP-01 certificate with a warning pointing at `--dns=cloudflare`, and a wildcard *primary* is refused up front with the two commands that do work.
+- **`cipi ssl install --dns=cloudflare --wildcard` doubled the wildcard label** when the primary domain already was one (`*.*.example.com`).
+- **`cipi www force-to-root|force-from-root` and `cipi health set` produced nonsense on a wildcard app** — `www.*.example.com` as a server_name, and a healthcheck (with post-deploy rollback attached) aimed at `https://*.example.com/up`. Both now stop with an explanation; `cipi health set` asks for an explicit `--url`.
+- **`cipi app create` now says how to secure a wildcard app**, printing the `cipi ssl dns set` / `cipi ssl install --dns=cloudflare` pair in the summary instead of the plain `cipi ssl install` that cannot work there.
+
+---
+
 ## [5.1.0] — 2026-09-02
 
 Thanks to **Alberto Peripolli** for putting Cipi through a real multi-tenant SaaS deployment and reporting every one of the problems this release fixes.

@@ -83,7 +83,7 @@ app_create() {
 
     # Validate
     validate_username "$app_user"  || { error "Invalid username '${app_user}'"; exit 1; }
-    validate_domain "$domain"      || { error "Invalid domain '${domain}'"; exit 1; }
+    validate_domain_or_wildcard "$domain" || { error "Invalid domain '${domain}'"; exit 1; }
     validate_php_version "$php_ver" || { error "Invalid PHP version. Use: 8.3 8.4 8.5"; exit 1; }
     [[ -n "$repository" ]] && { validate_git_repository "$repository" || { error "Invalid repository URL '${repository}'"; exit 1; }; }
     [[ -n "$branch" ]]     && { validate_git_branch "$branch"         || { error "Invalid branch name '${branch}'"; exit 1; }; }
@@ -101,7 +101,10 @@ app_create() {
 
     echo ""; info "Creating '${app_user}' (${app_type}${octane_server:+, octane=${octane_server}})..."; echo ""
 
-    local user_pass db_pass webhook_token app_key home
+    local user_pass db_pass webhook_token app_key home url_host
+    # A wildcard primary is a valid nginx server_name but not a hostname, so
+    # every URL built for the app (APP_URL, webhook) names a concrete tenant.
+    url_host=$(domain_url_host "$domain")
     user_pass=$(generate_password 40)
     db_pass=""
     if [[ "$app_type" == "laravel" ]]; then
@@ -244,9 +247,9 @@ BASH
     # 3b. Git provider integration (auto-add deploy key; webhook only for Laravel)
     source "${CIPI_LIB}/git.sh"
     if [[ "$app_type" == "laravel" ]]; then
-        git_setup_repo "$app_user" "$repository" "$domain" "$webhook_token" "$deploy_key"
+        git_setup_repo "$app_user" "$repository" "$url_host" "$webhook_token" "$deploy_key"
     else
-        git_setup_repo "$app_user" "$repository" "$domain" "" "$deploy_key" "skip_webhook"
+        git_setup_repo "$app_user" "$repository" "$url_host" "" "$deploy_key" "skip_webhook"
     fi
 
     # 4. Database (Laravel only)
@@ -267,7 +270,7 @@ APP_NAME="${app_user}"
 APP_ENV=production
 APP_KEY=${app_key}
 APP_DEBUG=false
-APP_URL=https://${domain}
+APP_URL=https://${url_host}
 
 LOG_CHANNEL=daily
 LOG_LEVEL=error
@@ -493,12 +496,12 @@ SUDO
     elif [[ "$app_type" == "laravel" ]]; then
         if [[ -n "${GIT_PROVIDER:-}" && -n "${GIT_DEPLOY_KEY_ID:-}" && -n "${GIT_WEBHOOK_ID:-}" ]]; then
             echo -e "  ${BOLD}Git${NC}         ${GREEN}${GIT_PROVIDER} auto-configured ✓${NC}"
-            echo -e "  ${BOLD}Webhook${NC}     ${CYAN}https://${domain}/cipi/webhook${NC}"
+            echo -e "  ${BOLD}Webhook${NC}     ${CYAN}https://${url_host}/cipi/webhook${NC}"
         else
             echo -e "  ${BOLD}Deploy Key${NC}  (add to your Git provider)"
             echo -e "  ${CYAN}${deploy_key}${NC}"
             echo ""
-            echo -e "  ${BOLD}Webhook${NC}     ${CYAN}https://${domain}/cipi/webhook${NC}"
+            echo -e "  ${BOLD}Webhook${NC}     ${CYAN}https://${url_host}/cipi/webhook${NC}"
             echo -e "  ${BOLD}Token${NC}       ${CYAN}${webhook_token}${NC}"
             if [[ -z "${GIT_PROVIDER:-}" ]]; then
                 echo ""
@@ -517,6 +520,12 @@ SUDO
             echo -e "        cipi deploy ${app_user}"
             echo -e "        cipi ssl install ${app_user}"
         fi
+    fi
+    if domain_is_wildcard "$domain"; then
+        echo ""
+        echo -e "  ${BOLD}Wildcard${NC}    ${DIM}Let's Encrypt issues *.${NC}${DIM} certificates over DNS-01 only:${NC}"
+        echo -e "              ${DIM}cipi ssl dns set --provider=cloudflare --token=<TOKEN>${NC}"
+        echo -e "              ${DIM}cipi ssl install ${app_user} --dns=cloudflare${NC}"
     fi
     echo ""
     echo -e "  ${YELLOW}${BOLD}⚠ SAVE THESE CREDENTIALS — shown only once${NC}"
@@ -620,7 +629,7 @@ app_show() {
 
     local show_webhook; show_webhook=$(app_get "$app" webhook_token)
     if [[ -n "$show_webhook" ]] && [[ "$is_custom" != "true" ]]; then
-        echo -e "\n  ${BOLD}Webhook${NC}  ${CYAN}https://${d}/cipi/webhook${NC}"
+        echo -e "\n  ${BOLD}Webhook${NC}  ${CYAN}https://$(domain_url_host "$d")/cipi/webhook${NC}"
     fi
 
     if [[ -f "/home/${app}/.ssh/id_ed25519.pub" ]]; then
@@ -667,13 +676,13 @@ _app_change_domain() {
     old_domain=$(app_get "$app" domain)
     [[ "$new_domain" == "$old_domain" ]] && return 2
 
-    validate_domain "$new_domain" || { error "Invalid domain '${new_domain}'"; return 1; }
+    validate_domain_or_wildcard "$new_domain" || { error "Invalid domain '${new_domain}'"; return 1; }
     domain_is_used_by_other_app "$new_domain" "$app" && {
         error "Domain '${new_domain}' is already used by app '${DOMAIN_USED_BY_APP}'"
         return 1
     }
 
-    [[ -d "/etc/letsencrypt/live/${old_domain}" ]] && had_ssl=true
+    [[ -d "/etc/letsencrypt/live/$(domain_cert_name "$old_domain")" ]] && had_ssl=true
 
     step "Domain ${old_domain} → ${new_domain}..."
 
@@ -694,18 +703,22 @@ _app_change_domain() {
     reload_nginx || return 1
 
     if [[ -f "/home/${app}/shared/.env" ]]; then
-        sed -i "s|^APP_URL=.*|APP_URL=https://${new_domain}|" "/home/${app}/shared/.env" 2>/dev/null || true
+        sed -i "s|^APP_URL=.*|APP_URL=https://$(domain_url_host "$new_domain")|" "/home/${app}/shared/.env" 2>/dev/null || true
     fi
 
     repo=$(app_get "$app" repository)
     if [[ -n "$repo" ]]; then
         source "${CIPI_LIB}/git.sh"
-        git_update_webhook_domain "$app" "$new_domain" "$repo"
+        git_update_webhook_domain "$app" "$(domain_url_host "$new_domain")" "$repo"
     fi
 
-    if [[ "$had_ssl" == true ]]; then
+    if [[ "$had_ssl" == true ]] && domain_is_wildcard "$new_domain"; then
+        # HTTP-01 cannot validate a wildcard, so reissuing here would only fail:
+        # the old certificate is left in place until DNS-01 replaces it.
+        warn "'${new_domain}' is a wildcard — reissue over DNS-01: cipi ssl install ${app} --dns=cloudflare"
+    elif [[ "$had_ssl" == true ]]; then
         step "Reissuing SSL certificate..."
-        certbot delete --cert-name "$old_domain" --non-interactive 2>/dev/null || true
+        certbot delete --cert-name "$(domain_cert_name "$old_domain")" --non-interactive 2>/dev/null || true
         source "${CIPI_LIB}/ssl.sh"
         _ssl_install "$app" || warn "SSL reinstall failed — run: cipi ssl install ${app}"
     else
@@ -889,7 +902,7 @@ app_delete() {
     step "Crontab...";     crontab -u "$app" -r 2>/dev/null||true
     step "Sudoers...";     rm -f "/etc/sudoers.d/cipi-${app}"
     step "Basic auth...";  rm -f "/etc/nginx/cipi-basicauth/${app}.htpasswd"
-    step "SSL...";         certbot delete --cert-name "$d" --non-interactive 2>/dev/null||true
+    step "SSL...";         certbot delete --cert-name "$(domain_cert_name "$d")" --non-interactive 2>/dev/null||true
     step "User & files..."
     # Kill leftover processes, userdel -r with rm -rf /home/<app> fallback (SSH keys included)
     remove_app_linux_user "$app"
@@ -1545,6 +1558,18 @@ _www_resolve_pair() {
     fi
 }
 
+# A wildcard primary ("*.example.com") has no apex/www pair: prefixing it gives
+# "www.*.example.com", which is not a hostname and which nginx would refuse.
+_www_reject_wildcard() {
+    local app="$1" primary
+    primary=$(app_get "$app" domain)
+    if domain_is_wildcard "$primary"; then
+        error "'${app}' is served on the wildcard domain '${primary}' — there is no www/apex pair to redirect"
+        return 1
+    fi
+    return 0
+}
+
 # Ensure the apex/www counterpart of the primary is present as an alias.
 _www_ensure_pair() {
     local app="$1" primary other
@@ -1592,6 +1617,7 @@ www_force_to_root() {
     local app="${1:-}"
     [[ -z "$app" ]] && { error "Usage: cipi www force-to-root <app>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
+    _www_reject_wildcard "$app" || exit 1
 
     _www_ensure_pair "$app" || true
     _www_resolve_pair "$(app_get "$app" domain)"
@@ -1611,6 +1637,7 @@ www_force_from_root() {
     local app="${1:-}"
     [[ -z "$app" ]] && { error "Usage: cipi www force-from-root <app>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
+    _www_reject_wildcard "$app" || exit 1
 
     _www_ensure_pair "$app" || true
     _www_resolve_pair "$(app_get "$app" domain)"
@@ -1697,7 +1724,7 @@ domains_list() {
         total=$((total + 1))
 
         local ssl="${RED}✗${NC}"
-        if [[ -d "/etc/letsencrypt/live/${dom}" ]]; then
+        if [[ -d "/etc/letsencrypt/live/$(domain_cert_name "$dom")" ]]; then
             ssl="${GREEN}✓${NC}"; secured=$((secured + 1))
         fi
 
@@ -1824,7 +1851,14 @@ request_terminate_timeout = 300
 php_admin_value[open_basedir] = /home/${app}/:/tmp/:/proc/
 php_admin_value[error_log] = /home/${app}/logs/php-fpm-error.log
 php_admin_flag[log_errors] = on
-${overrides}EOF
+EOF
+    # Appended after the heredoc, not inside it: a heredoc only ends on a line
+    # holding the delimiter *alone*, so the old `${overrides}EOF` never closed
+    # it — the body ran on and swallowed the next function whole.
+    if [[ -n "$overrides" ]]; then
+        printf '%s' "$overrides" >> "/etc/php/${v}/fpm/pool.d/${app}.conf"
+    fi
+    return 0
 }
 
 # Nginx location block for Laravel Reverb (WebSockets) when enabled.
@@ -2001,7 +2035,7 @@ EOF
             names="$canonical"
         fi
         redir_scheme="http"
-        [[ -d "/etc/letsencrypt/live/${domain}" ]] && redir_scheme="https"
+        [[ -d "/etc/letsencrypt/live/$(domain_cert_name "$domain")" ]] && redir_scheme="https"
         www_redirect_block=$(cat <<EOF
 server {
     listen 80;
@@ -2585,8 +2619,9 @@ _basicauth_file() { echo "${BASICAUTH_DIR}/${1}.htpasswd"; }
 _nginx_reapply_ssl() {
     local app="$1" d
     d=$(app_get "$app" domain)
-    if [[ -n "$d" ]] && [[ -d "/etc/letsencrypt/live/${d}" ]] && command -v certbot &>/dev/null; then
-        certbot install --nginx --cert-name "${d}" --non-interactive --redirect >/dev/null 2>&1 || true
+    local cert; cert=$(domain_cert_name "$d")
+    if [[ -n "$d" ]] && [[ -d "/etc/letsencrypt/live/${cert}" ]] && command -v certbot &>/dev/null; then
+        certbot install --nginx --cert-name "${cert}" --non-interactive --redirect >/dev/null 2>&1 || true
         reload_nginx
     else
         reload_nginx
@@ -2869,8 +2904,9 @@ app_reset_db_password() {
 _reapply_ssl_if_present() {
     local app="$1" d
     d=$(app_get "$app" domain)
-    [[ -n "$d" && -d "/etc/letsencrypt/live/${d}" ]] || return 0
-    certbot install --nginx --cert-name "$d" --non-interactive --redirect 2>&1 || true
+    local cert; cert=$(domain_cert_name "$d")
+    [[ -n "$d" && -d "/etc/letsencrypt/live/${cert}" ]] || return 0
+    certbot install --nginx --cert-name "$cert" --non-interactive --redirect 2>&1 || true
     if nginx -t &>/dev/null; then
         systemctl reload nginx 2>/dev/null || true
     fi
@@ -3199,7 +3235,7 @@ app_clone() {
 
     local domain="${ARG_domain:-}"
     [[ -z "$domain" ]] && { error "--domain is required"; exit 1; }
-    validate_domain "$domain" || { error "Invalid domain '${domain}'"; exit 1; }
+    validate_domain_or_wildcard "$domain" || { error "Invalid domain '${domain}'"; exit 1; }
     domain_is_used_by_other_app "$domain" && { error "Domain '${domain}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
 
     local name="${ARG_name:-}"
@@ -3244,7 +3280,7 @@ app_clone() {
             esac
             _env_set_or_add "$dst_env" "$key" "${line#*=}"
         done < "$src_env"
-        _env_set_or_add "$dst_env" "APP_URL" "https://${domain}"
+        _env_set_or_add "$dst_env" "APP_URL" "https://$(domain_url_host "$domain")"
         chown "${name}:${name}" "$dst_env"
     fi
 

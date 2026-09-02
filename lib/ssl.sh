@@ -92,20 +92,39 @@ _ssl_install() {
         return $?
     fi
 
+    # Let's Encrypt issues a wildcard certificate over DNS-01 only. Sending
+    # "*.example.com" to the HTTP-01 challenge fails the *whole* order, so the
+    # primary is refused up front and a wildcard alias is left out of this
+    # certificate instead of taking the other domains down with it.
+    if domain_is_wildcard "$d"; then
+        error "'${d}' is a wildcard domain — HTTP-01 cannot validate it."
+        echo -e "  ${DIM}cipi ssl dns set --provider=cloudflare --token=<TOKEN>${NC}"
+        echo -e "  ${DIM}cipi ssl install ${app} --dns=cloudflare${NC}"
+        exit 1
+    fi
+
     local domains="-d ${d}"
-    local aliases
+    local aliases skipped=""
     # Exclude primary domain from aliases to avoid duplicates
     aliases=$(vault_read apps.json | jq -r --arg a "$app" --arg d "$d" '.[$a].aliases // [] | map(select(. != $d)) | .[]' 2>/dev/null || true)
     while read -r a; do
-        [[ -n "$a" ]] && domains+=" -d ${a}"
+        [[ -n "$a" ]] || continue
+        if domain_is_wildcard "$a"; then
+            skipped="${skipped} ${a}"
+            continue
+        fi
+        domains+=" -d ${a}"
     done <<< "${aliases:-}"
+    if [[ -n "$skipped" ]]; then
+        warn "Skipping wildcard alias(es):${skipped} — they need DNS-01 (cipi ssl install ${app} --dns=cloudflare)"
+    fi
 
     echo ""
     step "Installing SSL for ${d}$([ -n "${aliases}" ] && echo " + aliases")..."
     echo ""
 
     if certbot --nginx $domains \
-        --cert-name "${d}" \
+        --cert-name "$(domain_cert_name "$d")" \
         --expand \
         --non-interactive \
         --agree-tos \
@@ -148,9 +167,13 @@ _ssl_install_dns01() {
         error "certbot not found"; exit 1
     fi
 
-    # Apex for wildcard: strip leading www. if present for *.apex naming
-    local apex="$d"
+    # Apex for wildcard: drop the wildcard label and a leading www. so
+    # "*.apex" is built once, whether or not the primary is already a wildcard.
+    local apex; apex=$(domain_cert_name "$d")
     [[ "$apex" == www.* ]] && apex="${apex#www.}"
+    # certbot rejects "*" in a lineage name and stores a wildcard cert under the
+    # bare domain, so the whole app must address it by that name.
+    local cert; cert=$(domain_cert_name "$d")
 
     local domains="-d ${d}"
     if [[ "$wildcard" == "true" ]]; then
@@ -173,7 +196,7 @@ _ssl_install_dns01() {
         --dns-cloudflare-credentials /etc/cipi/cloudflare.ini \
         --dns-cloudflare-propagation-seconds 30 \
         $domains \
-        --cert-name "${d}" \
+        --cert-name "${cert}" \
         --non-interactive \
         --agree-tos \
         --register-unsafely-without-email \
@@ -183,8 +206,9 @@ _ssl_install_dns01() {
         exit 1
     fi
 
-    if ! certbot install --nginx --cert-name "${d}" --non-interactive --redirect 2>&1; then
+    if ! certbot install --nginx --cert-name "${cert}" --non-interactive --redirect 2>&1; then
         error "Certificate issued but nginx install failed. Check: nginx -t"
+        error "The certificate is saved under /etc/letsencrypt/live/${cert} — reapply with: cipi ssl force ${app}"
         exit 1
     fi
 
@@ -216,7 +240,8 @@ _ssl_force() {
     local d; d=$(app_get "$app" domain)
     [[ -z "$d" ]] && { error "No domain for app '$app'"; exit 1; }
 
-    if [[ ! -d "/etc/letsencrypt/live/${d}" ]]; then
+    local cert; cert=$(domain_cert_name "$d")
+    if [[ ! -d "/etc/letsencrypt/live/${cert}" ]]; then
         error "No SSL certificate for '${d}'. Run: cipi ssl install ${app}"
         exit 1
     fi
@@ -229,7 +254,7 @@ _ssl_force() {
     fi
 
     step "Forcing HTTP → HTTPS redirect for ${d}..."
-    if ! certbot install --nginx --cert-name "${d}" --non-interactive --redirect 2>&1; then
+    if ! certbot install --nginx --cert-name "${cert}" --non-interactive --redirect 2>&1; then
         error "Failed to apply HTTPS redirect. Check: nginx -t"
         exit 1
     fi

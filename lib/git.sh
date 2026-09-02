@@ -203,7 +203,7 @@ git_setup_repo() {
     fi
 
     GIT_PROVIDER="$provider"
-    local webhook_url="https://${domain}/cipi/webhook"
+    local webhook_url="https://$(domain_url_host "$domain")/cipi/webhook"
 
     step "Configuring ${provider} integration..."
 
@@ -343,7 +343,7 @@ git_recreate_webhook() {
         fi
     fi
 
-    webhook_url="https://${domain}/cipi/webhook"
+    webhook_url="https://$(domain_url_host "$domain")/cipi/webhook"
     step "Recreating ${provider} webhook..."
 
     local new_hook_id=""
@@ -397,11 +397,11 @@ git_update_webhook_domain() {
 
     token=$(_git_server_get "${provider}_token")
     [[ -z "$token" ]] && {
-        warn "No ${provider} token — update webhook URL manually: https://${domain}/cipi/webhook"
+        warn "No ${provider} token — update webhook URL manually: https://$(domain_url_host "$domain")/cipi/webhook"
         return 0
     }
 
-    local webhook_url="https://${domain}/cipi/webhook"
+    local webhook_url="https://$(domain_url_host "$domain")/cipi/webhook"
     step "Updating ${provider} webhook..."
 
     local new_hook_id=""

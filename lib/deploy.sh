@@ -667,7 +667,7 @@ _deploy_webhook() {
     local d; d=$(app_get "$app" domain)
     local t; t=$(app_get "$app" webhook_token)
     echo -e "\n${BOLD}Webhook for '${app}'${NC}"
-    echo -e "  URL:   ${CYAN}https://${d}/cipi/webhook${NC}"
+    echo -e "  URL:   ${CYAN}https://$(domain_url_host "$d")/cipi/webhook${NC}"
     echo -e "  Token: ${CYAN}${t}${NC}"
     echo ""
 
@@ -677,12 +677,12 @@ _deploy_webhook() {
         echo -e "  ${GREEN}✓ Auto-configured on ${git_prov} (ID: ${git_whid})${NC}"
     else
         echo "  GitHub: Repo → Settings → Webhooks → Add"
-        echo "    Payload URL: https://${d}/cipi/webhook"
+        echo "    Payload URL: https://$(domain_url_host "$d")/cipi/webhook"
         echo "    Secret: ${t}"
         echo "    Events: Push only"
         echo ""
         echo "  GitLab: Repo → Settings → Webhooks"
-        echo "    URL: https://${d}/cipi/webhook"
+        echo "    URL: https://$(domain_url_host "$d")/cipi/webhook"
         echo "    Secret token: ${t}"
     fi
     echo ""

@@ -113,6 +113,20 @@ validate_domain_or_wildcard() {
     validate_domain "$d"
 }
 
+# True when the domain is a wildcard ("*.example.com").
+domain_is_wildcard() { [[ "$1" == \*.* ]]; }
+
+# Certificate lineage name for a domain. Certbot names a wildcard lineage after
+# the bare domain — "*" is not a directory name and certbot rejects it as a
+# --cert-name — so every `--cert-name` and every /etc/letsencrypt/live/<name>
+# lookup has to go through this, or SSL silently misses the app.
+domain_cert_name() { local d="$1"; printf '%s' "${d#\*.}"; }
+
+# A concrete host to build a URL with. A wildcard server_name matches
+# subdomains only, so "https://*.example.com" reaches nothing and a Git
+# provider refuses it as a webhook URL: "www" stands in for the tenant.
+domain_url_host() { local d="$1"; [[ "$d" == \*.* ]] && d="www.${d#\*.}"; printf '%s' "$d"; }
+
 # Git branch name. Restricted to a safe charset so it can never break out of
 # the single-quoted PHP string literal it's substituted into when generating
 # deploy.php (lib/app.sh _create_deployer_config_from_template / app_edit).

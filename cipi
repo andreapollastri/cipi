@@ -183,6 +183,8 @@ show_help_topic() {
             _help_cmd "cipi alias add <app> <domain>"  "Add alias"
             _help_cmd "cipi alias remove <app> <domain>" "Remove alias"
             _help_cmd "cipi alias list <app>"          "List aliases"
+            _help_note "A domain may be a wildcard (*.example.com), as primary or as alias."
+            _help_note "Wildcard certificates are DNS-01 only: cipi ssl install <app> --dns=cloudflare"
             _help_note "See also: cipi help www"
             echo ""
             ;;
@@ -380,6 +382,7 @@ show_help_topic() {
             _help_cmd "cipi ssl force <app>"           "Force HTTP → HTTPS redirect"
             _help_cmd "cipi ssl renew"                 "Renew all certs"
             _help_cmd "cipi ssl status"                "List certificates"
+            _help_note "A wildcard domain (*.example.com) needs --dns=cloudflare — HTTP-01 cannot validate it."
             echo ""
             ;;
 
