@@ -142,6 +142,14 @@ _ssl_install() {
         sed -i "s|^APP_URL=http://|APP_URL=https://|" "/home/${app}/shared/.env" 2>/dev/null || true
         app_set "$app" force_https "true"
         app_unset "$app" ssl_dns_provider 2>/dev/null || true
+        # A certificate turns ws:// into wss:// for a Reverb app: without this
+        # the browser blocks the socket as mixed content while nginx is already
+        # serving it over TLS, and nothing shows up in the Reverb log.
+        if [[ -n "$(app_get "$app" reverb)" ]]; then
+            declare -f _reverb_sync_env >/dev/null 2>&1 || source "${CIPI_LIB}/app.sh"
+            _reverb_sync_env "$app"
+        fi
+
         log_action "SSL INSTALLED: $app"
         cipi_notify \
             "Cipi SSL installed: ${d} (${app}) on $(hostname)" \
@@ -222,6 +230,12 @@ _ssl_install_dns01() {
     sed -i "s|^APP_URL=http://|APP_URL=https://|" "/home/${app}/shared/.env" 2>/dev/null || true
     app_set "$app" force_https "true"
     app_set "$app" ssl_dns_provider "$provider"
+    # Same as HTTP-01 above: move a Reverb app's clients onto wss://.
+    if [[ -n "$(app_get "$app" reverb)" ]]; then
+        declare -f _reverb_sync_env >/dev/null 2>&1 || source "${CIPI_LIB}/app.sh"
+        _reverb_sync_env "$app"
+    fi
+
     log_action "SSL INSTALLED DNS-01: $app provider=$provider wildcard=${wildcard:-false}"
     cipi_notify \
         "Cipi SSL installed (DNS-01): ${d} (${app}) on $(hostname)" \

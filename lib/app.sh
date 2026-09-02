@@ -725,6 +725,12 @@ _app_change_domain() {
         info "Run: cipi ssl install ${app}  (after DNS for ${new_domain} is ready)"
     fi
 
+    # REVERB_HOST and VITE_REVERB_HOST named the old domain, so a Reverb app
+    # would keep pointing browsers (and its own broadcaster) at it.
+    if [[ -n "$(app_get "$app" reverb)" ]]; then
+        _reverb_sync_env "$app"
+    fi
+
     success "Domain → ${new_domain} (${old_domain} is now an alias)"
     return 0
 }
@@ -1862,6 +1868,22 @@ EOF
 }
 
 # Nginx location block for Laravel Reverb (WebSockets) when enabled.
+#
+# The path is a *regex* location, not the bare `location /app` this used to be.
+# In nginx a prefix location matches everything that starts with it, so `/app`
+# also swallowed `/appointments`, `/apple` and `/application/...` and proxied
+# real Laravel routes into Reverb. `~ ^/apps?(/|$)` matches only the two paths
+# the Pusher protocol actually uses — `/app/{key}` for the WebSocket handshake
+# and `/apps/{id}/...` for the HTTP API the application broadcasts through —
+# and, being a regex written before `location ~ \.php$`, it is the one nginx
+# picks for those. An app that has its own `/app` or `/apps` route cannot use
+# Reverb behind the same domain: the protocol fixes these paths.
+#
+# proxy_read_timeout has to sit above Reverb's ping interval (60s by default).
+# An idle connection sees traffic only when Reverb pings it, so the 60s this
+# block used to carry was a coin flip on every idle client. Reverb prunes the
+# connections that stop answering its pings, so it — not nginx — is what reaps
+# dead clients here.
 _nginx_reverb_location_block() {
     local app="$1"
     local port
@@ -1869,7 +1891,7 @@ _nginx_reverb_location_block() {
     [[ -z "$port" ]] && return 0
     _ensure_nginx_octane_map
     cat <<EOF
-    location /app {
+    location ~ ^/apps?(/|\$) {
         proxy_http_version 1.1;
         proxy_set_header Host \$http_host;
         proxy_set_header Scheme \$scheme;
@@ -1880,8 +1902,9 @@ _nginx_reverb_location_block() {
         proxy_set_header Upgrade \$http_upgrade;
         proxy_set_header Connection \$connection_upgrade;
         proxy_pass http://127.0.0.1:${port};
-        proxy_read_timeout 60s;
-        proxy_send_timeout 60s;
+        proxy_buffering off;
+        proxy_read_timeout 3600s;
+        proxy_send_timeout 3600s;
     }
 EOF
 }
@@ -2922,6 +2945,43 @@ _env_set_or_add() {
     fi
 }
 
+# Write a group of KEY=VALUE pairs into an .env.
+#
+# Keys already in the file are updated in place; the ones that are missing are
+# appended together under a single comment header, instead of each arriving
+# with its own leading blank line the way _env_set_or_add leaves them — which
+# turns twelve new Reverb keys into twelve stanzas.
+#
+# `fill` = true keeps any existing non-empty value: used where Cipi derives a
+# value the application may legitimately have set for itself.
+_env_apply_group() {
+    local file="$1" fill="$2" header="$3"; shift 3
+    [[ -f "$file" ]] || return 0
+    local -a missing=()
+    local pair key val cur
+    for pair in "$@"; do
+        key="${pair%%=*}"; val="${pair#*=}"
+        if grep -qE "^${key}=" "$file" 2>/dev/null; then
+            if [[ "$fill" == "true" ]]; then
+                cur=$(_env_read_key "$file" "$key" 2>/dev/null || true)
+                [[ -n "$cur" ]] && continue
+            fi
+            sed -i "s|^${key}=.*|${key}=${val}|" "$file"
+        else
+            missing+=("${key}=${val}")
+        fi
+    done
+    [[ ${#missing[@]} -eq 0 ]] && return 0
+    {
+        printf '\n'
+        if [[ -n "$header" ]] && ! grep -qxF "# ${header}" "$file"; then
+            printf '# %s\n' "$header"
+        fi
+        printf '%s\n' "${missing[@]}"
+    } >> "$file"
+    return 0
+}
+
 _env_remove_keys() {
     local file="$1"; shift
     [[ -f "$file" ]] || return 0
@@ -3019,17 +3079,128 @@ app_reverb() {
         enable)  _app_reverb_enable "$@" ;;
         disable) _app_reverb_disable "$@" ;;
         status)  _app_reverb_status "$@" ;;
-        *) error "Usage: cipi app reverb enable|disable|status <app>"; exit 1 ;;
+        *) error "Usage: cipi app reverb enable|disable|status <app>"
+           echo "      enable [--restart-supervisor]  apply the new open-file limit now"; exit 1 ;;
     esac
 }
 
+# Write the .env half of a Reverb setup: credentials, the localhost socket the
+# supervisor program binds to, and the public host/port/scheme that both the
+# PHP broadcaster and the frontend bundle dial.
+#
+# Credentials are generated once and then left alone. Rotating them would
+# disconnect every live client and invalidate a frontend bundle already built
+# against the old key, so an existing non-empty value always wins — which also
+# means an app that arrived with its own Reverb credentials keeps them.
+#
+# The public side is derived from what the server actually serves rather than
+# assumed: https/443 once a certificate exists, http/80 before that, and a
+# concrete host when the app sits on a wildcard domain (no browser can open a
+# socket to "*.example.com"). Re-derived after `cipi ssl install` and after a
+# domain change, so these values never drift away from nginx.
+#
+# `--fill` writes only what is missing. The migration uses it so that an app
+# whose .env was tuned by hand — a dedicated socket host, a scheme behind an
+# upstream proxy — keeps what it had and only gains the keys it lacked.
+_reverb_sync_env() {
+    local app="$1" fill="false"
+    [[ "${2:-}" == "--fill" ]] && fill="true"
+    local envf="/home/${app}/shared/.env"
+    [[ -f "$envf" ]] || return 0
+    local port; port=$(app_get "$app" reverb_port)
+    [[ -n "$port" ]] || return 0
+
+    local domain host scheme pub_port
+    domain=$(app_get "$app" domain)
+    host=$(domain_url_host "$domain")
+    scheme="http"; pub_port="80"
+    if [[ -d "/etc/letsencrypt/live/$(domain_cert_name "$domain")" ]]; then
+        scheme="https"; pub_port="443"
+    fi
+
+    local rid rkey rsecret
+    rid=$(_env_read_key "$envf" REVERB_APP_ID 2>/dev/null || true)
+    rkey=$(_env_read_key "$envf" REVERB_APP_KEY 2>/dev/null || true)
+    rsecret=$(_env_read_key "$envf" REVERB_APP_SECRET 2>/dev/null || true)
+    [[ -n "$rid" ]]     || rid=$(( ($(od -An -N4 -tu4 /dev/urandom | tr -d ' ') % 900000) + 100000 ))
+    [[ -n "$rkey" ]]    || rkey=$(openssl rand -hex 10)
+    [[ -n "$rsecret" ]] || rsecret=$(openssl rand -hex 16)
+
+    local hdr="Laravel Reverb — managed by Cipi (cipi app reverb status ${app})"
+
+    # Where the supervisor program listens. Cipi owns this pair outright — the
+    # port is the one it allocated and wrote into the Supervisor program — so
+    # it is written even in fill mode.
+    _env_apply_group "$envf" false "$hdr" \
+        "REVERB_SERVER_HOST=127.0.0.1" \
+        "REVERB_SERVER_PORT=${port}"
+
+    _env_apply_group "$envf" "$fill" "$hdr" \
+        "BROADCAST_CONNECTION=reverb" \
+        "REVERB_APP_ID=${rid}" \
+        "REVERB_APP_KEY=${rkey}" \
+        "REVERB_APP_SECRET=${rsecret}" \
+        "REVERB_HOST=${host}" \
+        "REVERB_PORT=${pub_port}" \
+        "REVERB_SCHEME=${scheme}" \
+        "VITE_REVERB_APP_KEY=${rkey}" \
+        "VITE_REVERB_HOST=${host}" \
+        "VITE_REVERB_PORT=${pub_port}" \
+        "VITE_REVERB_SCHEME=${scheme}"
+
+    chown "${app}:${app}" "$envf" 2>/dev/null || true
+}
+
+# Raise the file-descriptor ceilings a WebSocket server runs into, and say what
+# is still needed. Supervisor picks its new limit up only on a restart — which
+# stops every queue worker on the box, so it is the admin's call, not ours.
+_reverb_ensure_capacity() {
+    local restart="${1:-false}" rc=0
+    _ensure_nginx_ws_limits || rc=$?
+    case "$rc" in
+        2)  # A raised worker_rlimit_nofile only reaches the workers a reload
+            # spawns, so the reload is part of applying it.
+            systemctl reload nginx 2>/dev/null || true
+            info "nginx raised to ${CIPI_WS_NOFILE} open files / ${CIPI_WS_WORKER_CONNECTIONS} connections per worker" ;;
+        1)  warn "Could not raise nginx's worker limits — nginx.conf was left unchanged (check: nginx -t)" ;;
+    esac
+    if _ensure_supervisor_fd_limit; then
+        return 0
+    fi
+    if [[ "$restart" == "true" ]]; then
+        step "Restarting Supervisor to apply the new file-descriptor limit..."
+        if systemctl restart supervisor 2>/dev/null; then
+            success "Supervisor restarted (${CIPI_WS_NOFILE} open files)"
+        else
+            warn "systemctl restart supervisor failed — check: systemctl status supervisor"
+        fi
+        return 0
+    fi
+    echo ""
+    warn "Supervisor is still running with the default limit of open files."
+    echo -e "  ${DIM}Reverb gets one file descriptor per connected client, so it will stop"
+    echo -e "  accepting clients at around a thousand. The new limit (${CIPI_WS_NOFILE}) is"
+    echo -e "  configured and applies on the next Supervisor restart, which also"
+    echo -e "  restarts every queue worker on this server:${NC}"
+    echo -e "      ${CYAN}systemctl restart supervisor${NC}"
+    echo -e "  ${DIM}or re-run this command with ${NC}--restart-supervisor${DIM} to do it now.${NC}"
+}
+
 _app_reverb_enable() {
-    local app="${1:-}"
-    [[ -z "$app" ]] && { error "Usage: cipi app reverb enable <app>"; exit 1; }
+    local app="${1:-}"; shift || true
+    [[ -z "$app" ]] && { error "Usage: cipi app reverb enable <app> [--restart-supervisor]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     [[ "$(app_get "$app" custom)" == "true" ]] && { error "Reverb is only for Laravel apps"; exit 1; }
+    parse_args "$@"
+    local restart="${ARG_restart_supervisor:-false}"
+
     if [[ -n "$(app_get "$app" reverb)" ]]; then
         info "Reverb already enabled for '${app}' (port $(app_get "$app" reverb_port))"
+        # Converge anyway: a certificate or a domain change since the last
+        # enable moves REVERB_HOST/PORT/SCHEME, and a missing credential is
+        # exactly what stops reverb:start from booting.
+        _reverb_sync_env "$app"
+        _reverb_ensure_capacity "$restart"
         return 0
     fi
     local port php_ver domain
@@ -3037,6 +3208,17 @@ _app_reverb_enable() {
     php_ver=$(app_get "$app" php)
     domain=$(app_get "$app" domain)
     step "Enabling Reverb for '${app}' :${port}..."
+
+    # Remember what the app was broadcasting through, so disabling Reverb puts
+    # it back instead of leaving BROADCAST_CONNECTION pointed at a dead server.
+    local envf="/home/${app}/shared/.env" prev_broadcast=""
+    if [[ -f "$envf" ]]; then
+        prev_broadcast=$(_env_read_key "$envf" BROADCAST_CONNECTION 2>/dev/null || true)
+    fi
+    if [[ -n "$prev_broadcast" && "$prev_broadcast" != "reverb" ]]; then
+        app_set "$app" reverb_prev_broadcast "$prev_broadcast"
+    fi
+
     app_set "$app" reverb "true"
     app_set "$app" reverb_port "$port"
     local conf="/etc/supervisor/conf.d/${app}.conf"
@@ -3047,16 +3229,22 @@ _app_reverb_enable() {
     _create_nginx_vhost "$app" "$domain" "$php_ver"
     reload_nginx || exit 1
     _reapply_ssl_if_present "$app"
-    local envf="/home/${app}/shared/.env"
-    _env_set_or_add "$envf" "BROADCAST_CONNECTION" "reverb"
-    _env_set_or_add "$envf" "REVERB_SERVER_HOST" "127.0.0.1"
-    _env_set_or_add "$envf" "REVERB_SERVER_PORT" "$port"
-    _env_set_or_add "$envf" "REVERB_HOST" "$domain"
-    _env_set_or_add "$envf" "REVERB_PORT" "443"
-    _env_set_or_add "$envf" "REVERB_SCHEME" "https"
-    chown "${app}:${app}" "$envf" 2>/dev/null || true
+    _reverb_sync_env "$app"
+
     log_action "REVERB ENABLE: $app port=$port"
-    success "Reverb enabled on 127.0.0.1:${port} (nginx /app)"
+    success "Reverb enabled on 127.0.0.1:${port}"
+    echo -e "  ${DIM}nginx proxies ${NC}/app/{key}${DIM} (WebSocket) and ${NC}/apps/{id}/…${DIM} (broadcast API)"
+    echo -e "  to it — an app with its own /app or /apps route cannot share the domain.${NC}"
+    if domain_is_wildcard "$domain"; then
+        warn "'${domain}' is a wildcard: REVERB_HOST was set to $(domain_url_host "$domain")"
+        echo -e "  ${DIM}A multi-tenant frontend has to pick its own host at runtime.${NC}"
+    fi
+    if [[ ! -d "/etc/letsencrypt/live/$(domain_cert_name "$domain")" ]]; then
+        echo -e "  ${DIM}No certificate yet, so REVERB_SCHEME is ${NC}http${DIM} on port 80."
+        echo -e "  ${CYAN}cipi ssl install ${app}${NC}${DIM} switches it to wss:// automatically.${NC}"
+    fi
+    _reverb_ensure_capacity "$restart"
+    echo ""
     info "Require laravel/reverb in the app, then: cipi deploy ${app}"
 }
 
@@ -3077,9 +3265,20 @@ _app_reverb_disable() {
     _create_nginx_vhost "$app" "$domain" "$php_ver"
     reload_nginx || exit 1
     _reapply_ssl_if_present "$app"
-    _env_remove_keys "/home/${app}/shared/.env" REVERB_SERVER_HOST REVERB_SERVER_PORT
+
+    # Point broadcasting back where it was before Reverb took it over. Leaving
+    # BROADCAST_CONNECTION=reverb behind would have every broadcast fail
+    # against a server that is no longer running.
+    local envf="/home/${app}/shared/.env" prev
+    prev=$(app_get "$app" reverb_prev_broadcast)
+    [[ -n "$prev" ]] || prev="log"
+    _env_set_or_add "$envf" "BROADCAST_CONNECTION" "$prev"
+    app_unset "$app" reverb_prev_broadcast
+    # Only the two keys Cipi owns are dropped. The credentials stay: they are
+    # what a re-enable — or a frontend bundle already built — depends on.
+    _env_remove_keys "$envf" REVERB_SERVER_HOST REVERB_SERVER_PORT
     log_action "REVERB DISABLE: $app"
-    success "Reverb disabled for '${app}'"
+    success "Reverb disabled for '${app}' (broadcasting back to '${prev}')"
 }
 
 _app_reverb_status() {
@@ -3089,11 +3288,50 @@ _app_reverb_status() {
     local r p
     r=$(app_get "$app" reverb)
     p=$(app_get "$app" reverb_port)
-    if [[ -n "$r" ]]; then
-        echo -e "  Reverb: ${GREEN}enabled${NC} 127.0.0.1:${p}"
-        supervisorctl status "${app}-reverb" 2>/dev/null || true
-    else
+    if [[ -z "$r" ]]; then
         echo -e "  Reverb: ${DIM}disabled${NC}"
+        return 0
+    fi
+    echo -e "  Reverb: ${GREEN}enabled${NC} 127.0.0.1:${p}"
+    supervisorctl status "${app}-reverb" 2>/dev/null || true
+
+    local envf="/home/${app}/shared/.env"
+    if [[ -f "$envf" ]]; then
+        local host scheme pub_port key missing=""
+        host=$(_env_read_key "$envf" REVERB_HOST 2>/dev/null || true)
+        scheme=$(_env_read_key "$envf" REVERB_SCHEME 2>/dev/null || true)
+        pub_port=$(_env_read_key "$envf" REVERB_PORT 2>/dev/null || true)
+        key=$(_env_read_key "$envf" REVERB_APP_KEY 2>/dev/null || true)
+        if [[ -n "$host" ]]; then
+            local ws="ws"; [[ "$scheme" == "https" ]] && ws="wss"
+            echo -e "  Clients dial: ${CYAN}${ws}://${host}:${pub_port:-443}/app/${key}${NC}"
+        fi
+        # A key that is present but empty is the state Laravel's own .env
+        # stanza ships in, and it is just as fatal as a missing one — so test
+        # the value, not whether the line exists.
+        local k v
+        for k in REVERB_APP_ID REVERB_APP_KEY REVERB_APP_SECRET; do
+            v=$(_env_read_key "$envf" "$k" 2>/dev/null || true)
+            [[ -n "$v" ]] || missing="${missing} ${k}"
+        done
+        if [[ -n "$missing" ]]; then
+            warn "Missing in .env:${missing} — run: cipi app reverb enable ${app}"
+        fi
+        # A certificate added after Reverb was enabled leaves the .env on ws://
+        # while nginx already serves wss:// — the browser then blocks the
+        # connection as mixed content, with nothing in the Reverb log.
+        local dom; dom=$(app_get "$app" domain)
+        if [[ -d "/etc/letsencrypt/live/$(domain_cert_name "$dom")" && "$scheme" != "https" ]]; then
+            warn "This app has a certificate but REVERB_SCHEME is '${scheme:-unset}'"
+            echo -e "  ${DIM}Re-run ${NC}cipi app reverb enable ${app}${DIM} to move it to wss://.${NC}"
+        fi
+    fi
+
+    if _supervisor_fd_limit_active; then
+        echo -e "  Open files: ${GREEN}${CIPI_WS_NOFILE}${NC} ${DIM}(supervisor)${NC}"
+    else
+        warn "Supervisor still runs with the default open-file limit (~1000 clients)"
+        echo -e "  ${DIM}Apply it with: ${NC}systemctl restart supervisor${NC}"
     fi
 }
 
@@ -3276,12 +3514,24 @@ app_clone() {
             [[ "$line" =~ ^[A-Za-z_][A-Za-z0-9_]*= ]] || continue
             key="${line%%=*}"
             case "$key" in
-                APP_KEY|APP_URL|DB_*|DATABASE_URL|CIPI_*|OCTANE_*|REVERB_SERVER_*) continue ;;
+                # REVERB_*/VITE_REVERB_* are deliberately not carried over: the
+                # clone gets its own port, its own credentials and its own
+                # domain below. Copying them would point a staging clone's
+                # frontend at the production socket and hand it the production
+                # app secret.
+                APP_KEY|APP_URL|DB_*|DATABASE_URL|CIPI_*|OCTANE_*|REVERB_*|VITE_REVERB_*) continue ;;
             esac
             _env_set_or_add "$dst_env" "$key" "${line#*=}"
         done < "$src_env"
         _env_set_or_add "$dst_env" "APP_URL" "https://$(domain_url_host "$domain")"
         chown "${name}:${name}" "$dst_env"
+    fi
+
+    # A clone of a Reverb app gets its own Reverb, the way it gets its own
+    # Octane. Without this the copied BROADCAST_CONNECTION=reverb would point
+    # at a server that does not exist on the clone.
+    if [[ -n "$(app_get "$src" reverb)" ]]; then
+        _app_reverb_enable "$name"
     fi
 
     if [[ "$with_db" == "true" ]]; then

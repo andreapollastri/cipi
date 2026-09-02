@@ -765,6 +765,117 @@ map $http_upgrade $connection_upgrade {
 EOF
 }
 
+# ── WEBSOCKET CAPACITY ────────────────────────────────────────
+# A WebSocket is not a request: it stays open. Every connected client costs one
+# file descriptor inside Reverb and two connections inside nginx (browser side
+# and upstream side). The stock limits are sized for short HTTP requests, so a
+# Reverb app hits a wall long before it runs out of CPU or RAM:
+#
+#   supervisor  children inherit supervisord's RLIMIT_NOFILE, and systemd's
+#               default soft limit is 1024 — Reverb starts refusing clients at
+#               roughly a thousand, with nothing in the logs to explain it.
+#   nginx       workers inherit the same 1024 unless worker_rlimit_nofile
+#               raises it, and worker_connections caps the pairs on top.
+#
+# Both helpers are idempotent and are called when Reverb is enabled, from the
+# installer, and from the migration — never on every command.
+CIPI_WS_NOFILE=65535
+CIPI_WS_WORKER_CONNECTIONS=8192
+
+# Is the *running* supervisord already using the raised limit? A drop-in only
+# applies to the next start, so this is what decides whether the admin still
+# has to restart supervisor.
+_supervisor_fd_limit_active() {
+    local pid soft
+    pid=$(systemctl show supervisor.service -p MainPID --value 2>/dev/null || true)
+    # Not running: whatever starts it next reads the drop-in.
+    [[ -n "$pid" && "$pid" != "0" && -r "/proc/${pid}/limits" ]] || return 0
+    soft=$(awk '/^Max open files/{print $4}' "/proc/${pid}/limits" 2>/dev/null || true)
+    [[ "$soft" == "unlimited" ]] && return 0
+    [[ "$soft" =~ ^[0-9]+$ ]] || return 0
+    (( soft >= CIPI_WS_NOFILE ))
+}
+
+# Raise RLIMIT_NOFILE for supervisord, and therefore for every program it runs.
+# A systemd drop-in rather than supervisord's own `minfds`: minfds makes
+# supervisord *refuse to start* when the limit cannot be reached, and a
+# supervisor that will not come up takes every queue worker on the box with it.
+#
+# Returns 0 when the running supervisord already has the headroom, 1 when the
+# drop-in is in place but supervisor still has to be restarted for it to apply.
+_ensure_supervisor_fd_limit() {
+    systemctl cat supervisor.service &>/dev/null || return 0
+    local dir="/etc/systemd/system/supervisor.service.d"
+    local drop="${dir}/cipi-nofile.conf"
+    if ! grep -q "^LimitNOFILE=${CIPI_WS_NOFILE}$" "$drop" 2>/dev/null; then
+        mkdir -p "$dir" 2>/dev/null || return 0
+        cat > "$drop" <<EOF
+# Managed by Cipi — file-descriptor headroom for long-lived connections.
+# One descriptor per open WebSocket; supervisord's children inherit this.
+[Service]
+LimitNOFILE=${CIPI_WS_NOFILE}
+EOF
+        systemctl daemon-reload 2>/dev/null || true
+    fi
+    _supervisor_fd_limit_active
+}
+
+# Give nginx workers the same headroom. `worker_rlimit_nofile` is a main-context
+# directive, so unlike the octane map it cannot live in a conf.d snippet — that
+# include sits inside `http`. nginx.conf itself has to be edited, so the file is
+# rewritten through a temp copy, tested, and rolled back if `nginx -t` fails.
+#
+# Exit status: 0 nothing needed doing, 2 the file was changed and passes
+# `nginx -t`, 1 the change was attempted and rolled back. 2 rather than 0 so a
+# caller knows to reload — new limits only reach the workers a reload spawns.
+_ensure_nginx_ws_limits() {
+    local conf="/etc/nginx/nginx.conf"
+    [[ -f "$conf" ]] || return 0
+    command -v nginx &>/dev/null || return 0
+
+    local has_rlimit=false cur_conns=0
+    grep -qE '^[[:space:]]*worker_rlimit_nofile[[:space:]]' "$conf" && has_rlimit=true
+    cur_conns=$(grep -oE '^[[:space:]]*worker_connections[[:space:]]+[0-9]+' "$conf" 2>/dev/null \
+        | grep -oE '[0-9]+' | head -1)
+    [[ "$cur_conns" =~ ^[0-9]+$ ]] || cur_conns=0
+
+    local need_conns=false
+    (( cur_conns < CIPI_WS_WORKER_CONNECTIONS )) && need_conns=true
+    [[ "$has_rlimit" == false || "$need_conns" == true ]] || return 0
+
+    local tmp; tmp=$(mktemp) || return 0
+    awk -v nofile="$CIPI_WS_NOFILE" \
+        -v conns="$CIPI_WS_WORKER_CONNECTIONS" \
+        -v add_rlimit="$([[ "$has_rlimit" == false ]] && echo 1 || echo 0)" \
+        -v add_conns="$([[ "$need_conns" == true ]] && echo 1 || echo 0)" '
+        add_rlimit && !placed && /^[[:space:]]*worker_processes[[:space:]]/ {
+            print; print "worker_rlimit_nofile " nofile ";"; placed = 1; next
+        }
+        add_conns && /^[[:space:]]*worker_connections[[:space:]]+[0-9]+[[:space:]]*;/ {
+            match($0, /^[[:space:]]*/)
+            print substr($0, 1, RLENGTH) "worker_connections " conns ";"; next
+        }
+        { print }
+    ' "$conf" > "$tmp" 2>/dev/null
+
+    # A truncated or unreadable rewrite must never reach nginx.conf.
+    if [[ ! -s "$tmp" ]] || ! grep -q 'worker_processes' "$tmp"; then
+        rm -f "$tmp"; return 1
+    fi
+
+    local backup; backup=$(mktemp)
+    cp "$conf" "$backup" 2>/dev/null || { rm -f "$tmp" "$backup"; return 1; }
+    cat "$tmp" > "$conf" 2>/dev/null || { cat "$backup" > "$conf"; rm -f "$tmp" "$backup"; return 1; }
+    rm -f "$tmp"
+    if nginx -t &>/dev/null; then
+        rm -f "$backup"
+        return 2
+    fi
+    cat "$backup" > "$conf"
+    rm -f "$backup"
+    return 1
+}
+
 # Init config on source — do not chmod /etc/cipi here: setup.sh sets permissions once.
 # chmod on every `cipi` source breaks read-only / (db list, deploy status, …).
 mkdir -p "${CIPI_CONFIG}" "${CIPI_LOG}" 2>/dev/null || true

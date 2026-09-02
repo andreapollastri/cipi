@@ -77,13 +77,13 @@ Every app gets a fully isolated environment. **Laravel** (default): zero-downtim
 | **PHP & Composer** | Selectable per app — PHP 7.4 to 8.5, hot-swappable                                                           |
 | **Runtime**        | PHP-FPM pools by default; optional **Laravel Octane (FrankenPHP)** per app (`--octane`)                      |
 | **Database**       | MariaDB (default) + optional PostgreSQL; dedicated DB and user per Laravel app                               |
-| **Queue workers**  | Supervisor with per-app pools — `queue:work` or **Horizon**; optional **Reverb** for WebSockets              |
+| **Queue workers**  | Supervisor with per-app pools — `queue:work` or **Horizon**; optional **Reverb** for WebSockets (wss:// + credentials + fd limits) |
 | **Deployments**    | Deployer — Laravel: atomic symlink, 5 releases, rollback, optional Node build; Custom: clone into htdocs     |
 | **SSL**            | Let's Encrypt via Certbot — HTTP-01 by default; optional **DNS-01 (Cloudflare)** + wildcards                 |
 | **Security**       | Fail2ban + UFW, per-app Linux user + PHP-FPM/Octane + SSH key                                                |
 | **Healthchecks**   | HTTP probes every 5 minutes, plus a post-deploy check with optional automatic rollback of a broken release    |
 | **Backups**        | Backup profiles: what, how often, where, how long — S3/S3-compatible/local, client-side encryption           |
-| **Configuration**  | `cipi ini` for php.ini; optional per-project `cipi.yml` for aliases, databases, workers and backups          |
+| **Configuration**  | `cipi ini` for php.ini; optional per-project `cipi.yml` for aliases, databases, workers, Reverb and backups  |
 
 ---
 
@@ -164,7 +164,11 @@ cipi worker horizon enable myapp
 cipi schedule on myapp
 ```
 
-Reverb gets a localhost port, Supervisor program, and Nginx `/app` WebSocket proxy. Horizon is mutually exclusive with `queue:work` workers. Scheduler toggles the crontab `schedule:run` entry.
+Enabling Reverb allocates a localhost port, writes a Supervisor program, and proxies the two paths the Pusher protocol uses — `/app/{key}` for the WebSocket and `/apps/{id}/…` for the broadcast API — through Nginx on the app's own domain. It also generates `REVERB_APP_ID/KEY/SECRET` and the `VITE_REVERB_*` copies the frontend build reads, picks `ws://` or `wss://` from whether the app has a certificate (and moves to `wss://` by itself when one is installed later), and raises the file-descriptor limits that otherwise cap a WebSocket server at about a thousand concurrent clients.
+
+An app with its own `/app` or `/apps` route cannot use Reverb behind the same domain — those paths belong to the protocol. Reverb can also be declared in `cipi.yml` as `workers.reverb: true`.
+
+Horizon is mutually exclusive with `queue:work` workers. Scheduler toggles the crontab `schedule:run` entry.
 
 ### 🔗 Webhook Auto-Deploy
 

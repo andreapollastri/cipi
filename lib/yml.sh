@@ -625,12 +625,16 @@ class Validator:
         m = self.expect_map(node, "workers")
         if m is None:
             return {}
-        self.unknown_keys(m, {"horizon", "queues"}, "workers")
+        self.unknown_keys(m, {"horizon", "reverb", "queues"}, "workers")
         out = {}
         if "horizon" in m:
             b = self.as_bool(m["horizon"], "workers.horizon")
             if b is not None:
                 out["horizon"] = b
+        if "reverb" in m:
+            b = self.as_bool(m["reverb"], "workers.reverb")
+            if b is not None:
+                out["reverb"] = b
         if "queues" in m:
             lst = self.expect_list(m["queues"], "workers.queues")
             queues, seen = [], set()
@@ -1026,13 +1030,32 @@ _yml_build_plan() {
 
     # ── workers
     if echo "$_YML_DATA" | jq -e 'has("workers")' &>/dev/null; then
+        # `// empty` cannot be used to read these: jq's alternative operator
+        # treats `false` exactly like a missing key, so "horizon: false" used to
+        # read back as "not declared" and silently did nothing.
         local want_horizon cur_horizon
-        want_horizon=$(echo "$_YML_DATA" | jq -r '.workers.horizon // empty')
+        want_horizon=$(echo "$_YML_DATA" | jq -r 'if .workers | has("horizon") then (.workers.horizon|tostring) else "" end')
         cur_horizon=$(app_get "$app" horizon)
         if [[ "$want_horizon" == "true" && "$cur_horizon" != "true" ]]; then
             _YML_ACTIONS+=("horizon|on|enable Horizon")
         elif [[ "$want_horizon" == "false" && "$cur_horizon" == "true" ]]; then
             _YML_ACTIONS+=("horizon|off|disable Horizon (restore queue workers)")
+        fi
+
+        # Reverb is independent of Horizon and of the queue workers: it is its
+        # own Supervisor program with its own localhost port, so it is only ever
+        # on or off here.
+        local want_reverb cur_reverb
+        want_reverb=$(echo "$_YML_DATA" | jq -r 'if .workers | has("reverb") then (.workers.reverb|tostring) else "" end')
+        cur_reverb="false"; [[ -n "$(app_get "$app" reverb)" ]] && cur_reverb="true"
+        if [[ "$want_reverb" == "true" && "$cur_reverb" != "true" ]]; then
+            if [[ "$(app_get "$app" custom)" == "true" ]]; then
+                _YML_BLOCKERS+=("workers.reverb is declared, but '${app}' is a custom app — Reverb is Laravel only")
+            else
+                _YML_ACTIONS+=("reverb|on|enable Reverb (WebSockets, nginx /app + /apps)")
+            fi
+        elif [[ "$want_reverb" == "false" && "$cur_reverb" == "true" ]]; then
+            _YML_ACTIONS+=("reverb|off|disable Reverb (broadcasting back to its previous driver)")
         fi
 
         if echo "$_YML_DATA" | jq -e '.workers | has("queues")' &>/dev/null; then
@@ -1354,6 +1377,15 @@ _yml_apply_action() {
             step "horizon ${mode}"
             if [[ "$mode" == "on" ]]; then _horizon_enable "$app" >/dev/null
             else _horizon_disable "$app" >/dev/null; fi
+            ;;
+        reverb)
+            local mode="${rest%%|*}"
+            step "reverb ${mode}"
+            # Not silenced: enabling prints the credentials it generated, the
+            # ws:// vs wss:// it settled on, and whether Supervisor still needs
+            # a restart to lift its open-file limit.
+            if [[ "$mode" == "on" ]]; then _app_reverb_enable "$app"
+            else _app_reverb_disable "$app"; fi
             ;;
         worker-add|worker-sync)
             local q procs tries timeout
@@ -1745,9 +1777,10 @@ _yml_generate() {
         fi
 
         # ── workers
-        local horizon workers
+        local horizon workers reverb
         horizon=$(app_get "$app" horizon)
         workers=$(_yml_read_workers "$app")
+        reverb="false"; [[ -n "$(app_get "$app" reverb)" ]] && reverb="true"
         echo ""
         echo "workers:"
         if [[ "$horizon" == "true" ]]; then
@@ -1770,6 +1803,14 @@ _yml_generate() {
             echo "  # queues:"
             echo "  #   - queue: default"
             echo "  #     processes: 2"
+        fi
+        if [[ "$custom" != "true" ]]; then
+            if [[ "$reverb" == "true" ]]; then
+                echo "  # Laravel Reverb — nginx proxies /app and /apps to it on this domain."
+                echo "  reverb: true"
+            else
+                echo "  reverb: false          # true adds a Reverb WebSocket server"
+            fi
         fi
 
         # ── scheduler
@@ -1949,6 +1990,14 @@ databases:
 
 workers:
   horizon: false           # true replaces the queue workers below
+
+  # Laravel Reverb. Cipi gives it a localhost port, a Supervisor program and an
+  # nginx proxy for /app/{key} and /apps/{id}/… on this app's own domain, and
+  # generates REVERB_APP_ID/KEY/SECRET (plus the VITE_ copies) in the .env the
+  # first time it is enabled. An app with its own /app or /apps route cannot
+  # use it behind the same domain — those paths belong to the Pusher protocol.
+  reverb: false
+
   queues:
     - queue: default
       processes: 2

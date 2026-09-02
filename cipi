@@ -158,6 +158,7 @@ show_help_topic() {
             _help_cmd "cipi app convert <app>"         "FPM ↔ Octane  ${DIM}--to=octane|fpm${NC}"
             _help_cmd "cipi app clone <app>"           "Clone app (staging)  ${DIM}--domain= [--with-db]${NC}"
             _help_cmd "cipi app reverb …"              "Reverb WebSockets  ${DIM}enable|disable|status${NC}"
+            _help_note "enable [--restart-supervisor] — lifts Supervisor's open-file limit now (restarts every worker)"
             _help_cmd "cipi app limits <app>"          "Resource limits  ${DIM}[--fpm-max-children=]${NC}"
             _help_cmd "cipi app delete <app>"          "Delete app"
             _help_cmd "cipi app suspend <app>"         "Take offline (503)"

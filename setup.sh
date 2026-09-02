@@ -370,11 +370,17 @@ install_nginx() {
     cat > /etc/nginx/nginx.conf <<NGINXEOF
 user www-data;
 worker_processes ${CPU_CORES};
+# Headroom for long-lived connections: a WebSocket holds two nginx connections
+# (browser side and upstream side) and a descriptor each for as long as it is
+# open, and the stock 1024 soft limit caps a Reverb app at a few hundred
+# clients. See _ensure_nginx_ws_limits in lib/common.sh, which applies the same
+# two values to servers installed before this was the default.
+worker_rlimit_nofile 65535;
 pid /run/nginx.pid;
 include /etc/nginx/modules-enabled/*.conf;
 
 events {
-    worker_connections 2048;
+    worker_connections 8192;
     multi_accept on;
 }
 
@@ -819,6 +825,22 @@ install_supervisor() {
     step_msg "Installing Supervisor..."
 
     _cipi_apt_install -y -qq supervisor
+
+    # Every program Supervisor runs inherits its file-descriptor limit, and a
+    # WebSocket server spends one descriptor per connected client — systemd's
+    # default of 1024 would stop Reverb at around a thousand. A drop-in rather
+    # than supervisord's own `minfds`, which makes supervisord refuse to start
+    # when the limit cannot be reached and would take every queue worker on the
+    # box down with it. Written before the first start, so it applies at once.
+    mkdir -p /etc/systemd/system/supervisor.service.d
+    cat > /etc/systemd/system/supervisor.service.d/cipi-nofile.conf <<'SUPEOF'
+# Managed by Cipi — file-descriptor headroom for long-lived connections.
+# One descriptor per open WebSocket; supervisord's children inherit this.
+[Service]
+LimitNOFILE=65535
+SUPEOF
+    systemctl daemon-reload
+
     systemctl enable supervisor
     systemctl start supervisor
 

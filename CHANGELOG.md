@@ -4,6 +4,32 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.1.2] — 2026-09-03
+
+WebSockets, done properly. Reverb has been in Cipi since 5.0.0, but only as far as "a port, a Supervisor program and an Nginx proxy" — the parts that decide whether a WebSocket app actually works in production were missing, and one of them was quietly breaking ordinary routes.
+
+### Fixed
+
+- **The Nginx location for Reverb swallowed every URL beginning with `/app`.** It was written as `location /app`, and in Nginx that is a *prefix* match, not a path: `/appointments`, `/apple`, `/application/...` — any route whose path started with those four characters — was proxied into Reverb instead of reaching Laravel, on every app with Reverb enabled. The block is now the regex `~ ^/apps?(/|$)`, which matches only the two paths the Pusher protocol actually uses: `/app/{key}` for the WebSocket handshake and `/apps/{id}/…` for the HTTP API the application broadcasts through. (An app with its own `/app` or `/apps` route still cannot use Reverb behind the same domain — those paths belong to the protocol.)
+- **`proxy_read_timeout` was set to exactly Reverb's ping interval.** Both were 60 seconds, and an idle WebSocket sees traffic only when Reverb pings it — so every idle client was a coin flip between the ping and the timeout. The timeout is now well clear of it; Reverb's own ping/prune cycle is what reaps dead connections, which is what it is there for.
+- **Disabling Reverb left the app broadcasting into a dead server.** `cipi app reverb disable` removed the Supervisor program and the Nginx block but left `BROADCAST_CONNECTION=reverb` in the `.env`, so every broadcast failed afterwards. Cipi now records what the app was broadcasting through before Reverb took over and puts that back on disable (falling back to `log`).
+- **`workers.horizon: false` in `cipi.yml` did nothing.** The plan read the value with jq's `// empty`, and that operator treats `false` exactly like a missing key — so declaring `horizon: false` on an app running Horizon read back as "not declared" and no action was planned, while the mutual-exclusion check simultaneously refused to accept the queue workers declared alongside it. Both `horizon` and the new `reverb` are now read with `has()`.
+
+### Added
+
+- **Reverb credentials are generated.** `REVERB_APP_ID`, `REVERB_APP_KEY` and `REVERB_APP_SECRET` were left for the admin to invent — and an empty set is precisely what stops `reverb:start` from booting. `cipi app reverb enable` now writes a set on first use and never touches it again: rotating a key would disconnect every live client and invalidate any frontend bundle already built against it, so existing values always win (an app that arrived with its own credentials keeps them).
+- **`VITE_REVERB_APP_KEY`, `VITE_REVERB_HOST`, `VITE_REVERB_PORT` and `VITE_REVERB_SCHEME`** are written alongside them. Vite reads these at build time and bakes them into the bundle; Cipi's `node_build` step runs after Deployer has linked the shared `.env`, so a deploy now produces a frontend that can actually find the socket.
+- **`ws://` or `wss://` is decided from what the server serves, not assumed.** A brand-new app with no certificate gets `http`/80, an app with one gets `https`/443 — and installing a certificate later (HTTP-01 or DNS-01) moves the app's Reverb settings to `wss://` on the spot. Previously the values were hardcoded to `https`/443 at enable time, which meant a browser refusing the connection as mixed content, with nothing in the Reverb log to explain it. A domain change re-derives them too, and a wildcard domain resolves to a concrete host (`www.example.com`) because no browser can open a socket to `*.example.com`.
+- **The file-descriptor ceilings a WebSocket server runs into are lifted.** Every open socket costs one descriptor inside Reverb and two connections inside Nginx, and the stock 1024 soft limit stops an app at roughly a thousand concurrent clients — with nothing in any log to say why. Cipi now ships a systemd drop-in raising Supervisor's `LimitNOFILE` to 65535 (and therefore every program it runs, Reverb included), and sets `worker_rlimit_nofile 65535` with `worker_connections 8192` in `nginx.conf`. Supervisor picks its new limit up only on a restart, which also restarts every queue worker on the server — so Cipi says so rather than doing it behind your back; `cipi app reverb enable <app> --restart-supervisor` does it in one go.
+  - The drop-in rather than supervisord's own `minfds`: `minfds` makes supervisord **refuse to start** when the limit cannot be reached, which would take every queue worker on the box down with it.
+- **`workers.reverb: true|false` in `cipi.yml`.** Reverb was the one Laravel extra that could not be declared in a project file even though Horizon, the queue workers and the scheduler all could. It is planned, applied and emitted by `cipi yml generate` like the rest, and declaring it on a `--custom` app is refused up front.
+- **`cipi app reverb status` says what a client should be dialling** — the full `wss://host:port/app/{key}` — and warns when the `.env` is missing a credential, when the app has a certificate but is still configured for `ws://`, and when Supervisor is still running with the old open-file limit.
+- **Cloning a Reverb app clones its Reverb.** `cipi app clone` copied the source's `REVERB_*` keys into the new `.env` — pointing the clone's frontend at the production socket and handing it the production app secret — while never starting a Reverb for it. The clone now gets its own port, its own credentials and its own domain, the way it already got its own Octane.
+
+**Migration 5.1.2** applies all of this to servers that are already running: it raises both limits (reporting whether Supervisor still needs a restart), rewrites the Nginx vhost of every app whose Reverb location is still the greedy prefix — backed up to `/var/lib/cipi/vhost-backup-5.1.2`, tested, SSL reapplied, and rolled back as a batch if `nginx -t` fails — and fills in the missing `.env` keys **without overwriting anything already there**, so an app whose socket settings were tuned by hand keeps them.
+
+---
+
 ## [5.1.1] — 2026-09-02
 
 A hotfix for 5.1.0: one unterminated heredoc, and wildcard domains made to work end to end.

@@ -44,10 +44,14 @@ nginx_write_global_conf() {
     cat > /etc/nginx/nginx.conf <<NGINXEOF
 user www-data;
 worker_processes ${worker_processes};
+# Headroom for long-lived connections — see the same pair in setup.sh and in
+# _ensure_nginx_ws_limits (lib/common.sh). A WebSocket holds two nginx
+# connections and a descriptor each for as long as it stays open.
+worker_rlimit_nofile 65535;
 pid /run/nginx.pid;
 
 events {
-    worker_connections 2048;
+    worker_connections 8192;
     multi_accept on;
 }
 
