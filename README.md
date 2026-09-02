@@ -123,14 +123,25 @@ none, because it still looks configured.
 
 An app can carry a `cipi.yml` in its repository describing the state it expects:
 domain aliases, PHP version and settings, its extra databases, its queue workers
-and its backup strategy. `cipi yml plan` shows exactly what would change,
-`cipi yml apply` applies it, and `cipi yml auto <app> on` reconciles after every
-successful deploy.
+and its backup strategy. `cipi yml plan` shows exactly what would change and
+`cipi yml apply` applies it.
+
+Deploys **ignore the file** until you opt in with `cipi yml auto <app> on`. From
+then on every successful deploy reconciles — whether it came from `cipi deploy`
+or from the Git webhook — and a release without the file is simply a no-op.
+
+You do not have to write it by hand: `cipi yml generate <app>` prints the app's
+current configuration on that server as a ready-to-commit `cipi.yml`.
+
+```bash
+cipi yml generate myapp > cipi.yml   # then commit it
+cipi yml plan myapp                  # reports nothing to do
+```
 
 It can only *configure* an app that already exists, its databases must be named
 `<app>` or `<app>_*` and its backup profiles `<app>` or `<app>-*`, and nothing
 in the schema carries a shell command — so a commit can never reach beyond its
-own app. Run `cipi yml example` for a commented template.
+own app. Run `cipi yml example` for a blank commented template.
 
 ### 🚀 Laravel Octane (FrankenPHP)
 

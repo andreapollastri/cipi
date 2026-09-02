@@ -192,6 +192,7 @@ _deploy_run() {
             "Cipi deploy succeeded: ${app} on $(hostname)" \
             "Deploy completed successfully.\n\nServer: $(hostname)\nApp: ${app}\nBranch: ${branch_disp:-?}\nRelease: ${rel_after:-?}\nDuration: ${secs}s\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
             deploy_success
+        _deploy_apply_yml "$app"
     else
         deploy_log_close "$app" "FAILED" "$rel_after" "$secs" "$rc"
         error "Deploy failed (exit $rc)"
@@ -208,6 +209,38 @@ _deploy_run() {
             deploy_fail
         return "$rc"
     fi
+}
+
+# Reconcile the server with the cipi.yml shipped in the release that was just
+# put live — only for apps root opted in with `cipi yml auto <app> on`.
+#
+# The webhook path (cipi-app-deploy) does the same thing, and both must behave
+# identically: a deploy that reads cipi.yml when triggered by a push but
+# ignores it when triggered by hand would be worse than not reading it at all.
+#
+# A failure here never turns a successful deploy into a failed one — the code is
+# live either way — but it is logged and `cipi yml apply` reports it by email.
+_deploy_apply_yml() {
+    local app="$1"
+    [[ "$(app_get "$app" yml_auto)" == "true" ]] || return 0
+
+    local lf; lf=$(deploy_log_file "$app")
+    echo ""
+    step "Applying cipi.yml..."
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== cipi.yml apply =====\n' -1 >> "$lf" 2>/dev/null || true
+
+    local rc=0
+    set +e
+    ( source "${CIPI_LIB}/yml.sh"; yml_command apply "$app" --yes --auto ) 2>&1 | deploy_log_tee "$lf"
+    rc=${PIPESTATUS[0]}
+    set -e
+
+    if [[ $rc -ne 0 ]]; then
+        warn "cipi.yml was not applied — the deploy itself succeeded."
+        warn "Details: ${lf}   Retry: cipi yml apply ${app}"
+    fi
+    chown "${app}:www-data" "$lf" 2>/dev/null || true
+    return 0
 }
 
 # cipi deploy <app> --log        → last 200 lines

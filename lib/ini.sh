@@ -137,7 +137,7 @@ _ini_validate_value() {
             [[ "$val" =~ ^-?[0-9]+$ ]] || { error "Invalid value for ${key}: '${val}' (expected an integer)"; return 1; }
             ;;
         flag)
-            case "${val,,}" in
+            case "$(printf '%s' "$val" | tr '[:upper:]' '[:lower:]')" in
                 on|off|1|0|true|false|yes|no) ;;
                 *) error "Invalid value for ${key}: '${val}' (expected On or Off)"; return 1 ;;
             esac
@@ -167,7 +167,7 @@ _ini_validate_value() {
 _ini_normalize_value() {
     local key="$1" val="$2"
     if [[ "$(_ini_key_type "$key")" == "flag" ]]; then
-        case "${val,,}" in
+        case "$(printf '%s' "$val" | tr '[:upper:]' '[:lower:]')" in
             on|1|true|yes)  echo "On" ;;
             off|0|false|no) echo "Off" ;;
         esac

@@ -182,8 +182,114 @@ if [[ $rc -eq 0 ]]; then pass "cipi.yml: template valid, 11 hostile documents re
 else fail "cipi.yml validation (${out})"; fi
 
 grep -q 'a project file cannot' "${LIB}/yml.sh" && pass "namespacing is enforced with an explanation" || fail "namespacing"
+
+# generate must produce something this same Cipi accepts, and round-trip exactly
+cat > "${TMP}/gen.sh" <<'GS'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=/tmp/cipi-t
+info(){ :; }; warn(){ echo "WARN $*" >&2; }; error(){ echo "ERR $*" >&2; }
+success(){ :; }; step(){ :; }
+APPS='{"iceberg":{"domain":"icebergpro.it","aliases":["*.icebergpro.it","www.icebergpro.it"],
+ "php":"8.5","custom":false,"horizon":false,
+ "ini":{"upload_max_filesize":"50M","display_errors":"Off"}}}'
+BK='{"bucket":"b","profiles":{
+ "default":{"scope":"all","cron":"0 2 * * *","destinations":["s3"],"retention":{"keep":0,"days":28,"weeks":0},"encrypt":false,"enabled":true},
+ "iceberg-db":{"scope":"db","databases":["iceberg","tenant_*"],"exclude_tables":["*.jobs"],
+   "cron":"*/30 * * * *","destinations":["local"],"retention":{"keep":48,"days":0,"weeks":0},"encrypt":false,"enabled":true}}}'
+vault_read(){ case "$1" in apps.json) echo "$APPS";; backup.json) echo "$BK";; *) echo '{}';; esac; }
+vault_write(){ cat >/dev/null; }
+app_exists(){ [[ "$1" == iceberg ]]; }
+app_get(){ echo "$APPS" | jq -r --arg a "$1" --arg k "$2" '.[$a][$k] // empty'; }
+db_engine_is_installed(){ [[ "$1" == mariadb ]]; }
+db_list_databases(){ [[ "$1" == mariadb ]] && printf 'iceberg\niceberg_reporting\ntenant_1\nsomeoneelse\n'; }
+crontab(){ printf '* * * * * /usr/bin/php8.5 /home/iceberg/current/artisan schedule:run\n'; }
+hostname(){ echo vps-test; }
+source LIBDIR/backup.sh
+source LIBDIR/yml.sh
+_yml_source_libs(){ :; }
+_bk_configured(){ return 0; }
+_yml_read_workers(){ printf 'default\t3\t3\t3600\nemails\t1\t5\t300\n'; }
+_yml_generate iceberg > TMPDIR/gen.yml 2>TMPDIR/gen.err
+[[ -s TMPDIR/gen.err ]] && { cat TMPDIR/gen.err >&2; exit 40; }
+[[ "$(_yml_parse TMPDIR/gen.yml iceberg | jq -r .ok)" == "true" ]] || exit 41
+d=$(_yml_parse TMPDIR/gen.yml iceberg | jq -c .data)
+[[ "$(echo "$d" | jq -r '.app.php')" == "8.5" ]] || exit 42
+[[ "$(echo "$d" | jq -c '.app.aliases')" == '["*.icebergpro.it","www.icebergpro.it"]' ]] || exit 43
+[[ "$(echo "$d" | jq -r '.app.ini["display_errors"]')" == "Off" ]] || exit 44
+[[ "$(echo "$d" | jq -c '[.databases[].name]')" == '["iceberg_reporting"]' ]] || exit 45
+[[ "$(echo "$d" | jq -c '[.workers.queues[] | [.queue,.processes,.tries,.timeout]]')" \
+   == '[["default",3,3,3600],["emails",1,5,300]]' ]] || exit 46
+[[ "$(echo "$d" | jq -r '.schedule')" == "true" ]] || exit 47
+[[ "$(echo "$d" | jq -c '[.backup.profiles[].name]')" == '["iceberg-db"]' ]] || exit 48
+[[ "$(echo "$d" | jq -r '.backup.profiles[0].every')" == "30m" ]] || exit 49
+[[ "$(echo "$d" | jq -r '.backup.profiles[0].retention.keep')" == "48" ]] || exit 50
+exit 0
+GS
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/gen.sh" && rm -f "${TMP}/gen.sh.bak"
+gout=$(bash "${TMP}/gen.sh" 2>&1); grc=$?
+if [[ $grc -eq 0 ]]; then pass "cipi yml generate round-trips through the validator unchanged"
+else fail "cipi yml generate (exit ${grc}: ${gout})"; fi
+grep -q "'default' stay out of the repository" "${LIB}/yml.sh" \
+    && pass "generate leaves server-wide backup profiles out" || fail "generate namespacing"
+grep -q '_yml_cron_to_every' "${LIB}/yml.sh" && pass "generate renders cron back as every:" || fail "no every: rendering"
 grep -q 'sudoers.d/cipi-\${app}-yml' "${LIB}/yml.sh" && pass "auto-apply uses a scoped sudoers rule" || fail "auto-apply sudoers"
 grep -q 'yml_auto' "${LIB}/yml.sh" && pass "auto-apply is opt-in per app" || fail "auto-apply gate"
+
+# both deploy paths must honour the same opt-in
+grep -q '_deploy_apply_yml' "${LIB}/deploy.sh" \
+    && pass "cipi deploy applies cipi.yml when opted in" || fail "CLI deploy ignores cipi.yml"
+grep -q 'cipi yml apply' "${LIB}/cipi-app-deploy.sh" \
+    && pass "webhook deploy applies cipi.yml when opted in" || fail "webhook deploy ignores cipi.yml"
+grep -A3 '_deploy_apply_yml() {' "${LIB}/deploy.sh" | grep -q 'yml_auto.*== "true".*|| return 0' \
+    && pass "deploy hook is gated on the opt-in" || fail "deploy hook not gated"
+
+cat > "${TMP}/auto.sh" <<'AS'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=/tmp/cipi-t
+info(){ echo "INFO $*"; }; warn(){ :; }; error(){ echo "ERR $*"; }
+success(){ :; }; step(){ :; }
+parse_args() {
+    for arg in "$@"; do
+        case "$arg" in
+            --*=*) local k="${arg%%=*}" v="${arg#*=}"; k="${k#--}"; printf -v "ARG_${k//-/_}" '%s' "$v" ;;
+            --*)   local k="${arg#--}"; printf -v "ARG_${k//-/_}" '%s' "true" ;;
+        esac
+    done
+}
+YMLAUTO="$1"
+app_exists(){ [[ "$1" == iceberg ]]; }
+app_get(){ [[ "$2" == yml_auto ]] && echo "$YMLAUTO"; }
+source LIBDIR/yml.sh
+_yml_find_file(){ [[ -f TMPDIR/cipi.yml ]] && { echo TMPDIR/cipi.yml; return 0; }; return 1; }
+_yml_source_libs(){ :; }
+_yml_build_plan(){ _YML_ACTIONS=(); _YML_BLOCKERS=(); }
+_yml_apply_cmd iceberg --yes --auto
+AS
+sed -i.bak "s#LIBDIR#${LIB}#g; s#TMPDIR#${TMP}#g" "${TMP}/auto.sh" && rm -f "${TMP}/auto.sh.bak"
+
+rm -f "${TMP}/cipi.yml"
+o=$(bash "${TMP}/auto.sh" true 2>&1); r=$?
+[[ $r -eq 0 && "$o" == *"nothing to reconcile"* ]] \
+    && pass "auto: a release with no cipi.yml is a quiet no-op" \
+    || fail "auto: missing file should not error (exit ${r}: ${o})"
+
+o=$(bash "${TMP}/auto.sh" false 2>&1); r=$?
+[[ $r -ne 0 && "$o" == *"not enabled"* ]] \
+    && pass "auto: --auto is refused when the app has not opted in" \
+    || fail "auto: --auto not gated (exit ${r}: ${o})"
+
+printf 'version: 1\napp:\n  php: "8.5"\n' > "${TMP}/cipi.yml"
+o=$(bash "${TMP}/auto.sh" true 2>&1); r=$?
+[[ $r -eq 0 ]] && pass "auto: a valid file applies cleanly" || fail "auto: valid file (exit ${r}: ${o})"
+
+printf 'version: 1\ndatabases:\n  - name: otherapp\n' > "${TMP}/cipi.yml"
+o=$(bash "${TMP}/auto.sh" true 2>&1); r=$?
+[[ $r -ne 0 && "$o" == *"namespace"* ]] \
+    && pass "auto: an out-of-namespace file is refused, not applied" \
+    || fail "auto: hostile file (exit ${r}: ${o})"
+rm -f "${TMP}/cipi.yml"
 
 # ── 7. nginx default server
 echo "-- nginx"

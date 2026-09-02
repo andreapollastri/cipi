@@ -30,8 +30,9 @@ yml_command() {
         plan|diff)      _yml_plan_cmd "$@" ;;
         apply)          _yml_apply_cmd "$@" ;;
         auto)           _yml_auto_cmd "$@" ;;
+        generate|dump)  _yml_generate "$@" ;;
         example|sample) _yml_example ;;
-        *) error "Use: validate plan apply auto example"; exit 1 ;;
+        *) error "Use: validate plan apply auto generate example"; exit 1 ;;
     esac
 }
 
@@ -1083,13 +1084,29 @@ _yml_apply_cmd() {
     local app="${1:-}"; shift||true
     parse_args "$@"
     local auto="${ARG_auto:-}"
+
+    # --auto is the unattended, post-deploy path. Both of its gates are checked
+    # before anything else, so the answer never depends on whether a file
+    # happens to be present:
+    #   1. the app must have opted in (cipi yml auto <app> on);
+    #   2. a release without a cipi.yml is simply nothing to reconcile — asked
+    #      for explicitly, a missing file stays an error.
+    if [[ "$auto" == "true" ]]; then
+        [[ -z "$app" ]] && { error "Usage: cipi yml apply <app>"; exit 1; }
+        app_exists "$app" || { error "App '${app}' not found"; exit 1; }
+        if [[ "$(app_get "$app" yml_auto)" != "true" ]]; then
+            error "Automatic cipi.yml apply is not enabled for '${app}'"
+            error "Turn it on with: cipi yml auto ${app} on"
+            exit 1
+        fi
+        if [[ -z "${ARG_file:-}" ]] && ! _yml_find_file "$app" >/dev/null; then
+            info "No cipi.yml in the current release of '${app}' — nothing to reconcile"
+            return 0
+        fi
+    fi
+
     _yml_resolve "$app"
     _yml_source_libs --with-app
-
-    if [[ "$auto" == "true" && "$(app_get "$_YML_APP" yml_auto)" != "true" ]]; then
-        error "Automatic cipi.yml apply is not enabled for '${_YML_APP}'"
-        exit 1
-    fi
 
     if ! _yml_load "$([[ "$auto" == "true" ]] && echo true || echo false)"; then
         [[ "$auto" == "true" ]] && cipi_notify \
@@ -1351,7 +1368,8 @@ SUDO
                 exit 1
             fi
             app_set "$app" yml_auto "true"
-            success "cipi.yml will be applied automatically after each successful deploy of '${app}'"
+            success "cipi.yml will be applied after every successful deploy of '${app}'"
+            info "Both paths: 'cipi deploy ${app}' and the Git webhook."
             warn "Anyone who can commit to the repository can now change this app's"
             warn "aliases, PHP settings, workers, databases and backup schedule."
             log_action "YML AUTO ON: $app"
@@ -1371,14 +1389,316 @@ SUDO
                 printf "  %-16s ${DIM}%s${NC}\n" "File" "not present in the current release"
             fi
             if [[ "$(app_get "$app" yml_auto)" == "true" ]]; then
-                printf "  %-16s ${GREEN}%s${NC}\n" "Auto-apply" "on (after every successful deploy)"
+                printf "  %-16s ${GREEN}%s${NC}\n" "Auto-apply" "on — after every successful deploy (CLI and webhook)"
             else
-                printf "  %-16s ${DIM}%s${NC}\n" "Auto-apply" "off (run: cipi yml apply ${app})"
+                printf "  %-16s ${DIM}%s${NC}\n" "Auto-apply" "off — deploys ignore the file"
+                printf "  %-16s ${DIM}%s${NC}\n" "" "apply by hand: cipi yml apply ${app}"
+                printf "  %-16s ${DIM}%s${NC}\n" "" "or turn it on:  cipi yml auto ${app} on"
             fi
             echo ""
             ;;
         *) error "Use: cipi yml auto <app> on|off|status"; exit 1 ;;
     esac
+}
+
+# ── Generate ─────────────────────────────────────────────────
+#
+# Print the cipi.yml that describes an app as it is configured *right now*, so
+# it can be pasted into the repository instead of written from scratch. This is
+# the reverse of `apply`: read the live server, emit the declaration. Running
+# `cipi yml plan` against freshly generated output should report no changes.
+
+# Emit a YAML scalar, quoting whenever a plain one would be misread — a leading
+# "*" is an alias, "8.5" is a float, "on"/"off"/"no" are booleans.
+_yml_q() {
+    local v="$1" lower
+    if [[ -z "$v" ]]; then echo '""'; return; fi
+    lower=$(printf '%s' "$v" | tr '[:upper:]' '[:lower:]')
+    case "$lower" in
+        true|false|on|off|yes|no|null|~) printf '"%s"\n' "$v"; return ;;
+    esac
+    if [[ "$v" =~ ^[A-Za-z][A-Za-z0-9._/-]*$ ]]; then
+        printf '%s\n' "$v"
+        return
+    fi
+    printf '"%s"\n' "${v//\"/\\\"}"
+}
+
+# "a,b" → [ "a", "b" ] on one line.
+_yml_flow() {
+    local out="" item
+    for item in "$@"; do
+        [[ -n "$item" ]] || continue
+        out="${out}${out:+, }$(_yml_q "$item")"
+    done
+    printf '[%s]\n' "$out"
+}
+
+# Turn a stored cron expression back into the friendlier `every:` form when it
+# maps cleanly onto one; otherwise the caller keeps the cron line.
+_yml_cron_to_every() {
+    local expr="$1" min hour dom mon dow
+    read -r min hour dom mon dow <<< "$expr"
+    [[ "$mon" == "*" && "$dow" == "*" ]] || return 1
+    if [[ "$min" =~ ^\*/([0-9]+)$ && "$hour" == "*" && "$dom" == "*" ]]; then
+        echo "${BASH_REMATCH[1]}m"; return 0
+    fi
+    if [[ "$min" == "0" && "$hour" =~ ^\*/([0-9]+)$ && "$dom" == "*" ]]; then
+        echo "${BASH_REMATCH[1]}h"; return 0
+    fi
+    if [[ "$min" == "0" && "$hour" == "2" && "$dom" == "*" ]]; then
+        echo "1d"; return 0
+    fi
+    if [[ "$min" == "0" && "$hour" == "2" && "$dom" =~ ^\*/([0-9]+)$ ]]; then
+        echo "${BASH_REMATCH[1]}d"; return 0
+    fi
+    return 1
+}
+
+# Queue workers as "<queue>\t<procs>\t<tries>\t<timeout>", read back out of the
+# supervisor program Cipi wrote for them.
+_yml_read_workers() {
+    local app="$1" conf="/etc/supervisor/conf.d/${app}.conf"
+    [[ -f "$conf" ]] || return 0
+    awk -v app="$app" '
+        $0 ~ "^\\[program:" app "-worker-" {
+            if (queue != "") print queue "\t" procs "\t" tries "\t" timeout
+            queue = $0
+            sub("^\\[program:" app "-worker-", "", queue)
+            sub("\\]$", "", queue)
+            procs = 1; tries = 3; timeout = 3600
+            next
+        }
+        /^\[program:/ {
+            if (queue != "") print queue "\t" procs "\t" tries "\t" timeout
+            queue = ""
+            next
+        }
+        queue != "" && /^numprocs=/ { procs = substr($0, 10) }
+        queue != "" && /--tries=/ {
+            t = $0; sub(/.*--tries=/, "", t); sub(/[^0-9].*/, "", t); if (t != "") tries = t
+        }
+        queue != "" && /--max-time=/ {
+            t = $0; sub(/.*--max-time=/, "", t); sub(/[^0-9].*/, "", t); if (t != "") timeout = t
+        }
+        END { if (queue != "") print queue "\t" procs "\t" tries "\t" timeout }
+    ' "$conf"
+}
+
+_yml_generate() {
+    local app="${1:-}"; shift||true
+    [[ -z "$app" ]] && { error "Usage: cipi yml generate <app>"; exit 1; }
+    app_exists "$app" || { error "App '${app}' not found"; exit 1; }
+    _yml_source_libs
+
+    local out; out=$(mktemp)
+    local domain php custom
+    domain=$(app_get "$app" domain)
+    php=$(app_get "$app" php)
+    custom=$(app_get "$app" custom)
+
+    {
+        echo "# cipi.yml for '${app}' (${domain}) — generated on $(date '+%Y-%m-%d %H:%M:%S')"
+        echo "# by: cipi yml generate ${app}"
+        echo "#"
+        echo "# This is the app's configuration as it stands on $(hostname) right now."
+        echo "# Commit it at the root of the repository, then check it back with:"
+        echo "#     cipi yml plan ${app}      (should report nothing to do)"
+        echo "#"
+        echo "# Not covered here, on purpose: the primary domain, the app's own"
+        echo "# database, SSL certificates and anything else that is not safe to"
+        echo "# drive from a file living in the repository."
+        echo ""
+        echo "version: 1"
+        echo ""
+        echo "app:"
+        echo "  php: $(_yml_q "$php")"
+
+        # ── aliases
+        local aliases; aliases=$(vault_read apps.json | jq -r --arg a "$app" '(.[$a].aliases // [])[]' 2>/dev/null || true)
+        if [[ -n "$aliases" ]]; then
+            echo ""
+            echo "  # The declared list replaces the current aliases: removing one here"
+            echo "  # removes it from the server on the next apply."
+            echo "  aliases:"
+            local al
+            while IFS= read -r al; do
+                [[ -n "$al" ]] || continue
+                echo "    - $(_yml_q "$al")"
+            done <<< "$aliases"
+        else
+            echo ""
+            echo "  # No aliases configured. Uncomment to declare some:"
+            echo "  # aliases:"
+            echo "  #   - \"www.${domain}\""
+        fi
+
+        # ── per-app php.ini overrides
+        local ini_pairs; ini_pairs=$(vault_read apps.json | jq -r --arg a "$app" \
+            '(.[$a].ini // {}) | to_entries[] | "\(.key)\t\(.value)"' 2>/dev/null || true)
+        if [[ -n "$ini_pairs" ]]; then
+            echo ""
+            echo "  ini:"
+            local k v
+            while IFS=$'\t' read -r k v; do
+                [[ -n "$k" ]] || continue
+                echo "    ${k}: $(_yml_q "$v")"
+            done <<< "$ini_pairs"
+        else
+            echo ""
+            echo "  # No per-app php.ini overrides. This app follows the server-wide"
+            echo "  # values (cipi ini list --app=${app}). Uncomment to pin some here:"
+            echo "  # ini:"
+            echo "  #   upload_max_filesize: 50M"
+            echo "  #   post_max_size: 60M"
+        fi
+
+        # ── databases the app owns, beyond the one created with it
+        local dbs="" eng db
+        for eng in mariadb pgsql; do
+            db_engine_is_installed "$eng" 2>/dev/null || continue
+            while IFS= read -r db; do
+                [[ -n "$db" ]] || continue
+                [[ "$db" == "$app" ]] && continue
+                [[ "$db" == "${app}_"* ]] || continue
+                dbs="${dbs}${db}	${eng}"$'\n'
+            done < <(db_list_databases "$eng" 2>/dev/null || true)
+        done
+        echo ""
+        if [[ -n "$dbs" ]]; then
+            echo "# Extra databases owned by this app. The app's own database ('${app}')"
+            echo "# is created with the app and is deliberately not managed here."
+            echo "databases:"
+            while IFS=$'\t' read -r db eng; do
+                [[ -n "$db" ]] || continue
+                echo "  - name: $(_yml_q "$db")"
+                echo "    engine: ${eng}"
+            done <<< "$dbs"
+        else
+            echo "# No extra databases. A declared database must be named '${app}' or"
+            echo "# '${app}_*' — nothing outside this app's namespace is accepted."
+            echo "# databases:"
+            echo "#   - name: ${app}_reporting"
+        fi
+
+        # ── workers
+        local horizon workers
+        horizon=$(app_get "$app" horizon)
+        workers=$(_yml_read_workers "$app")
+        echo ""
+        echo "workers:"
+        if [[ "$horizon" == "true" ]]; then
+            echo "  horizon: true"
+            [[ -n "$workers" ]] && echo "  # (queue workers are replaced by Horizon while it is on)"
+        elif [[ -n "$workers" ]]; then
+            echo "  horizon: false"
+            echo "  queues:"
+            local q procs tries timeout
+            while IFS=$'\t' read -r q procs tries timeout; do
+                [[ -n "$q" ]] || continue
+                echo "    - queue: $(_yml_q "$q")"
+                echo "      processes: ${procs:-1}"
+                [[ "${tries:-3}" != "3" ]] && echo "      tries: ${tries}"
+                [[ "${timeout:-3600}" != "3600" ]] && echo "      timeout: ${timeout}"
+            done <<< "$workers"
+        else
+            echo "  horizon: false"
+            echo "  # No queue workers configured. Uncomment to declare some:"
+            echo "  # queues:"
+            echo "  #   - queue: default"
+            echo "  #     processes: 2"
+        fi
+
+        # ── scheduler
+        if [[ "$custom" != "true" ]]; then
+            local sched="false"
+            crontab -u "$app" -l 2>/dev/null | grep -qE '^\* \* \* \* \*.*schedule:run' && sched="true"
+            echo ""
+            echo "# Laravel scheduler (* * * * * artisan schedule:run)"
+            echo "schedule: ${sched}"
+        fi
+
+        # ── backup profiles this app owns
+        local owned="" p
+        if _bk_configured; then
+            while IFS= read -r p; do
+                [[ -n "$p" ]] || continue
+                [[ "$p" == "$app" || "$p" == "${app}-"* ]] || continue
+                owned="${owned}${p}"$'\n'
+            done < <(_bk_profile_names)
+        fi
+
+        echo ""
+        if [[ -n "$owned" ]]; then
+            echo "backup:"
+            echo "  profiles:"
+            local scope enc every cron ret_keep ret_days ret_weeks
+            while IFS= read -r p; do
+                [[ -n "$p" ]] || continue
+                scope=$(_bk_profile_get "$p" scope)
+                cron=$(_bk_profile_get "$p" cron)
+                enc=$(_bk_profile_get "$p" encrypt)
+                echo "    - name: $(_yml_q "$p")"
+                echo "      scope: ${scope}"
+
+                local dbg exdbg extg
+                dbg=$(_bk_profile_list_field "$p" databases | tr '\n' ' ')
+                exdbg=$(_bk_profile_list_field "$p" exclude_databases | tr '\n' ' ')
+                extg=$(_bk_profile_list_field "$p" exclude_tables | tr '\n' ' ')
+                # shellcheck disable=SC2086
+                [[ -n "${dbg// }"   ]] && echo "      databases: $(_yml_flow $dbg)"
+                # shellcheck disable=SC2086
+                [[ -n "${exdbg// }" ]] && echo "      exclude_databases: $(_yml_flow $exdbg)"
+                # shellcheck disable=SC2086
+                [[ -n "${extg// }"  ]] && echo "      exclude_tables: $(_yml_flow $extg)"
+
+                if every=$(_yml_cron_to_every "$cron"); then
+                    echo "      every: ${every}"
+                else
+                    echo "      cron: $(_yml_q "$cron")"
+                fi
+
+                local dests
+                dests=$(_bk_profile_list_field "$p" destinations | tr '\n' ' ')
+                # shellcheck disable=SC2086
+                echo "      destinations: $(_yml_flow $dests)"
+                [[ "$enc" == "true" ]] && echo "      encrypt: true"
+
+                ret_keep=$(_bk_profiles_json  | jq -r --arg p "$p" '.[$p].retention.keep  // 0')
+                ret_days=$(_bk_profiles_json  | jq -r --arg p "$p" '.[$p].retention.days  // 0')
+                ret_weeks=$(_bk_profiles_json | jq -r --arg p "$p" '.[$p].retention.weeks // 0')
+                [[ "$ret_keep"  -gt 0 ]] && echo "      keep: ${ret_keep}"
+                [[ "$ret_days"  -gt 0 ]] && echo "      keep_days: ${ret_days}"
+                [[ "$ret_weeks" -gt 0 ]] && echo "      keep_weeks: ${ret_weeks}"
+            done <<< "$owned"
+        else
+            echo "# No backup profile belongs to this app yet. A profile declared here"
+            echo "# must be named '${app}' or '${app}-*'; server-wide profiles such as"
+            echo "# 'default' stay out of the repository on purpose."
+            echo "# backup:"
+            echo "#   profiles:"
+            echo "#     - name: ${app}-db"
+            echo "#       scope: db"
+            echo "#       databases: [$(_yml_q "$app"), \"${app}_*\"]"
+            echo "#       exclude_tables: [\"*.jobs\", \"*.telescope_*\"]"
+            echo "#       every: 30m"
+            echo "#       keep: 48"
+            echo "#       destinations: [local]"
+        fi
+    } > "$out"
+
+    # The generated file is fed straight back through the validator: emitting
+    # something this same Cipi would reject is a bug, and better caught here
+    # than after it has been committed.
+    local check; check=$(_yml_parse "$out" "$app" 2>/dev/null || true)
+    if [[ "$(echo "$check" | jq -r '.ok' 2>/dev/null)" != "true" ]]; then
+        warn "The generated file did not pass validation — please report this:"
+        echo "$check" | jq -r '.errors[]?' 2>/dev/null | sed 's/^/    /' >&2
+        warn "It is printed below anyway so nothing is lost."
+    fi
+
+    cat "$out"
+    rm -f "$out"
 }
 
 _yml_example() {
