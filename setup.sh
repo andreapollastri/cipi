@@ -517,6 +517,30 @@ EOF
 
     ln -sf /etc/nginx/sites-available/default /etc/nginx/sites-enabled/default
     rm -f /etc/nginx/sites-enabled/default.bak
+
+    # Catch-all for HTTPS. The "default" site above claims :80, but :443 had no
+    # default server: an HTTPS request carrying a Host that matches no app fell
+    # through to whichever vhost nginx loaded first. With a wildcard
+    # multi-tenant app that means its tenant resolver receives a hostname it
+    # cannot parse. Close those connections instead (cipi nginx default-server).
+    cat > /etc/nginx/sites-available/000-cipi-default <<'EOF'
+# Managed by Cipi — catch-all for requests matching no app.
+# Disable with: cipi nginx default-server off
+
+server {
+    listen 443 ssl default_server;
+    listen [::]:443 ssl default_server;
+    server_name _;
+    ssl_reject_handshake on;
+    access_log off;
+    return 444;
+}
+EOF
+    ln -sf /etc/nginx/sites-available/000-cipi-default /etc/nginx/sites-enabled/000-cipi-default
+    if ! nginx -t >/dev/null 2>&1; then
+        rm -f /etc/nginx/sites-enabled/000-cipi-default /etc/nginx/sites-available/000-cipi-default
+    fi
+
     systemctl restart nginx
     systemctl enable nginx
 
@@ -867,6 +891,10 @@ install_cipi() {
     cp cipi-install/lib/cipi-app-notify.sh /usr/local/bin/cipi-app-notify
     chmod 700 /usr/local/bin/cipi-app-notify
 
+    # Automatic (webhook) deploy wrapper — runs as the app user from its crontab
+    cp cipi-install/lib/cipi-app-deploy.sh /usr/local/bin/cipi-app-deploy
+    chmod 755 /usr/local/bin/cipi-app-deploy
+
     cp cipi-install/lib/cipi-read-app-logs.sh /usr/local/bin/cipi-read-app-logs
     chmod 755 /usr/local/bin/cipi-read-app-logs
 
@@ -885,7 +913,7 @@ EOF
     # Templates (if any)
     cp cipi-install/templates/* /opt/cipi/templates/ 2>/dev/null || true
 
-    chown -R root:root /usr/local/bin/cipi /usr/local/bin/cipi-worker /usr/local/bin/cipi-cron-notify /usr/local/bin/cipi-auth-notify /usr/local/bin/cipi-app-notify /usr/local/bin/cipi-read-app-logs /usr/local/bin/cipi-health-check /opt/cipi
+    chown -R root:root /usr/local/bin/cipi /usr/local/bin/cipi-worker /usr/local/bin/cipi-cron-notify /usr/local/bin/cipi-auth-notify /usr/local/bin/cipi-app-notify /usr/local/bin/cipi-app-deploy /usr/local/bin/cipi-read-app-logs /usr/local/bin/cipi-health-check /opt/cipi
 
     # Generate vault key for config encryption
     if [ ! -f /etc/cipi/.vault_key ]; then

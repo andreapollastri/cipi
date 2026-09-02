@@ -21,13 +21,64 @@ _deploy_assert_php_compat() {
     fi
 }
 
+# ── Deploy log framing ───────────────────────────────────────
+# /home/<app>/logs/deploy.log is written by both paths: `cipi deploy` (root)
+# and the per-minute webhook trigger cron (cipi-app-deploy, app user). Raw
+# Deployer output carries no dates and no release markers, so a deploy that
+# failed overnight was unreadable after the fact. Every line gets a wall-clock
+# timestamp, and each run is bracketed by a start/end banner naming the
+# trigger, the branch, the release and the duration.
+
+deploy_log_file() { echo "/home/${1}/logs/deploy.log"; }
+
+# Release directory the `current` symlink points at ("54"), empty before the
+# first successful deploy or for custom apps (no releases/).
+deploy_current_release() {
+    local app="$1" target
+    [[ -L "/home/${app}/current" ]] || { echo ""; return 0; }
+    target=$(readlink "/home/${app}/current" 2>/dev/null || true)
+    [[ -z "$target" ]] && { echo ""; return 0; }
+    basename "$target"
+}
+
+# Copy stdin to stdout unchanged, and to $1 with a timestamp per line.
+# printf's %(...)T is a bash builtin — no `date` subprocess per output line.
+deploy_log_tee() {
+    local lf="$1" line
+    while IFS= read -r line; do
+        printf '%s\n' "$line"
+        printf '[%(%Y-%m-%d %H:%M:%S)T] %s\n' -1 "$line" >> "$lf" 2>/dev/null || true
+    done
+}
+
+deploy_log_open() {
+    local app="$1" trigger="$2" branch="$3" from="$4" lf
+    lf=$(deploy_log_file "$app")
+    mkdir -p "$(dirname "$lf")" 2>/dev/null || true
+    touch "$lf" 2>/dev/null || true
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== deploy start  app=%s trigger=%s branch=%s from-release=%s =====\n' \
+        -1 "$app" "$trigger" "${branch:-?}" "${from:-none}" >> "$lf" 2>/dev/null || true
+}
+
+deploy_log_close() {
+    local app="$1" result="$2" release="$3" secs="$4" rc="$5" lf
+    lf=$(deploy_log_file "$app")
+    printf '[%(%Y-%m-%d %H:%M:%S)T] ===== deploy %s  app=%s release=%s duration=%ss exit=%s =====\n\n' \
+        -1 "$result" "$app" "${release:-?}" "$secs" "$rc" >> "$lf" 2>/dev/null || true
+    # Root just appended to a log the app user owns — keep it writable for the
+    # cron/webhook path, which runs as the app user.
+    chown "${app}:www-data" "$lf" 2>/dev/null || true
+    chmod 664 "$lf" 2>/dev/null || true
+}
+
 deploy_command() {
     local app="${1:-}"; shift||true
-    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--key|--webhook|--snapshot|--snapshot-required]"; exit 1; }
+    [[ -z "$app" ]] && { error "Usage: cipi deploy <app> [--rollback|--releases|--log|--key|--webhook|--snapshot|--snapshot-required]"; exit 1; }
     app_exists "$app" || { error "App '$app' not found"; exit 1; }
     parse_args "$@"
 
     if   [[ "${ARG_rollback:-}" == "true" ]];        then _deploy_rollback "$app"
+    elif [[ -n "${ARG_log:-}" ]];                    then _deploy_log_show "$app" "${ARG_log}"
     elif [[ "${ARG_releases:-}" == "true" ]];        then _deploy_releases "$app"
     elif [[ "${ARG_key:-}" == "true" ]];             then _deploy_key "$app"
     elif [[ "${ARG_webhook:-}" == "true" ]];         then _deploy_webhook "$app"
@@ -108,31 +159,67 @@ _deploy_run() {
     local snapshot_path=""
     [[ -f "/tmp/cipi-predeploy-${app}.path" ]] && snapshot_path=$(cat "/tmp/cipi-predeploy-${app}.path" 2>/dev/null || true)
 
+    local lf; lf=$(deploy_log_file "$app")
+    local branch_disp; branch_disp=$(app_get "$app" branch)
+    local rel_before; rel_before=$(deploy_current_release "$app")
+    local t0=$SECONDS
+
+    deploy_log_open "$app" "cli" "$branch_disp" "$rel_before"
+
     info "Deploying '${app}'..."
     echo ""
-    sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${df} 2>&1"
-    local rc=$?
+
+    # `set -e` would abort the whole `cipi` process the moment Deployer exits
+    # non-zero — the failure branch below (and its deploy_fail notification)
+    # was unreachable. Disable it around the run and read the real status from
+    # PIPESTATUS[0]; the pipe adds a wall-clock timestamp to every logged line.
+    local rc=0
+    set +e
+    sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${df} 2>&1" \
+        | deploy_log_tee "$lf"
+    rc=${PIPESTATUS[0]}
+    set -e
+
+    local rel_after; rel_after=$(deploy_current_release "$app")
+    local secs=$(( SECONDS - t0 ))
     echo ""
+
     if [[ $rc -eq 0 ]]; then
-        success "Deploy completed"
-        log_action "DEPLOY OK: $app"
+        deploy_log_close "$app" "OK" "$rel_after" "$secs" "$rc"
+        success "Deploy completed${rel_after:+  (release ${rel_after}, ${secs}s)}"
+        log_action "DEPLOY OK: $app release=${rel_after:-?} in ${secs}s"
         cipi_notify \
             "Cipi deploy succeeded: ${app} on $(hostname)" \
-            "Deploy completed successfully.\n\nServer: $(hostname)\nApp: ${app}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+            "Deploy completed successfully.\n\nServer: $(hostname)\nApp: ${app}\nBranch: ${branch_disp:-?}\nRelease: ${rel_after:-?}\nDuration: ${secs}s\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
             deploy_success
     else
+        deploy_log_close "$app" "FAILED" "$rel_after" "$secs" "$rc"
         error "Deploy failed (exit $rc)"
+        warn "Log: ${lf}"
         warn "Rollback code: cipi deploy ${app} --rollback"
         if [[ -n "$snapshot_path" && -f "$snapshot_path" ]]; then
             warn "DB snapshot (not restored automatically): ${snapshot_path}"
             warn "Restore: cipi db restore ${app} ${snapshot_path}"
         fi
-        log_action "DEPLOY FAIL: $app exit=$rc"
+        log_action "DEPLOY FAIL: $app exit=$rc release=${rel_after:-?}"
         cipi_notify \
-            "Cipi deploy failed: ${app}" \
-            "Deploy exited with code ${rc}. Rollback: cipi deploy ${app} --rollback" \
+            "Cipi deploy failed: ${app} on $(hostname)" \
+            "Deploy exited with code ${rc}.\n\nServer: $(hostname)\nApp: ${app}\nBranch: ${branch_disp:-?}\nRelease still live: ${rel_after:-?}\nDuration: ${secs}s\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\nLast lines of ${lf}:\n$(tail -n 30 "$lf" 2>/dev/null || echo '<log unreadable>')\n\nRollback: cipi deploy ${app} --rollback" \
             deploy_fail
+        return "$rc"
     fi
+}
+
+# cipi deploy <app> --log        → last 200 lines
+# cipi deploy <app> --log=500    → last 500 lines
+_deploy_log_show() {
+    local app="$1" want="$2" lines=200 lf
+    [[ "$want" =~ ^[0-9]+$ ]] && lines="$want"
+    lf=$(deploy_log_file "$app")
+    [[ -f "$lf" ]] || { info "No deploy log yet for '${app}' (${lf})"; return 0; }
+    echo -e "\n${BOLD}Deploy log — ${app}${NC} ${DIM}(last ${lines} lines of ${lf})${NC}\n"
+    tail -n "$lines" "$lf"
+    echo ""
 }
 
 _deploy_unlock() {
@@ -157,31 +244,71 @@ _deploy_rollback() {
     if [[ "${ARG_force:-}" != "true" ]] && [[ -t 0 ]]; then
         confirm "Rollback '${app}'?" || { info "Cancelled"; return; }
     fi
+    local lf; lf=$(deploy_log_file "$app")
+    local rel_before; rel_before=$(deploy_current_release "$app")
+    local t0=$SECONDS
+    deploy_log_open "$app" "rollback" "$(app_get "$app" branch)" "$rel_before"
+
     info "Rolling back..."
-    sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep rollback -f ${home}/.deployer/deploy.php 2>&1"
-    local rc=$?
+    # Same `set -e` trap as _deploy_run: an unguarded sudo would abort cipi
+    # before the failure branch and before the notification.
+    local rc=0
+    set +e
+    sudo -u "$app" bash -c "cd ${home} && /usr/bin/php${php_ver} /usr/local/bin/dep rollback -f ${home}/.deployer/deploy.php 2>&1" \
+        | deploy_log_tee "$lf"
+    rc=${PIPESTATUS[0]}
+    set -e
+
+    local rel_after; rel_after=$(deploy_current_release "$app")
+    local secs=$(( SECONDS - t0 ))
     if [[ $rc -eq 0 ]]; then
-        success "Rollback done"
+        deploy_log_close "$app" "ROLLBACK OK" "$rel_after" "$secs" "$rc"
+        success "Rollback done${rel_after:+  (now on release ${rel_after})}"
+        log_action "ROLLBACK OK: $app ${rel_before:-?} → ${rel_after:-?}"
         cipi_notify \
             "Cipi deploy rollback: ${app} on $(hostname)" \
-            "Deploy rollback completed.\n\nServer: $(hostname)\nApp: ${app}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
+            "Deploy rollback completed.\n\nServer: $(hostname)\nApp: ${app}\nRelease: ${rel_before:-?} → ${rel_after:-?}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')" \
             deploy_rollback
     else
-        error "Rollback failed"
+        deploy_log_close "$app" "ROLLBACK FAILED" "$rel_after" "$secs" "$rc"
+        error "Rollback failed (exit $rc)"
+        warn "Log: ${lf}"
+        log_action "ROLLBACK FAIL: $app exit=$rc"
+        cipi_notify \
+            "Cipi deploy rollback failed: ${app} on $(hostname)" \
+            "Rollback exited with code ${rc}.\n\nServer: $(hostname)\nApp: ${app}\nRelease still live: ${rel_after:-?}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\nLast lines of ${lf}:\n$(tail -n 30 "$lf" 2>/dev/null || echo '<log unreadable>')" \
+            deploy_fail
+        return "$rc"
     fi
-    log_action "ROLLBACK: $app"
 }
 
+# Release directories stay numeric (Deployer increments them, and rollback
+# relies on that ordering). The date and the deployed commit are shown here
+# instead, which is what the numbers alone failed to tell you.
 _deploy_releases() {
     local app="$1" home="/home/${app}"
     [[ ! -d "${home}/releases" ]] && { info "No releases yet"; return; }
     local current=""
     [[ -L "${home}/current" ]] && current=$(readlink -f "${home}/current" | xargs basename)
-    echo -e "\n${BOLD}Releases${NC}"
-    ls -1t "${home}/releases" | while read -r r; do
-        local mark=""; [[ "$r" == "$current" ]] && mark=" ${GREEN}← current${NC}"
-        printf "  ${CYAN}%-20s${NC} %s%b\n" "$r" "$(stat -c '%y' "${home}/releases/${r}" 2>/dev/null|cut -d. -f1)" "$mark"
-    done; echo ""
+
+    echo -e "\n${BOLD}Releases for '${app}'${NC}"
+    printf "  ${BOLD}%-8s %-20s %-10s %s${NC}\n" "RELEASE" "DEPLOYED" "COMMIT" "SUBJECT"
+    local r when sha subject mark
+    while read -r r; do
+        [[ -n "$r" ]] || continue
+        when=$(stat -c '%y' "${home}/releases/${r}" 2>/dev/null | cut -d. -f1)
+        sha=""; subject=""
+        if [[ -d "${home}/releases/${r}/.git" ]]; then
+            sha=$(git -C "${home}/releases/${r}" log -1 --format=%h 2>/dev/null || true)
+            subject=$(git -C "${home}/releases/${r}" log -1 --format=%s 2>/dev/null | cut -c1-46 || true)
+        fi
+        mark=""; [[ "$r" == "$current" ]] && mark=" ${GREEN}← current${NC}"
+        printf "  ${CYAN}%-8s${NC} %-20s %-10s %s%b\n" "$r" "${when:-—}" "${sha:-—}" "${subject:-—}" "$mark"
+    done < <(ls -1t "${home}/releases" 2>/dev/null)
+    echo ""
+    echo -e "  ${DIM}Rollback to the previous release: cipi deploy ${app} --rollback${NC}"
+    echo -e "  ${DIM}Deploy log (timestamped): $(deploy_log_file "$app")${NC}"
+    echo ""
 }
 
 _deploy_key() {

@@ -22,8 +22,10 @@ No web panel. No bloat. No sleepless nights fighting Nginx configs or PHP-FPM po
 Just SSH and the `cipi` command.
 
 ```bash
-$ wget -O - https://cipi.sh/setup.sh | bash
+wget -O - https://cipi.sh/setup.sh | bash
 ```
+
+> Run this **on the server**, over SSH — not on your own machine — as a user with `sudo`.
 
 > Works on DigitalOcean, AWS EC2, Hetzner, Vultr, Linode, OVH, Google Cloud, Scaleway, and more.
 
@@ -31,11 +33,18 @@ $ wget -O - https://cipi.sh/setup.sh | bash
 
 ## From zero to production in 3 steps
 
-**1. Install Cipi** on a fresh Ubuntu 24.04 or 26.04 VPS (~10 minutes):
+**1. Install Cipi** on a fresh Ubuntu 24.04 or 26.04 VPS (~10 minutes).
+SSH into the server first and run it there, as a user with `sudo`:
 
 ```bash
 wget -O - https://cipi.sh/setup.sh | bash
 ```
+
+The installer asks for the **public** half of an SSH key (`~/.ssh/id_ed25519.pub`
+on your own machine; `ssh-keygen -t ed25519` creates one if you have none — on
+Windows, from PowerShell or WSL). It ends by printing a root password: keep it
+in a password manager. Root is reachable only by logging in as the `cipi` user
+with that key and then running `su root`.
 
 **2. Create your app** (Laravel by default, or `cipi app create --custom` for a simple deploy):
 
@@ -73,7 +82,8 @@ Every app gets a fully isolated environment. **Laravel** (default): zero-downtim
 | **SSL**            | Let's Encrypt via Certbot — HTTP-01 by default; optional **DNS-01 (Cloudflare)** + wildcards                 |
 | **Security**       | Fail2ban + UFW, per-app Linux user + PHP-FPM/Octane + SSH key                                                |
 | **Healthchecks**   | HTTP probes every 5 minutes with failure alerts                                                              |
-| **Backups**        | Automated DB and storage dumps to S3 or any compatible provider; optional pre-deploy DB snapshots            |
+| **Backups**        | Backup profiles: what, how often, where, how long — S3/S3-compatible/local, client-side encryption           |
+| **Configuration**  | `cipi ini` for php.ini; optional per-project `cipi.yml` for aliases, databases, workers and backups          |
 
 ---
 
@@ -86,6 +96,41 @@ Each app runs under its own Linux user with an isolated filesystem, PHP-FPM pool
 ### ⚡ Zero-Downtime Deploys
 
 Deployer clones your repo, runs `composer install`, links storage, runs migrations, and swaps the symlink atomically. Optional **Node build** on deploy (`cipi app edit --node-build=…`). Roll back to any of the last 5 releases instantly. Opt-in **pre-deploy DB snapshot** (`cipi deploy --snapshot`).
+
+### 💾 Backups That Match How You Actually Work
+
+Backups are driven by **profiles**: each one decides what it takes (application
+files, databases, or both), which apps and databases it covers, how often it
+runs, where it lands and how long it is kept. A 30-minute database-only copy
+kept on disk sits happily next to a nightly full copy encrypted to S3.
+
+```bash
+cipi backup profile add hourly-db --scope=db \
+    --databases='shop,tenant_*' --exclude-tables='*.jobs,*.telescope_*' \
+    --every=30m --keep=48 --dest=local
+
+cipi backup profile add nightly --scope=all \
+    --cron='0 2 * * *' --keep-days=14 --dest=s3 --encrypt
+```
+
+Databases are discovered from the engine, so tenant databases an app creates at
+runtime are backed up too. The schedule is written to root's crontab for you.
+`cipi backup verify` checks the newest run actually opens, and an overdue
+profile raises an alert — a backup that quietly stopped running is worse than
+none, because it still looks configured.
+
+### 📄 cipi.yml — Configuration That Travels With the Code
+
+An app can carry a `cipi.yml` in its repository describing the state it expects:
+domain aliases, PHP version and settings, its extra databases, its queue workers
+and its backup strategy. `cipi yml plan` shows exactly what would change,
+`cipi yml apply` applies it, and `cipi yml auto <app> on` reconciles after every
+successful deploy.
+
+It can only *configure* an app that already exists, its databases must be named
+`<app>` or `<app>_*` and its backup profiles `<app>` or `<app>-*`, and nothing
+in the schema carries a shell command — so a commit can never reach beyond its
+own app. Run `cipi yml example` for a commented template.
 
 ### 🚀 Laravel Octane (FrankenPHP)
 

@@ -67,7 +67,7 @@ _help_topics_list() {
     cat <<'EOF'
 app  domains  www  deploy  worker  schedule  health  db  service  ssl  php
 auth  basicauth  ssh  firewall  ban  backup  sync  git
-api  gui  smtp  notifications  reset  server
+ini  yml  nginx  api  gui  smtp  notifications  reset  server
 EOF
 }
 
@@ -110,7 +110,10 @@ show_help() {
     _help_cmd "cipi gui ..."               "Web control panel"
     echo ""
     echo -e "  ${BOLD}Ops${NC}"
-    _help_cmd "cipi php / backup / sync / git"   "PHP, S3 backups, migrate apps, Git tokens"
+    _help_cmd "cipi php / ini"                   "PHP versions and php.ini settings"
+    _help_cmd "cipi backup ..."                  "Backup profiles, schedules, retention"
+    _help_cmd "cipi yml ..."                     "Apply a project's cipi.yml"
+    _help_cmd "cipi nginx / sync / git"          "Default server, migrate apps, Git tokens"
     _help_cmd "cipi smtp / notifications"        "Email alerts & triggers"
     echo ""
     echo -e "  ${DIM}Detailed help:${NC}  ${CYAN}cipi help <topic>${NC}"
@@ -220,11 +223,15 @@ show_help_topic() {
             _help_cmd "cipi deploy <app>"              "Deploy via Deployer"
             _help_cmd "cipi deploy <app> --snapshot"   "Deploy with DB dump first"
             _help_cmd "cipi deploy <app> --rollback"   "Rollback"
-            _help_cmd "cipi deploy <app> --releases"   "List releases"
+            _help_cmd "cipi deploy <app> --releases"   "List releases (number, date, commit)"
+            _help_cmd "cipi deploy <app> --log[=N]"    "Timestamped deploy log"
             _help_cmd "cipi deploy <app> --key"        "Show SSH deploy key"
             _help_cmd "cipi deploy <app> --webhook"    "Show webhook info"
             _help_cmd "cipi deploy <app> --unlock"     "Unlock a stuck deploy"
             _help_cmd "cipi deploy <app> --trust-host=<host[:port]>" "Trust a custom Git server"
+            echo ""
+            _help_note "Automatic (webhook) deploys write the same timestamped log and send"
+            _help_note "an email on success and on failure — see: cipi notifications"
             echo ""
             ;;
 
@@ -386,10 +393,86 @@ show_help_topic() {
         backup|backups|s3)
             _help_topic_header "Backup"
             echo ""
-            _help_cmd "cipi backup configure"          "Configure S3"
-            _help_cmd "cipi backup run [app]"          "Run backup"
-            _help_cmd "cipi backup list [app]"         "List S3 backups"
-            _help_cmd "cipi backup prune [app] --weeks=N" "Delete backups older than N weeks"
+            _help_cmd "cipi backup configure"            "Destinations (S3 / S3-compatible / local)"
+            _help_cmd "cipi backup status"               "Destinations, profiles, last run, overdue"
+            echo ""
+            _help_note "Profiles decide what is taken, how often, where it goes and how long it is kept."
+            _help_note "Several profiles coexist — e.g. a 30-minute database copy next to a nightly full one."
+            _help_cmd "cipi backup profile list"                  "All profiles"
+            _help_cmd "cipi backup profile show <name>"           "One profile in detail"
+            _help_cmd "cipi backup profile add <name> [flags]"    "Create a profile"
+            _help_cmd "cipi backup profile edit <name> [flags]"   "Change a profile"
+            _help_cmd "cipi backup profile remove <name>"         "Delete a profile (keeps its archives)"
+            _help_cmd "cipi backup profile enable|disable <name>" "Pause or resume it"
+            echo ""
+            _help_note "Flags for profile add/edit:"
+            _help_note "  --scope=all|files|db          what to take"
+            _help_note "  --apps=<glob,...>             which apps (files)"
+            _help_note "  --databases=<glob,...>        which databases, e.g. 'main,tenant_*'"
+            _help_note "  --exclude-databases=<glob,...>"
+            _help_note "  --exclude-tables=<pat,...>    e.g. '*.jobs,*.telescope_*'"
+            _help_note "  --every=30m|6h|1d             or --cron='0 2 * * *'"
+            _help_note "  --dest=local|s3|local,s3      where it goes"
+            _help_note "  --keep=N --keep-days=N --keep-weeks=N   retention (at least one)"
+            _help_note "  --encrypt | --no-encrypt      client-side AES-256"
+            echo ""
+            _help_cmd "cipi backup run [--profile=NAME] [--dry-run]" "Run now (--dry-run shows what it would take)"
+            _help_cmd "cipi backup list [--profile=NAME]"           "Runs held on each destination"
+            _help_cmd "cipi backup verify [--profile=NAME] [--deep]" "Check the newest run opens"
+            _help_cmd "cipi backup prune [--profile=NAME] [--dry-run]" "Apply retention now"
+            _help_cmd "cipi backup fetch <profile> <timestamp>"     "Download and decrypt one run"
+            _help_cmd "cipi backup key show|rotate"                 "Encryption key (save it off-server)"
+            echo ""
+            _help_note "The schedule is written to root's crontab for you — no manual editing."
+            echo ""
+            ;;
+
+        ini|php-ini)
+            _help_topic_header "PHP settings (php.ini)"
+            echo ""
+            _help_cmd "cipi ini list [--app=<app>]"           "Effective values and which layer set them"
+            _help_cmd "cipi ini get <key> [--app=<app>]"      "One setting"
+            _help_cmd "cipi ini set <key>=<value>"            "Set server-wide (FPM + CLI)"
+            _help_cmd "cipi ini set <key>=<value> --app=<app>" "Set for one app only"
+            _help_cmd "cipi ini unset <key> [--app=<app>]"    "Fall back to the wider value"
+            _help_cmd "cipi ini reset [--app=<app>]"          "Back to Cipi defaults"
+            _help_cmd "cipi ini keys"                         "What can be set, and what cannot"
+            echo ""
+            _help_note "Example:  cipi ini set upload_max_filesize=50M"
+            _help_note "post_max_size and memory_limit are raised with it when they would cap it."
+            echo ""
+            ;;
+
+        yml|yaml|cipi.yml)
+            _help_topic_header "cipi.yml"
+            echo ""
+            _help_note "An app can carry a cipi.yml in its repository describing the state it"
+            _help_note "expects: aliases, PHP version and settings, extra databases, queue"
+            _help_note "workers and its backup strategy. Configuration travels with the code."
+            echo ""
+            _help_cmd "cipi yml example"                  "Print a commented template"
+            _help_cmd "cipi yml validate <app>"           "Parse and check, change nothing"
+            _help_cmd "cipi yml plan <app>"               "Show exactly what would change"
+            _help_cmd "cipi yml apply <app> [--yes]"      "Apply it"
+            _help_cmd "cipi yml auto <app> on|off|status" "Apply after every successful deploy"
+            echo ""
+            _help_note "Looked up in current/cipi.yml, current/cipi.yaml, shared/cipi.yml"
+            _help_note "(override with --file=<path>)."
+            _help_note "It can only configure an existing app: databases must be named <app> or"
+            _help_note "<app>_*, backup profiles <app> or <app>-*, and nothing in it runs a command."
+            echo ""
+            ;;
+
+        nginx)
+            _help_topic_header "Nginx"
+            echo ""
+            _help_cmd "cipi nginx default-server status" "Who answers requests matching no app"
+            _help_cmd "cipi nginx default-server on"     "Close unmatched requests (444)"
+            _help_cmd "cipi nginx default-server off"    "Let the first vhost answer them again"
+            echo ""
+            _help_note "Recommended with wildcard/multi-tenant apps: without it an HTTPS request"
+            _help_note "carrying an unknown Host lands on whichever app sorts first, and its"
+            _help_note "tenant resolver receives a hostname it cannot parse."
             echo ""
             ;;
 
@@ -466,6 +549,9 @@ show_help_all() {
     show_help_topic firewall
     show_help_topic ban
     show_help_topic backup
+    show_help_topic ini
+    show_help_topic yml
+    show_help_topic nginx
     show_help_topic smtp
     show_help_topic notifications
     show_help_topic reset
@@ -545,6 +631,9 @@ main() {
         firewall)   _maybe_cmd_help firewall "$@";   require_root; source "${CIPI_LIB}/firewall.sh";    firewall_command "$@" ;;
         ban)        _maybe_cmd_help ban "$@";        require_root; source "${CIPI_LIB}/ban.sh";         ban_command "$@" ;;
         backup)     _maybe_cmd_help backup "$@";     require_root; source "${CIPI_LIB}/backup.sh";      backup_command "$@" ;;
+        ini)        _maybe_cmd_help ini "$@";        require_root; source "${CIPI_LIB}/ini.sh";         ini_command "$@" ;;
+        yml|yaml)   _maybe_cmd_help yml "$@";        require_root; source "${CIPI_LIB}/yml.sh";        yml_command "$@" ;;
+        nginx)      _maybe_cmd_help nginx "$@";      require_root; source "${CIPI_LIB}/nginx.sh";      nginx_command "$@" ;;
         self-update) _maybe_cmd_help server "$@";    require_root; source "${CIPI_LIB}/self-update.sh"; selfupdate_command "$@" ;;
         service)    _maybe_cmd_help service "$@";    require_root; source "${CIPI_LIB}/service.sh";    service_command "$@" ;;
         api)        _maybe_cmd_help api "$@";        require_root; source "${CIPI_LIB}/api.sh";       api_command "$@" ;;

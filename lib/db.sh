@@ -320,6 +320,131 @@ db_dump_database() {
     [[ -s "$outfile" ]]
 }
 
+# ── Discovery (live engine state, not the registry) ──────────
+#
+# databases.json only knows about databases created through `cipi db create`.
+# A multi-tenant app creates its tenant databases at runtime, so the registry
+# can never list them — and a backup driven by the registry silently skips
+# every tenant. These helpers ask the engine what actually exists, minus the
+# engine's own system schemas.
+
+db_system_schemas() {
+    case "$1" in
+        mariadb) echo "information_schema mysql performance_schema sys" ;;
+        pgsql)   echo "postgres template0 template1" ;;
+    esac
+}
+
+# Print one database name per line for an installed engine.
+db_list_databases() {
+    local engine="$1"
+    engine=$(db_normalize_engine "$engine") || return 1
+    case "$engine" in
+        mariadb)
+            local dbr; dbr=$(db_get_root_password mariadb)
+            [[ -z "$dbr" || "$dbr" == "null" ]] && return 1
+            mariadb -u root -p"$dbr" -N -B -e \
+                "SELECT schema_name FROM information_schema.schemata
+                 WHERE schema_name NOT IN ('information_schema','mysql','performance_schema','sys')
+                 ORDER BY schema_name;" 2>/dev/null
+            ;;
+        pgsql)
+            _db_pgsql_exec -tAc \
+                "SELECT datname FROM pg_database
+                 WHERE datistemplate = false AND datname NOT IN ('postgres')
+                 ORDER BY datname;" 2>/dev/null | sed 's/[[:space:]]*$//' | grep -v '^$'
+            ;;
+        *) return 1 ;;
+    esac
+}
+
+# True when the named database exists on the engine.
+db_database_exists() {
+    local engine="$1" name="$2"
+    db_list_databases "$engine" 2>/dev/null | grep -qx "$name"
+}
+
+# Print one table name per line.
+db_list_tables() {
+    local engine="$1" name="$2"
+    case "$engine" in
+        mariadb)
+            local dbr; dbr=$(db_get_root_password mariadb)
+            [[ -z "$dbr" || "$dbr" == "null" ]] && return 1
+            mariadb -u root -p"$dbr" -N -B -e \
+                "SELECT table_name FROM information_schema.tables
+                 WHERE table_schema = '${name}' AND table_type = 'BASE TABLE'
+                 ORDER BY table_name;" 2>/dev/null
+            ;;
+        pgsql)
+            _db_pgsql_exec -d "$name" -tAc \
+                "SELECT tablename FROM pg_tables WHERE schemaname = 'public' ORDER BY tablename;" 2>/dev/null \
+                | sed 's/[[:space:]]*$//' | grep -v '^$'
+            ;;
+        *) return 1 ;;
+    esac
+}
+
+# Dump with optional table exclusions.
+#
+# `excludes` is a comma-separated list of glob patterns, each either
+# "<db-glob>.<table-glob>" or a bare "<table-glob>" (any database). Excluding
+# high-churn tables (jobs, telescope_*, *_logs) is what makes a 30-minute
+# database backup affordable next to a slower full one.
+#
+# MariaDB's --ignore-table takes literal db.table names only, so the patterns
+# are expanded against the live table list first. pg_dump takes globs directly.
+db_dump_database_ex() {
+    local engine="$1" name="$2" outfile="$3" excludes="${4:-}"
+
+    [[ -z "$excludes" ]] && { db_dump_database "$engine" "$name" "$outfile"; return $?; }
+
+    case "$engine" in
+        mariadb)
+            local dbr; dbr=$(db_get_root_password mariadb)
+            local -a ignore=()
+            local table pat db_glob tbl_glob
+            while IFS= read -r table; do
+                [[ -n "$table" ]] || continue
+                while IFS=',' read -ra _pats; do
+                    for pat in "${_pats[@]}"; do
+                        pat="${pat#"${pat%%[![:space:]]*}"}"; pat="${pat%"${pat##*[![:space:]]}"}"
+                        [[ -n "$pat" ]] || continue
+                        if [[ "$pat" == *.* ]]; then
+                            db_glob="${pat%%.*}"; tbl_glob="${pat#*.}"
+                        else
+                            db_glob="*"; tbl_glob="$pat"
+                        fi
+                        # shellcheck disable=SC2053
+                        if [[ "$name" == $db_glob && "$table" == $tbl_glob ]]; then
+                            ignore+=( "--ignore-table=${name}.${table}" )
+                        fi
+                    done
+                done <<< "$excludes"
+            done < <(db_list_tables mariadb "$name")
+            mysqldump -u root -p"$dbr" --single-transaction --routines --triggers \
+                "${ignore[@]}" "$name" 2>/dev/null | gzip >"$outfile"
+            ;;
+        pgsql)
+            local dbr; dbr=$(db_get_root_password pgsql)
+            local -a excl=()
+            local pat
+            while IFS=',' read -ra _pats; do
+                for pat in "${_pats[@]}"; do
+                    pat="${pat#"${pat%%[![:space:]]*}"}"; pat="${pat%"${pat##*[![:space:]]}"}"
+                    [[ -n "$pat" ]] || continue
+                    [[ "$pat" == *.* ]] && pat="${pat#*.}"
+                    excl+=( "--exclude-table=${pat}" )
+                done
+            done <<< "$excludes"
+            PGPASSWORD="$dbr" pg_dump -U postgres -h 127.0.0.1 -p 5432 --no-owner --no-acl \
+                "${excl[@]}" "$name" 2>/dev/null | gzip >"$outfile"
+            ;;
+        *) return 1 ;;
+    esac
+    [[ -s "$outfile" ]]
+}
+
 db_restore_database() {
     local engine="$1" name="$2" file="$3"
     case "$engine" in

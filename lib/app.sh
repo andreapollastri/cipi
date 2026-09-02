@@ -420,7 +420,7 @@ JSON
 # Laravel Scheduler
 * * * * * /usr/bin/php${php_ver} ${home}/current/artisan schedule:run >> /dev/null 2>&1
 # Cipi deploy trigger (written by cipi/agent webhook)
-* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && { /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1 || sudo /usr/local/bin/cipi-app-notify ${app_user} deploy \$? ${home}/logs/deploy.log; }
+* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && /usr/local/bin/cipi-app-deploy ${app_user} ${php_ver} webhook >/dev/null 2>&1
 CRON
         success "Scheduler + deploy trigger"
     fi
@@ -1467,7 +1467,7 @@ alias_add() {
     local app="${1:-}" dom="${2:-}"
     [[ -z "$app" || -z "$dom" ]] && { error "Usage: cipi alias add <app> <domain>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
-    validate_domain "$dom" || { error "Invalid domain"; exit 1; }
+    validate_domain_or_wildcard "$dom" || { error "Invalid domain"; exit 1; }
     local primary; primary=$(app_get "$app" domain)
     [[ "$dom" == "$primary" ]] && { error "'${dom}' is already the primary domain"; exit 1; }
     domain_is_used_by_other_app "$dom" "$app" && { error "Domain '${dom}' is already used by app '${DOMAIN_USED_BY_APP}'"; exit 1; }
@@ -1760,15 +1760,50 @@ domains_command() {
 
 # ── HELPERS ───────────────────────────────────────────────────
 
+# php.ini settings that take php_admin_flag (On/Off) rather than php_admin_value.
+# Kept in step with the `flag` type in lib/ini.sh.
+_fpm_pool_flag_keys() {
+    cat <<'EOF'
+display_errors
+log_errors
+zlib.output_compression
+expose_php
+opcache.enable
+opcache.enable_cli
+opcache.validate_timestamps
+EOF
+}
+
 _create_fpm_pool() {
     local app="$1" v="$2"
     local max_children memory_limit start_servers
     max_children=$(_app_limit "$app" fpm_max_children 5 50)
-    memory_limit=$(_app_limit "$app" memory_limit 256M)
+    # Only an *explicit* per-app limit is written into the pool. A pool-level
+    # php_admin_value outranks conf.d/99-cipi.ini, so hardcoding the defaults
+    # here made `cipi ini set` server-wide look like it did nothing for apps.
+    memory_limit=$(vault_read apps.json | jq -r --arg a "$app" '.[$a].limits.memory_limit // empty' 2>/dev/null || true)
     # Derive start_servers from max_children (keep pool small when capped low)
     start_servers=2
     (( max_children < 3 )) && start_servers=1
     (( max_children >= 10 )) && start_servers=3
+
+    # Per-app php.ini overrides (cipi ini set <key>=<value> --app=<app>).
+    local overrides="" k val flags
+    flags=$(_fpm_pool_flag_keys)
+    if [[ -n "$memory_limit" ]]; then
+        overrides="${overrides}php_admin_value[memory_limit] = ${memory_limit}"$'\n'
+    fi
+    while IFS=$'\t' read -r k val; do
+        [[ -n "$k" ]] || continue
+        [[ "$k" == "memory_limit" && -n "$memory_limit" ]] && continue
+        if grep -qx -- "$k" <<< "$flags"; then
+            overrides="${overrides}php_admin_flag[${k}] = ${val}"$'\n'
+        else
+            overrides="${overrides}php_admin_value[${k}] = ${val}"$'\n'
+        fi
+    done < <(vault_read apps.json | jq -r --arg a "$app" \
+        '(.[$a].ini // {}) | to_entries[] | "\(.key)\t\(.value)"' 2>/dev/null || true)
+
     cat > "/etc/php/${v}/fpm/pool.d/${app}.conf" <<EOF
 [${app}]
 user = ${app}
@@ -1785,13 +1820,9 @@ pm.max_spare_servers = ${start_servers}
 pm.max_requests = 500
 request_terminate_timeout = 300
 php_admin_value[open_basedir] = /home/${app}/:/tmp/:/proc/
-php_admin_value[upload_max_filesize] = 256M
-php_admin_value[post_max_size] = 256M
-php_admin_value[memory_limit] = ${memory_limit}
-php_admin_value[max_execution_time] = 300
 php_admin_value[error_log] = /home/${app}/logs/php-fpm-error.log
 php_admin_flag[log_errors] = on
-EOF
+${overrides}EOF
 }
 
 # Nginx location block for Laravel Reverb (WebSockets) when enabled.
@@ -1826,7 +1857,7 @@ EOF
 # the flag is set, so suspension survives vhost regeneration (alias/PHP edits)
 # and certbot clones it into the :443 block — HTTPS is covered too. The page is
 # shared by all apps and created on demand below.
-readonly SUSPENDED_DIR="/var/www/cipi-suspended"
+[[ -z "${SUSPENDED_DIR:-}" ]] && readonly SUSPENDED_DIR="/var/www/cipi-suspended"
 
 # Create (once) the generic static suspension page served to visitors of a
 # suspended app. Idempotent — only writes the file when missing.
@@ -2541,7 +2572,7 @@ auth_delete() {
 # auth_basic directives into the location blocks when enabled. NOTE: this is
 # the HTTP gatekeeper — unrelated to `cipi auth` (Composer auth.json).
 
-readonly BASICAUTH_DIR="/etc/nginx/cipi-basicauth"
+[[ -z "${BASICAUTH_DIR:-}" ]] && readonly BASICAUTH_DIR="/etc/nginx/cipi-basicauth"
 
 _basicauth_file() { echo "${BASICAUTH_DIR}/${1}.htpasswd"; }
 
@@ -3052,7 +3083,7 @@ _schedule_crontab_write() {
     fi
     cat <<CRON | crontab -u "$app" -
 ${schedule_line}# Cipi deploy trigger (written by cipi/agent webhook)
-* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && { /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1 || sudo /usr/local/bin/cipi-app-notify ${app} deploy \$? ${home}/logs/deploy.log; }
+* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && /usr/local/bin/cipi-app-deploy ${app} ${php_ver} webhook >/dev/null 2>&1
 CRON
 }
 

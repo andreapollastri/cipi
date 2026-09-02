@@ -4,6 +4,50 @@ All notable changes to Cipi are documented in this file.
 
 ---
 
+## [5.1.0] — 2026-09-02
+
+Thanks to **Alberto Peripolli** for putting Cipi through a real multi-tenant SaaS deployment and reporting every one of the problems this release fixes.
+
+### Fixed
+
+- **The "deploy failed" notification never fired.** `_deploy_run` ran Deployer as a plain command under `set -euo pipefail`, so a non-zero exit killed the `cipi` process on the spot: the failure branch, its warnings, the rollback hint and the `deploy_fail` email were unreachable code. The run is now wrapped so the real status is read from `PIPESTATUS[0]`, and both the CLI and the automatic webhook path report success **and** failure by email. `cipi deploy` also exits non-zero when the deploy failed, so CI and webhooks can see it. The same bug and the same fix applied to `cipi deploy --rollback`.
+- **Backups silently skipped every database an app created at runtime.** `cipi backup run` dumped exactly one database per app — the one named after the app. A multi-tenant application creating `tenant_1`, `tenant_2`, … appears in no registry, so none of them were ever saved. Databases are now discovered from the engine itself (minus system schemas) and selected with glob patterns.
+- **Backups of `--custom` apps failed on every run.** The archive step ran `tar -C /home/<app> shared/`, but a `--custom` app has no `shared/` — its files live in `htdocs/`. Every run errored, marked the backup as failed, and saved nothing for those apps.
+- **`cipi worker horizon enable` left Horizon half-enabled.** `reload_supervisor` returns non-zero when `supervisorctl reread/update` complains, which under `set -e` aborted the function *before* `apps.json` was updated — so `enable` printed nothing after "Enabling Horizon…" and `status` still reported `disabled`. The state is now always written, the command reports what supervisor actually did, and `status` surfaces drift between the two.
+- **A server-wide php.ini change could not reach any app.** Every FPM pool hardcoded `php_admin_value[upload_max_filesize]`, `post_max_size` and `max_execution_time`, and pool values outrank `conf.d`. Pools now carry only what is genuinely per-app (`open_basedir`, the error log, explicit overrides) and inherit everything else.
+- **The CLI SAPI was never configured.** Cipi wrote `99-cipi.ini` for FPM only, so queue workers, `artisan` and cron ran on the PHP package defaults. Both SAPIs are now written, and **migration 5.1.0** backfills the CLI file on existing servers.
+- **Deploy logs had no dates and no release numbers.** `/home/<app>/logs/deploy.log` was raw Deployer output appended forever, which made a deploy that failed overnight unreadable afterwards. Every line is now timestamped and each run is bracketed by a banner naming the trigger, the branch, the release and the duration.
+- **HTTPS requests matching no app landed on an arbitrary app.** `:80` had a default server but `:443` never did, so a request with an unknown `Host` fell through to whichever vhost nginx loaded first — for a wildcard multi-tenant app, straight into a tenant resolver that cannot parse it.
+- **Wildcard domain aliases were rejected.** `cipi alias add <app> '*.example.com'` failed validation even though nginx matches wildcard `server_name` natively and multi-tenant apps need it.
+
+### Added
+
+- **`cipi backup profile` — backup strategies instead of one hardcoded job.** A profile decides scope (`all`, `files`, `db`), which apps and databases it covers, which tables to skip, how often it runs, where it goes (`local`, `s3`, or both) and how long it is kept (`--keep=N` runs, `--keep-days`, `--keep-weeks`). Profiles are independent, so a 30-minute database copy kept locally coexists with an encrypted nightly full copy on S3. Retention is mandatory — a profile that would grow without bound is refused.
+- **The backup schedule is managed for you.** `cipi backup configure` and every profile change rewrite a marked block in root's crontab; the pre-5.1 hand-written lines are absorbed on migration. Nothing outside the block is touched.
+- **Application files and databases are stored separately** — `apps/<app>/files.tar.gz` next to `databases/<engine>/<db>.sql.gz`, with a manifest per run — so a database-only profile costs nothing to take and a database can be restored without unpacking an app.
+- **Client-side backup encryption** (`--encrypt`): AES-256 before anything leaves the server, so the bucket operator never holds readable data. `cipi backup key show` prints the key to store off-server; `cipi backup fetch` downloads and decrypts a run for restore.
+- **`cipi backup verify`** checks the newest run of each profile actually decompresses (`--deep` downloads from S3 to do it), and **`cipi backup status`** shows destinations, profiles and last results. An hourly watchdog raises `backup_stale` when a profile has not succeeded within twice its own interval.
+- **`cipi ini` — guided php.ini editing.** `cipi ini list` shows the effective value of every tunable setting and which layer set it; `cipi ini set upload_max_filesize=50M` applies it server-wide to **both** FPM and CLI; `--app=<app>` scopes it to one app. `post_max_size` and `memory_limit` are raised along with an upload limit that would otherwise cap it, and nginx's `client_max_body_size` is flagged when it would. Settable keys are an explicit whitelist; `open_basedir`, `auto_prepend_file`, `extension` and friends are refused by name with the reason.
+- **`cipi yml` — optional per-project `cipi.yml`.** An app can carry a file in its repository declaring domain aliases, PHP version and settings, **extra databases**, **queue workers** and its **backup strategy**. `cipi yml plan` shows the exact diff, `cipi yml apply` applies it, `cipi yml auto <app> on` reconciles after every successful deploy through one narrowly scoped sudoers rule, and `cipi yml example` prints a commented template. Credentials for databases it creates are written to `/home/<app>/shared/cipi-databases.env`, never to the repository.
+
+  Because the file arrives over git, it is fail-closed throughout: it can only configure an app that already exists (never create, rename or delete one), its databases must be named `<app>` or `<app>_*` and its backup profiles `<app>` or `<app>-*`, unknown keys are errors, no field carries a shell command or a path to include, and the parser implements a small YAML subset that refuses anchors, aliases, tags, merge keys, block scalars and flow mappings outright.
+- **`cipi nginx default-server on|off|status`** — claims whichever of `:80`/`:443` has no default server and closes unmatched requests with an empty reply (444). Enabled on fresh installs and, where nothing else claims it, by migration 5.1.0.
+- **`cipi deploy <app> --log[=N]`** shows the timestamped deploy log; `--releases` now lists each release with its date, commit and subject (the directories stay numeric — rollback depends on that ordering).
+- **New notification triggers**: `backup_stale`, `ini_set`, `yml_apply`, `yml_fail`, and `self_update` — the last one so an unattended nightly update no longer lands without a word. All are toggled with `cipi notifications enable|disable`.
+- **Table exclusions in dumps** (`--exclude-tables='*.jobs,*.telescope_*'`), expanded against the live table list on MariaDB and passed straight to `pg_dump` on PostgreSQL.
+
+### Changed
+
+- `cipi backup configure` accepts an empty bucket for local-only backups, and lists Cloudflare R2, Hetzner, DO Spaces, Backblaze B2, Scaleway and MinIO as S3-compatible endpoints.
+- `cipi backup prune [app] --weeks=N` keeps working against the pre-5.1 layout, so existing archives and any hand-written cron line still prune.
+- README: the install snippet no longer carries a `$` prefix that gets copied with it, and states that it runs **on the server** as a `sudo` user, how to produce the SSH public key it asks for (including on Windows), and what the root password it prints is for.
+
+### Migration
+
+**5.1.0** installs the automatic-deploy wrapper and repoints each app's webhook cron at it, backfills the CLI `99-cipi.ini`, rewrites FPM pools so they inherit the server-wide file, converts the hardcoded nightly backup job into a `default` profile carrying over its existing `--weeks` retention, takes over the backup schedule with the managed crontab block, and claims the `:443` default server when nothing else does.
+
+---
+
 ## [5.0.18] — 2026-08-06
 
 ### Fixed

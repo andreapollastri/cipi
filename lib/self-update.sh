@@ -48,6 +48,7 @@ selfupdate_command() {
     [[ -f "${tmp}/lib/cipi-cron-notify.sh" ]] && cp "${tmp}/lib/cipi-cron-notify.sh" /usr/local/bin/cipi-cron-notify && chmod 700 /usr/local/bin/cipi-cron-notify
     [[ -f "${tmp}/lib/cipi-auth-notify.sh" ]] && cp "${tmp}/lib/cipi-auth-notify.sh" /usr/local/bin/cipi-auth-notify && chmod 700 /usr/local/bin/cipi-auth-notify
     [[ -f "${tmp}/lib/cipi-app-notify.sh" ]] && cp "${tmp}/lib/cipi-app-notify.sh" /usr/local/bin/cipi-app-notify && chmod 700 /usr/local/bin/cipi-app-notify
+    [[ -f "${tmp}/lib/cipi-app-deploy.sh" ]] && cp "${tmp}/lib/cipi-app-deploy.sh" /usr/local/bin/cipi-app-deploy && chmod 755 /usr/local/bin/cipi-app-deploy
     [[ -f "${tmp}/lib/cipi-health-check.sh" ]] && cp "${tmp}/lib/cipi-health-check.sh" /usr/local/bin/cipi-health-check && chmod 700 /usr/local/bin/cipi-health-check
     [[ -f "${tmp}/lib/cipi-read-app-logs.sh" ]] && cp "${tmp}/lib/cipi-read-app-logs.sh" /usr/local/bin/cipi-read-app-logs && chmod 755 /usr/local/bin/cipi-read-app-logs
     [[ -d "${tmp}/cipi-api" ]] && rm -rf /opt/cipi/cipi-api && cp -a "${tmp}/cipi-api" /opt/cipi/cipi-api
@@ -159,5 +160,14 @@ selfupdate_command() {
     fi
 
     log_action "SELF-UPDATE: v${CIPI_VERSION} → v${nv}"
+
+    # Updates arrive unattended from the nightly cron, so without this the only
+    # way to learn the server changed was to go looking for it.
+    if [[ "$nv" != "${CIPI_VERSION}" ]]; then
+        cipi_notify \
+            "Cipi updated to v${nv} on $(hostname)" \
+            "Cipi updated itself.\n\nServer: $(hostname)\nVersion: v${CIPI_VERSION} → v${nv}\nTime: $(date '+%Y-%m-%d %H:%M:%S %Z')\n\nChangelog: https://github.com/cipi-sh/cipi/blob/master/CHANGELOG.md\n\nTurn this off with: cipi notifications disable self_update" \
+            self_update
+    fi
     success "Updated to v${nv}"
 }

@@ -50,7 +50,12 @@ ssh_login|Security|SSH login (cipi/root/sudo users)
 sudo|Security|Sudo elevation
 su|Security|su to root by cipi
 backup_fail|Backup|Backup failed
+backup_stale|Backup|Backup overdue (no successful run in its window)
 cron_fail|Cron|Cron job failed
+ini_set|PHP|PHP setting changed
+yml_apply|cipi.yml|cipi.yml applied
+yml_fail|cipi.yml|cipi.yml invalid or could not be applied
+self_update|Updates|Cipi updated itself
 reset_root_password|Reset|Root SSH password reset
 reset_db_password|Reset|MariaDB root password reset
 reset_valkey_password|Reset|Valkey password reset

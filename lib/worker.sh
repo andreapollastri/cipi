@@ -34,11 +34,13 @@ _horizon_enable() {
     [[ "$(app_get "$app" custom)" == "true" ]] && { error "Horizon is only for Laravel apps"; exit 1; }
     if [[ "$(app_get "$app" horizon)" == "true" ]]; then
         info "Horizon already enabled for '${app}'"
+        _horizon_status "$app"
         return 0
     fi
 
     local php_ver conf
     php_ver=$(app_get "$app" php)
+    [[ -z "$php_ver" ]] && { error "App config incomplete (php). Run: cipi app edit ${app}"; exit 1; }
     conf="/etc/supervisor/conf.d/${app}.conf"
     [[ -f "$conf" ]] || echo "" > "$conf"
 
@@ -52,12 +54,42 @@ _horizon_enable() {
     _supervisor_remove_program "$app" "${app}-horizon"
     _create_supervisor_horizon "$app" "$php_ver"
     # Keep octane/reverb programs intact (they are separate)
-    reload_supervisor
+
+    # `reload_supervisor` returns 1 when supervisorctl reread/update complains
+    # (a common, usually harmless condition). Under `set -e` that aborted the
+    # function right here: the supervisor program was written but apps.json was
+    # never updated, so `enable` printed nothing and `status` still said
+    # "disabled". Never let a supervisor hiccup skip the state write.
+    local reload_rc=0
+    reload_supervisor || reload_rc=$?
     supervisorctl start "${app}-horizon" 2>/dev/null || true
+
     app_set "$app" horizon "true"
     log_action "HORIZON ENABLE: $app"
-    success "Horizon enabled for '${app}'"
+
+    # Report what supervisor actually did, rather than assuming it worked.
+    local state; state=$(_horizon_supervisor_state "$app")
+    if [[ "$state" == "RUNNING" ]]; then
+        success "Horizon enabled and running for '${app}'"
+    else
+        success "Horizon enabled for '${app}'"
+        warn "Supervisor reports '${app}-horizon' as ${state:-UNKNOWN}."
+        if (( reload_rc != 0 )); then
+            warn "supervisorctl reread/update reported a problem — check: supervisorctl status"
+        fi
+        warn "Horizon starts once the app has been deployed, laravel/horizon is required"
+        warn "in composer.json, and QUEUE_CONNECTION=redis is set in .env."
+        warn "Log: /home/${app}/logs/horizon.log"
+    fi
     info "Use QUEUE_CONNECTION=redis (Valkey) in .env. Require laravel/horizon in the app."
+}
+
+# Supervisor's own view of the program: RUNNING, STOPPED, FATAL, NOT-FOUND, ...
+_horizon_supervisor_state() {
+    local app="$1" line
+    line=$(supervisorctl status "${app}-horizon" 2>/dev/null | head -1 || true)
+    [[ -z "$line" ]] && { echo "NOT-FOUND"; return 0; }
+    echo "$line" | awk '{print $2}'
 }
 
 _horizon_disable() {
@@ -79,7 +111,9 @@ _horizon_disable() {
         [[ -f "/etc/supervisor/conf.d/${app}.conf" ]] || echo "" > "/etc/supervisor/conf.d/${app}.conf"
         _create_supervisor_worker "$app" "$php_ver" "default"
     fi
-    reload_supervisor
+    # Same guard as _horizon_enable: a supervisor hiccup must not leave
+    # apps.json claiming Horizon is still on.
+    reload_supervisor || warn "supervisorctl reread/update reported a problem — check: supervisorctl status"
     app_unset "$app" horizon
     log_action "HORIZON DISABLE: $app"
     success "Horizon disabled — default queue worker restored"
@@ -89,11 +123,29 @@ _horizon_status() {
     local app="${1:-}"
     [[ -z "$app" ]] && { error "Usage: cipi worker horizon status <app>"; exit 1; }
     app_exists "$app" || { error "Not found"; exit 1; }
-    if [[ "$(app_get "$app" horizon)" == "true" ]]; then
+    local configured state
+    configured=$(app_get "$app" horizon)
+    state=$(_horizon_supervisor_state "$app")
+
+    if [[ "$configured" == "true" ]]; then
         echo -e "  Horizon: ${GREEN}enabled${NC}"
-        supervisorctl status "${app}-horizon" 2>/dev/null || true
     else
         echo -e "  Horizon: ${DIM}disabled${NC}"
+    fi
+    echo -e "  Supervisor: ${CYAN}${state}${NC}"
+    supervisorctl status "${app}-horizon" 2>/dev/null | sed 's/^/  /' || true
+
+    # Surface drift between what apps.json claims and what supervisor holds —
+    # the state that used to be reachable when enable aborted halfway.
+    if [[ "$configured" == "true" && "$state" == "NOT-FOUND" ]]; then
+        warn "Config says enabled but supervisor has no '${app}-horizon' program."
+        warn "Repair: cipi worker horizon disable ${app} && cipi worker horizon enable ${app}"
+    elif [[ "$configured" != "true" && "$state" != "NOT-FOUND" ]]; then
+        warn "Supervisor still runs '${app}-horizon' but config says disabled."
+        warn "Repair: cipi worker horizon disable ${app}"
+    elif [[ "$configured" == "true" && "$state" == "FATAL" ]]; then
+        warn "Horizon keeps crashing — check /home/${app}/logs/horizon.log"
+        warn "Common causes: laravel/horizon not installed, no deploy yet, QUEUE_CONNECTION not redis."
     fi
 }
 

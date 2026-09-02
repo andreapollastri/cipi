@@ -103,6 +103,16 @@ validate_domain() {
     [[ "$1" =~ ^[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(\.[a-zA-Z0-9]([a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*\.[a-zA-Z]{2,}$ ]]
 }
 
+# Same, but also accepts a leading "*." wildcard. nginx matches wildcard
+# server_names natively, and a multi-tenant app fronted by one certificate
+# needs "*.example.com" as an alias rather than one entry per tenant.
+# Never use this for the primary domain — only for aliases.
+validate_domain_or_wildcard() {
+    local d="$1"
+    [[ "$d" == \*.* ]] && d="${d#\*.}"
+    validate_domain "$d"
+}
+
 # Git branch name. Restricted to a safe charset so it can never break out of
 # the single-quoted PHP string literal it's substituted into when generating
 # deploy.php (lib/app.sh _create_deployer_config_from_template / app_edit).
@@ -192,8 +202,8 @@ _update_apps_public() {
             domain, aliases, php, branch, repository, user, created_at, suspended,
             basic_auth, www_redirect, force_https, custom, docroot, engine,
             octane, octane_port, reverb, reverb_port, horizon, schedule, node_build,
-            cloned_from, predeploy_snapshot, limits, health_url, health_expect,
-            ssl_dns_provider
+            cloned_from, predeploy_snapshot, limits, ini, health_url, health_expect,
+            ssl_dns_provider, backup_profiles
         })
     ' > "${CIPI_CONFIG}/apps-public.json" 2>/dev/null || return 0
     _cipi_safe_chmod 640 "${CIPI_CONFIG}/apps-public.json"

@@ -668,7 +668,7 @@ BASH
     fi
     cat <<CRON | crontab -u "$app" -
 ${schedule_block}# Cipi deploy trigger
-* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && cd ${home} && { /usr/bin/php${php_ver} /usr/local/bin/dep deploy -f ${home}/.deployer/deploy.php >> ${home}/logs/deploy.log 2>&1 || sudo /usr/local/bin/cipi-app-notify ${app} deploy \$? ${home}/logs/deploy.log; }
+* * * * * test -f ${home}/.deploy-trigger && rm -f ${home}/.deploy-trigger && /usr/local/bin/cipi-app-deploy ${app} ${php_ver} webhook >/dev/null 2>&1
 CRON
     # Restore reverb/horizon/octane supervisor extras when conf was empty
     if [[ ! -f "${ad}/supervisor.conf" ]] || [[ ! -s "${ad}/supervisor.conf" ]]; then
