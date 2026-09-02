@@ -33,8 +33,48 @@ selfupdate_command() {
 
     step "Downloading from '${branch}'..."
     local tmp="/tmp/cipi-update-$$"; rm -rf "$tmp"
-    GIT_TERMINAL_PROMPT=0 git clone -b "$branch" --depth 1 "https://github.com/${_CIPI_REPO}.git" "$tmp" 2>/dev/null \
-        || { error "Download failed"; exit 1; }
+
+    if ! command -v git >/dev/null 2>&1; then
+        error "git is not installed — cannot download the update"
+        echo "  Install it with:  apt-get install -y git"
+        exit 1
+    fi
+
+    # Never swallow git's message. "Download failed" on its own gives nobody
+    # anything to act on, and the causes are wildly different: no egress, DNS,
+    # a full disk, a branch that does not exist. Capture stderr, print it, and
+    # name the most likely cause.
+    local clone_err clone_rc=0
+    clone_err=$(GIT_TERMINAL_PROMPT=0 GIT_ASKPASS=/bin/true \
+        _cipi_run_timed 180 git clone -b "$branch" --depth 1 \
+        "https://github.com/${_CIPI_REPO}.git" "$tmp" 2>&1) || clone_rc=$?
+
+    if [[ $clone_rc -ne 0 ]]; then
+        error "Download failed (git exit ${clone_rc})"
+        [[ -n "$clone_err" ]] && printf '%s\n' "$clone_err" | sed 's/^/  /'
+        echo ""
+        if [[ $clone_rc -eq 124 ]]; then
+            echo "  Timed out after 180s — the server could not reach github.com."
+        elif grep -qiE 'could not resolve|name or service not known|temporary failure in name' <<< "$clone_err"; then
+            echo "  DNS cannot resolve github.com. Check /etc/resolv.conf."
+        elif grep -qiE 'connection refused|connection timed out|failed to connect|network is unreachable' <<< "$clone_err"; then
+            echo "  No outbound HTTPS to github.com. Check the firewall, the security group"
+            echo "  and — on AWS — that this subnet has a NAT gateway or public IP."
+        elif grep -qiE 'remote branch .* not found|couldn.t find remote ref' <<< "$clone_err"; then
+            echo "  The branch '${branch}' does not exist on ${_CIPI_REPO}."
+            echo "  Try:  cipi self-update --branch=master"
+        elif grep -qiE 'no space left|write error|disk quota' <<< "$clone_err"; then
+            echo "  No space left. Free some and retry:  df -h /tmp /"
+        elif grep -qiE 'ssl|certificate|tls' <<< "$clone_err"; then
+            echo "  TLS failure — the system CA bundle or the clock may be wrong."
+            echo "  Check:  date  and  apt-get install --reinstall ca-certificates"
+        fi
+        echo ""
+        echo "  Reproduce it by hand:"
+        echo "    git clone -b ${branch} --depth 1 https://github.com/${_CIPI_REPO}.git /tmp/cipi-test"
+        rm -rf "$tmp"
+        exit 1
+    fi
     local nv; nv=$(tr -d '[:space:]' < "${tmp}/version.md" 2>/dev/null)
     [[ -z "$nv" ]] && { error "Invalid package (version.md missing)"; rm -rf "$tmp"; exit 1; }
     info "Updating v${CIPI_VERSION} → v${nv}"

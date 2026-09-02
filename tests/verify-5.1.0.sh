@@ -682,6 +682,36 @@ grep -A3 '^_bk_app_paths()' "${LIB}/backup.sh" >/dev/null && grep -q 'return 0' 
 sed -n '/^_supervisor_remove_program()/,/^}/p' "${LIB}/common.sh" | grep -q 'return 0' \
     && pass "_supervisor_remove_program returns 0 (horizon enable no longer aborts)" || fail "_supervisor_remove_program can abort its caller"
 
+# ── 8c. self-update must say why a download failed
+echo "-- self-update diagnostics"
+grep -q 'git clone .*2>/dev/null' "${LIB}/self-update.sh" \
+    && fail "git's error is still discarded" || pass "git's error is no longer discarded"
+grep -q 'Could not resolve\|could not resolve' "${LIB}/self-update.sh" && pass "DNS failure named" || fail "no DNS hint"
+grep -q 'NAT gateway' "${LIB}/self-update.sh" && pass "blocked egress named" || fail "no egress hint"
+grep -q 'does not exist on' "${LIB}/self-update.sh" && pass "missing branch named" || fail "no branch hint"
+grep -q 'No space left' "${LIB}/self-update.sh" && pass "full disk named" || fail "no disk hint"
+grep -q 'Reproduce it by hand' "${LIB}/self-update.sh" && pass "prints a command to reproduce it" || fail "no repro command"
+grep -q '_cipi_run_timed 180 git clone' "${LIB}/self-update.sh" && pass "the clone cannot hang forever" || fail "clone has no timeout"
+
+cat > "${TMP}/su.sh" <<'SU'
+set -uo pipefail
+RED=''; GREEN=''; YELLOW=''; CYAN=''; DIM=''; NC=''; BOLD=''
+CIPI_LIB=LIBDIR; CIPI_CONFIG=/tmp/cipi-t; CIPI_LOG=/tmp/cipi-t; CIPI_VERSION=5.0.18
+error(){ echo "ERR:$*"; }; step(){ :; }; info(){ :; }; success(){ :; }; warn(){ :; }
+_cipi_run_timed(){ shift; "$@"; }
+parse_args(){ :; }
+ARG_check=""; ARG_branch=""
+git(){ echo "$FAKE_ERR" >&2; return "${FAKE_RC:-128}"; }
+source LIBDIR/self-update.sh
+selfupdate_command
+SU
+sed -i.bak "s#LIBDIR#${LIB}#g" "${TMP}/su.sh" && rm -f "${TMP}/su.sh.bak"
+o=$(FAKE_ERR="fatal: Could not resolve host: github.com" FAKE_RC=128 bash "${TMP}/su.sh" 2>&1)
+[[ "$o" == *"Could not resolve host"* && "$o" == *"resolv.conf"* ]] \
+    && pass "a DNS failure reports the real git message and the cause" || fail "DNS diagnosis (${o})"
+o=$(FAKE_ERR="" FAKE_RC=124 bash "${TMP}/su.sh" 2>&1)
+[[ "$o" == *"Timed out after 180s"* ]] && pass "a hung clone is reported as a timeout" || fail "timeout diagnosis (${o})"
+
 # ── 9. Re-sourcing safety (cipi yml apply loads several libs)
 echo "-- re-sourcing"
 cat > "${TMP}/src.sh" <<'SS'
